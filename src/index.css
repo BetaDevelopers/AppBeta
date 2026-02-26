@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/* ─── Beta Design Tokens ─────────────────────────────────────── */
+:root {
+  --beta-accent:        #2563eb;
+  --beta-accent-hover:  #1d4ed8;
+  --beta-accent-glow:   rgba(37, 99, 235, 0.25);
+  --beta-accent-subtle: rgba(37, 99, 235, 0.08);
+
+  --beta-bg:        #0a0f1e;
+  --beta-surface:   #0f172a;
+  --beta-surface-2: #1e293b;
+  --beta-surface-3: #334155;
+  --beta-border:    rgba(255,255,255,0.06);
+  --beta-border-2:  rgba(255,255,255,0.10);
+
+  --beta-text-primary:   #f1f5f9;
+  --beta-text-secondary: #94a3b8;
+  --beta-text-muted:     #475569;
+
+  --beta-sidebar:    48px;
+  --beta-panel:      240px;
+  --beta-ai-panel:   320px;
+  --beta-topbar:     48px;
+}
+
+/* ─── Reset & Base ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--beta-bg);
+  color: var(--beta-text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Custom Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--beta-surface-3);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--beta-accent); }
+
+/* ─── Focus Ring ─────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--beta-accent);
+  outline-offset: 2px;
+}
+
+/* ─── Animations ─────────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
