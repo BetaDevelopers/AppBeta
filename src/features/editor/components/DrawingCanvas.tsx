@@ -1,19 +1,29 @@
-import React, { useRef, useState, useCallback } from 'react'
+import React, { useRef, useState, useCallback, useEffect } from 'react'
 import { Transforms, Editor, Element as SlateElement } from 'slate'
 import { ReactEditor, useSlate, useSelected, useFocused } from 'slate-react'
-import { Trash2, PenTool, Eraser, Sparkles, Wand2 } from 'lucide-react'
-import { detectShape, Point } from '@/lib/ai/shape-detection'
+import { Trash2, PenTool, Eraser, Sparkles, Wand2, RefreshCw } from 'lucide-react'
 import { useOCR } from '@/features/ai/hooks/useOCR'
+
+interface Point {
+    x: number
+    y: number
+    pressure?: number
+}
+
+const SMOOTHING_FACTOR = 0.3
 
 export const DrawingCanvas = ({ attributes, children, element }: any) => {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [isDrawing, setIsDrawing] = useState(false)
-    const [points, setPoints] = useState<Point[]>([])
     const [tool, setTool] = useState<'pen' | 'eraser'>('pen')
+    const [isBeautifying, setIsBeautifying] = useState(false)
     const editor = useSlate()
     const selected = useSelected()
     const focused = useFocused()
     const { performOCR, isProcessing } = useOCR()
+
+    // Tablet-friendly drawing with smoothing
+    const [lastPoints, setLastPoints] = useState<Point[]>([])
 
     const draw = useCallback((e: React.PointerEvent) => {
         if (!isDrawing || !canvasRef.current) return
@@ -25,12 +35,13 @@ export const DrawingCanvas = ({ attributes, children, element }: any) => {
         const x = e.clientX - rect.left
         const y = e.clientY - rect.top
 
-        setPoints(prev => [...prev, { x, y }])
+        const newPoint = { x, y, pressure: e.pressure }
+        setLastPoints(prev => [...prev.slice(-3), newPoint])
 
-        ctx.lineWidth = tool === 'eraser' ? 20 : 2
+        ctx.lineWidth = tool === 'eraser' ? 24 : 2.5
         ctx.lineCap = 'round'
         ctx.lineJoin = 'round'
-        ctx.strokeStyle = tool === 'eraser' ? '#0f172a' : '#c084fc'
+        ctx.strokeStyle = tool === 'eraser' ? '#ffffff' : '#2563eb'
 
         if (tool === 'eraser') {
             ctx.globalCompositeOperation = 'destination-out'
@@ -38,103 +49,123 @@ export const DrawingCanvas = ({ attributes, children, element }: any) => {
             ctx.globalCompositeOperation = 'source-over'
         }
 
-        ctx.lineTo(x, y)
-        ctx.stroke()
+        if (lastPoints.length > 2) {
+            const xc = (lastPoints[lastPoints.length - 1].x + lastPoints[lastPoints.length - 2].x) / 2
+            const yc = (lastPoints[lastPoints.length - 1].y + lastPoints[lastPoints.length - 2].y) / 2
+            ctx.quadraticCurveTo(lastPoints[lastPoints.length - 2].x, lastPoints[lastPoints.length - 2].y, xc, yc)
+            ctx.stroke()
+        } else {
+            ctx.lineTo(x, y)
+            ctx.stroke()
+        }
+
         ctx.beginPath()
         ctx.moveTo(x, y)
-    }, [isDrawing, tool])
+    }, [isDrawing, tool, lastPoints])
 
     const startDrawing = (e: React.PointerEvent) => {
         setIsDrawing(true)
-        setPoints([])
-        draw(e)
+        setLastPoints([{ x: e.clientX, y: e.clientY }])
+        const canvas = canvasRef.current
+        if (canvas) {
+            const rect = canvas.getBoundingClientRect()
+            const ctx = canvas.getContext('2d')
+            if (ctx) {
+                ctx.beginPath()
+                ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top)
+            }
+        }
     }
 
     const stopDrawing = () => {
         setIsDrawing(false)
-        const shape = detectShape(points)
-
-        if (shape && tool === 'pen') {
-            handleShapeDetection(shape)
-        }
-
-        const canvas = canvasRef.current
-        if (canvas) {
-            canvas.getContext('2d')?.beginPath()
-        }
+        setLastPoints([])
     }
 
-    const handleShapeDetection = (shape: any) => {
-        const canvas = canvasRef.current
-        if (!canvas) return
-        const ctx = canvas.getContext('2d')
-        if (!ctx) return
-        ctx.globalCompositeOperation = 'source-over'
-        ctx.strokeStyle = '#a855f7'
-        ctx.lineWidth = 3
-        const { x, y, width, height } = shape.bounds
-        if (shape.type === 'circle') {
-            ctx.beginPath()
-            ctx.ellipse(x + width / 2, y + height / 2, width / 2, height / 2, 0, 0, Math.PI * 2)
-            ctx.stroke()
-        } else if (shape.type === 'rectangle') {
-            ctx.strokeRect(x, y, width, height)
-        }
+    const handleBeautify = async () => {
+        setIsBeautifying(true)
+        // Simulate AI Beautification (In a real app, we'd send the path data to a smoothing API)
+        await new Promise(resolve => setTimeout(resolve, 1500))
+        setIsBeautifying(false)
+        alert('Trazos suavizados con IA (Simulación)')
     }
 
-    const handleEnhance = async () => {
+    const convertToText = async () => {
         if (!canvasRef.current) return
         const text = await performOCR(canvasRef.current)
         if (text && text.trim()) {
             const path = ReactEditor.findPath(editor, element)
             Transforms.insertNodes(
                 editor,
-                { type: 'paragraph', children: [{ text: `[Texto reconocido]: ${text}` }] } as any,
-                { at: Path.next(path) }
+                { type: 'paragraph', children: [{ text }] } as any,
+                { at: [path[0] + 1] }
             )
         }
     }
 
     return (
-        <div {...attributes} className="my-8 relative group">
-            <div contentEditable={false} className={clsx(
-                "rounded-2xl overflow-hidden bg-slate-950 border-2 transition-all",
-                selected && focused ? "border-violet-500 shadow-[0_0_30px_rgba(139,92,246,0.15)]" : "border-slate-800"
-            )}>
-                <div className="bg-slate-900/80 backdrop-blur-sm border-b border-white/5 p-3 flex items-center justify-between">
-                    <div className="flex gap-1.5">
+        <div {...attributes} className="my-12 relative group">
+            <div contentEditable={false} className={isProcessing || isBeautifying ? "animate-shimmer" : ""} style={{
+                borderRadius: '24px', overflow: 'hidden', background: '#fff',
+                border: `1px solid ${selected && focused ? '#2563eb' : 'rgba(0,0,0,0.06)'}`,
+                transition: 'all 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: selected && focused ? '0 30px 60px rgba(37,99,235,0.12)' : '0 10px 30px rgba(0,0,0,0.04)',
+                position: 'relative'
+            }}>
+                <div style={{
+                    background: 'rgba(255,255,255,0.95)', padding: '10px 16px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    borderBottom: '1px solid rgba(0,0,0,0.05)'
+                }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
                         <button
                             onClick={() => setTool('pen')}
-                            className={clsx("p-2 rounded-lg transition-all", tool === 'pen' ? "bg-violet-600 text-white shadow-lg shadow-violet-600/20" : "text-slate-500 hover:bg-white/5")}
+                            style={{ ...toolIconStyle, background: tool === 'pen' ? '#2563eb' : 'transparent', color: tool === 'pen' ? '#fff' : '#64748b' }}
                         >
                             <PenTool size={16} />
                         </button>
                         <button
                             onClick={() => setTool('eraser')}
-                            className={clsx("p-2 rounded-lg transition-all", tool === 'eraser' ? "bg-violet-600 text-white shadow-lg shadow-violet-600/20" : "text-slate-500 hover:bg-white/5")}
+                            style={{ ...toolIconStyle, background: tool === 'eraser' ? '#2563eb' : 'transparent', color: tool === 'eraser' ? '#fff' : '#64748b' }}
                         >
                             <Eraser size={16} />
                         </button>
                     </div>
 
-                    <button
-                        onClick={handleEnhance}
-                        disabled={isProcessing}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-violet-600/10 hover:bg-violet-600/20 text-violet-400 rounded-lg text-[10px] font-black uppercase tracking-widest border border-violet-500/20 transition-all disabled:opacity-50"
-                    >
-                        {isProcessing ? <RefreshCw size={12} className="animate-spin" /> : <Wand2 size={12} />}
-                        <span>{isProcessing ? 'Procesando...' : 'Mejorar Escritura'}</span>
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                            onClick={handleBeautify}
+                            disabled={isBeautifying}
+                            style={{ ...actionBtnStyle, background: 'rgba(37,99,235,0.1)', color: '#2563eb' }}
+                        >
+                            {isBeautifying ? <RefreshCw size={14} className="animate-spin" /> : <Wand2 size={14} />}
+                            <span>Embellencer</span>
+                        </button>
 
-                    <button className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all">
+                        <button
+                            onClick={convertToText}
+                            disabled={isProcessing}
+                            style={{ ...actionBtnStyle, background: 'rgba(5,150,105,0.1)', color: '#059669' }}
+                        >
+                            {isProcessing ? <RefreshCw size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                            <span>Pasar a Texto</span>
+                        </button>
+                    </div>
+
+                    <button style={{ ...toolIconStyle, color: '#ef4444' }}>
                         <Trash2 size={16} />
                     </button>
                 </div>
+
                 <canvas
                     ref={canvasRef}
-                    width={1200}
-                    height={600}
-                    className="w-full aspect-[2/1] cursor-crosshair touch-none bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px]"
+                    width={1600}
+                    height={800}
+                    className="paper-grid"
+                    style={{
+                        width: '100%', aspectRatio: '2/1', cursor: 'crosshair', touchAction: 'none',
+                        background: '#ffffff',
+                    }}
                     onPointerDown={startDrawing}
                     onPointerMove={draw}
                     onPointerUp={stopDrawing}
@@ -146,14 +177,12 @@ export const DrawingCanvas = ({ attributes, children, element }: any) => {
     )
 }
 
-function clsx(...args: any[]) {
-    return args.filter(Boolean).join(' ')
+const toolIconStyle: React.CSSProperties = {
+    padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer', display: 'flex', transition: 'all 0.2s'
 }
 
-const Path = {
-    next: (path: number[]) => {
-        const newPath = [...path]
-        newPath[newPath.length - 1]++
-        return newPath
-    }
+const actionBtnStyle: React.CSSProperties = {
+    padding: '8px 16px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: '800', transition: 'all 0.2s'
 }
+

@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react'
+import React, { useMemo, useState, useCallback, useEffect } from 'react'
 import { createEditor, Descendant, Editor, Transforms, Range, Element as SlateElement } from 'slate'
 import { Slate, Editable, withReact, ReactEditor } from 'slate-react'
 import { withHistory } from 'slate-history'
@@ -6,34 +6,43 @@ import { FloatingToolbar } from './FloatingToolbar'
 import { SlashMenu } from './SlashMenu'
 import { MathBlock } from './MathBlock'
 import { DrawingCanvas } from './DrawingCanvas'
+import { useFilesystemStore } from '../../filesystem/store/useFilesystemStore'
 
 const initialValue: Descendant[] = [
     {
-        type: 'heading-one',
-        children: [{ text: 'Teoría de la Relatividad' }],
-    } as any,
-    {
         type: 'paragraph',
-        children: [
-            { text: 'La relatividad general es una teoría del campo gravitatorio y de los sistemas de referencia generales...' },
-        ],
-    } as any,
-    {
-        type: 'math-block',
-        latex: 'G_{\\mu\\nu} + \\Lambda g_{\\mu\\nu} = \\frac{8\\pi G}{c^4} T_{\\mu\\nu}',
         children: [{ text: '' }],
-    } as any,
-    {
-        type: 'paragraph',
-        children: [{ text: 'Prueba a escribir "/" para ver los comandos disponibles.' }],
     } as any,
 ];
 
 export const BetaEditor: React.FC = () => {
+    const { activeNoteId, notes, updateNote } = useFilesystemStore()
+    const activeNote = useMemo(() => notes.find(n => n.id === activeNoteId), [activeNoteId, notes])
+
     const [target, setTarget] = useState<Range | null>(null)
     const [search, setSearch] = useState('')
     const editor = useMemo(() => withHistory(withReact(createEditor())), [])
+
+    // Internal state for the editor
     const [value, setValue] = useState<Descendant[]>(initialValue)
+
+    // Sync editor with activeNote when selection changes
+    useEffect(() => {
+        if (activeNote) {
+            // Transform editor content if it's different from stored content
+            // Need to handle empty content cases
+            const content = (activeNote.content && activeNote.content.length > 0)
+                ? activeNote.content as Descendant[]
+                : [{ type: 'paragraph', children: [{ text: '' }] } as any]
+
+            // Set local state
+            setValue(content)
+
+            // Reset editor state
+            editor.children = content
+            editor.onChange()
+        }
+    }, [activeNoteId, editor])
 
     const renderElement = useCallback((props: any) => {
         switch (props.element.type) {
@@ -65,8 +74,13 @@ export const BetaEditor: React.FC = () => {
 
     const onChange = (val: Descendant[]) => {
         setValue(val)
-        const { selection } = editor
 
+        // Auto-save logic
+        if (activeNoteId) {
+            updateNote(activeNoteId, { content: val })
+        }
+
+        const { selection } = editor
         if (selection && Range.isCollapsed(selection)) {
             const [start] = Range.edges(selection)
             const wordBefore = Editor.before(editor, start, { unit: 'word' })
@@ -88,7 +102,6 @@ export const BetaEditor: React.FC = () => {
                 return
             }
         }
-
         setTarget(null)
     }
 

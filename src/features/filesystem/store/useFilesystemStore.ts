@@ -5,10 +5,12 @@ interface FilesystemStore {
     currentWorkspace: Workspace | null;
     subjects: Subject[];
     notes: NoteDocument[];
+    activeNoteId: string | null;
     isLoading: boolean;
 
     // Actions
     loadWorkspace: (id: string) => Promise<void>;
+    setActiveNote: (id: string | null) => void;
     createSubject: (subject: Omit<Subject, 'id' | 'createdAt'>) => Promise<void>;
     renameSubject: (id: string, name: string) => Promise<void>;
     deleteSubject: (id: string) => Promise<void>;
@@ -29,6 +31,7 @@ export const useFilesystemStore = create<FilesystemStore>((set, get) => ({
     currentWorkspace: null,
     subjects: [],
     notes: [],
+    activeNoteId: null,
     isLoading: false,
 
     loadWorkspace: async (id: string) => {
@@ -37,8 +40,16 @@ export const useFilesystemStore = create<FilesystemStore>((set, get) => ({
         const subjects = await db.subjects.where('workspaceId').equals(id).sortBy('order');
         const notes = await db.notes.where('isTrashed').equals(0).toArray();
 
-        set({ currentWorkspace: workspace || null, subjects, notes, isLoading: false });
+        set({
+            currentWorkspace: workspace || null,
+            subjects,
+            notes,
+            isLoading: false,
+            activeNoteId: notes.length > 0 ? notes[0].id : null
+        });
     },
+
+    setActiveNote: (id) => set({ activeNoteId: id }),
 
     createSubject: async (subjectData) => {
         const id = safeUUID();
@@ -59,7 +70,6 @@ export const useFilesystemStore = create<FilesystemStore>((set, get) => ({
     },
 
     deleteSubject: async (id) => {
-        // Delete subject and move its notes to trash
         await db.subjects.delete(id);
         await db.notes.where('subjectId').equals(id).modify({ isTrashed: 1 });
         set((state) => ({
@@ -78,7 +88,7 @@ export const useFilesystemStore = create<FilesystemStore>((set, get) => ({
             syncedAt: null,
         };
         await db.notes.add(newNote);
-        set((state) => ({ notes: [...state.notes, newNote] }));
+        set((state) => ({ notes: [...state.notes, newNote], activeNoteId: id }));
     },
 
     renameNote: async (id, title) => {
@@ -90,7 +100,10 @@ export const useFilesystemStore = create<FilesystemStore>((set, get) => ({
 
     deleteNote: async (id) => {
         await db.notes.update(id, { isTrashed: 1 });
-        set((state) => ({ notes: state.notes.filter(n => n.id !== id) }));
+        set((state) => ({
+            notes: state.notes.filter(n => n.id !== id),
+            activeNoteId: get().activeNoteId === id ? null : get().activeNoteId
+        }));
     },
 
     updateNote: async (id, updates) => {

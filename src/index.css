@@ -52,11 +52,140 @@ html, body, #root {
   outline-offset: 2px;
 }
 
+/* ─── Premium Glassmorphism ───────────────────────────────────── */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.125);
+}
+
+[data-theme='dark'] .glass-effect {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ─── High-Fidelity Paper ────────────────────────────────────── */
+.paper-texture {
+  position: relative;
+}
+
+.paper-texture::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url("https://www.transparenttextures.com/patterns/natural-paper.png");
+  opacity: 0.15;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.page-canvas {
+  background: #ffffff;
+  color: #1e293b;
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: visible;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.02);
+}
+
+[data-theme='dark'] .page-canvas {
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+
+/* ─── Custom Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(37,99,235,0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(37,99,235,0.25);
+}
+
 /* ─── Animations ─────────────────────────────────────────────── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(37,99,235,0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.drawer-animation {
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* ─── Print & PDF Export ─────────────────────────────────────── */
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  /* Only show the page-canvas and its content */
+  .page-canvas, .page-canvas * {
+    visibility: visible;
+  }
+
+  /* Fix the position of the canvas for the printer */
+  .page-canvas {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    min-height: 100vh !important;
+    margin: 0 !important;
+    padding: 20mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #fff !important;
+    overflow: visible !important;
+  }
+
+  /* Hide the UI elements inside the canvas */
+  .page-canvas button, 
+  .page-canvas .tool-bar,
+  header, 
+  .drawer-panel,
+  nav {
+    display: none !important;
+  }
+
+  /* Ensure text is black/grey for readability */
+  .page-canvas h1, 
+  .page-canvas h2, 
+  .page-canvas h3, 
+  .page-canvas p, 
+  .page-canvas span {
+    color: #1e293b !important;
+  }
 }
