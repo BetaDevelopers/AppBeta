@@ -1,13 +1,19 @@
 import React, { useRef, useState, useEffect } from 'react'
-import { Camera, RefreshCw, X, ShieldAlert, Check } from 'lucide-react'
-import { clsx } from 'clsx'
+import { Camera, RefreshCw, X, ShieldAlert, Check, Loader2 } from 'lucide-react'
+import { useOCR } from '@/hooks/useOCR'
+import { useFilesystemStore } from '@/features/filesystem/store/useFilesystemStore'
+import { motion } from 'framer-motion'
 
 export const CaptureModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
     const videoRef = useRef<HTMLVideoElement>(null)
+    const { recognizeText, loading, progress } = useOCR()
+    const { activeNoteId, notes, updateNote } = useFilesystemStore()
+
     const [stream, setStream] = useState<MediaStream | null>(null)
     const [error, setError] = useState<string | null>(null)
-    const [isProcessing, setIsProcessing] = useState(false)
     const [capturedImage, setCapturedImage] = useState<string | null>(null)
+
+    const activeNote = notes.find(n => n.id === activeNoteId)
 
     useEffect(() => {
         if (isOpen) {
@@ -41,10 +47,25 @@ export const CaptureModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
         setCapturedImage(canvas.toDataURL('image/jpeg'))
     }
 
+    const handleUsePhoto = async () => {
+        if (!capturedImage || !activeNote) return
+
+        const text = await recognizeText(capturedImage)
+        if (text) {
+            const newParagraph = {
+                type: 'paragraph',
+                children: [{ text: `[Escaneado: ${new Date().toLocaleTimeString()}]\n${text}` }]
+            }
+            const updatedContent = [...(activeNote.content as any[]), newParagraph]
+            await updateNote(activeNote.id, { content: updatedContent })
+        }
+        onClose()
+    }
+
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 backdrop-blur-xl bg-slate-950/80">
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6 backdrop-blur-xl bg-slate-950/80">
             <div className="bg-slate-900 w-full max-w-4xl rounded-3xl border border-white/10 shadow-3xl overflow-hidden flex flex-col h-[80vh]">
                 <div className="p-6 border-b border-white/5 flex items-center justify-between bg-slate-900/50">
                     <div className="flex items-center gap-3">
@@ -62,6 +83,20 @@ export const CaptureModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                 </div>
 
                 <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
+                    {loading && (
+                        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm">
+                            <Loader2 size={48} className="text-emerald-500 animate-spin mb-4" />
+                            <p className="text-white font-black text-xl tracking-tighter uppercase italic">Analizando Texto...</p>
+                            <div className="w-1/2 h-1 bg-white/10 rounded-full mt-4 overflow-hidden relative">
+                                <motion.div
+                                    className="absolute top-0 left-0 h-full bg-emerald-500"
+                                    style={{ width: `${progress * 100}%` }}
+                                    transition={{ duration: 0.3 }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     {!capturedImage ? (
                         <>
                             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
@@ -97,16 +132,19 @@ export const CaptureModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
                         <div className="flex gap-4 w-full max-w-sm">
                             <button
                                 onClick={() => setCapturedImage(null)}
-                                className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
+                                disabled={loading}
+                                className="flex-1 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 <RefreshCw size={18} />
                                 <span>Reintentar</span>
                             </button>
                             <button
-                                className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition-all shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-2"
+                                onClick={handleUsePhoto}
+                                disabled={loading || !activeNote}
+                                className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition-all shadow-xl shadow-emerald-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 <Check size={18} />
-                                <span>Usar Foto</span>
+                                <span>{activeNote ? 'Usar Foto' : 'Elige una nota'}</span>
                             </button>
                         </div>
                     )}

@@ -140,6 +140,32 @@ html, body, #root {
 .drawer-animation {
   animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+/* ─── Tablet & Touch Optimization ────────────────────────── */
+@media (pointer: coarse) {
+  button, [role="button"] {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 12px;
+  }
+}
+
+button:active, 
+[role="button"]:active {
+  transform: scale(0.96);
+  transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Ensure hit targets are generous for tablet users */
+.touch-target {
+  padding: 8px;
+  margin: -8px;
+}
+
 /* ─── Print & PDF Export ─────────────────────────────────────── */
 @media print {
   @page {

@@ -26,14 +26,10 @@ export const SummaryPanel: React.FC<{ content: string; isOpen: boolean; onClose:
     if (!isOpen) return null
 
     return (
-        <aside style={{
-            width: 'var(--beta-ai-panel)',
-            background: 'var(--beta-surface)',
-            borderLeft: '1px solid var(--beta-border)',
+        <div style={{
             display: 'flex',
             flexDirection: 'column',
             flexShrink: 0,
-            zIndex: 30,
             overflowY: 'auto',
         }}>
             {/* Header */}
@@ -113,6 +109,6 @@ export const SummaryPanel: React.FC<{ content: string; isOpen: boolean; onClose:
                     </div>
                 )}
             </div>
-        </aside>
+        </div>
     )
 }

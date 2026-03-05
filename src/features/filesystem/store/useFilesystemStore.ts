@@ -5,11 +5,13 @@ interface FilesystemStore {
     currentWorkspace: Workspace | null;
     subjects: Subject[];
     notes: NoteDocument[];
+    trashedNotes: NoteDocument[];
     activeNoteId: string | null;
     isLoading: boolean;
 
     // Actions
     loadWorkspace: (id: string) => Promise<void>;
+    loadTrash: () => Promise<void>;
     setActiveNote: (id: string | null) => void;
     createSubject: (subject: Omit<Subject, 'id' | 'createdAt'>) => Promise<void>;
     renameSubject: (id: string, name: string) => Promise<void>;
@@ -17,6 +19,8 @@ interface FilesystemStore {
     createNote: (note: Omit<NoteDocument, 'id' | 'createdAt' | 'updatedAt' | 'syncedAt'>) => Promise<void>;
     renameNote: (id: string, title: string) => Promise<void>;
     deleteNote: (id: string) => Promise<void>;
+    restoreNote: (id: string) => Promise<void>;
+    deleteNotePermanently: (id: string) => Promise<void>;
     updateNote: (id: string, updates: Partial<NoteDocument>) => Promise<void>;
 }
 
@@ -31,6 +35,7 @@ export const useFilesystemStore = create<FilesystemStore>((set, get) => ({
     currentWorkspace: null,
     subjects: [],
     notes: [],
+    trashedNotes: [],
     activeNoteId: null,
     isLoading: false,
 
@@ -39,14 +44,21 @@ export const useFilesystemStore = create<FilesystemStore>((set, get) => ({
         const workspace = await db.workspaces.get(id);
         const subjects = await db.subjects.where('workspaceId').equals(id).sortBy('order');
         const notes = await db.notes.where('isTrashed').equals(0).toArray();
+        const trashed = await db.notes.where('isTrashed').equals(1).toArray();
 
         set({
             currentWorkspace: workspace || null,
             subjects,
             notes,
+            trashedNotes: trashed,
             isLoading: false,
             activeNoteId: notes.length > 0 ? notes[0].id : null
         });
+    },
+
+    loadTrash: async () => {
+        const trashed = await db.notes.where('isTrashed').equals(1).toArray();
+        set({ trashedNotes: trashed });
     },
 
     setActiveNote: (id) => set({ activeNoteId: id }),
@@ -72,9 +84,12 @@ export const useFilesystemStore = create<FilesystemStore>((set, get) => ({
     deleteSubject: async (id) => {
         await db.subjects.delete(id);
         await db.notes.where('subjectId').equals(id).modify({ isTrashed: 1 });
+        const allNotes = await db.notes.where('isTrashed').equals(0).toArray();
+        const trashed = await db.notes.where('isTrashed').equals(1).toArray();
         set((state) => ({
             subjects: state.subjects.filter(s => s.id !== id),
-            notes: state.notes.filter(n => n.subjectId !== id)
+            notes: allNotes,
+            trashedNotes: trashed
         }));
     },
 
@@ -100,9 +115,27 @@ export const useFilesystemStore = create<FilesystemStore>((set, get) => ({
 
     deleteNote: async (id) => {
         await db.notes.update(id, { isTrashed: 1 });
+        const note = await db.notes.get(id);
         set((state) => ({
             notes: state.notes.filter(n => n.id !== id),
-            activeNoteId: get().activeNoteId === id ? null : get().activeNoteId
+            trashedNotes: note ? [...state.trashedNotes, note] : state.trashedNotes,
+            activeNoteId: state.activeNoteId === id ? null : state.activeNoteId
+        }));
+    },
+
+    restoreNote: async (id) => {
+        await db.notes.update(id, { isTrashed: 0 });
+        const note = await db.notes.get(id);
+        set((state) => ({
+            trashedNotes: state.trashedNotes.filter(n => n.id !== id),
+            notes: note ? [...state.notes, note] : state.notes
+        }));
+    },
+
+    deleteNotePermanently: async (id) => {
+        await db.notes.delete(id);
+        set((state) => ({
+            trashedNotes: state.trashedNotes.filter(n => n.id !== id)
         }));
     },
 

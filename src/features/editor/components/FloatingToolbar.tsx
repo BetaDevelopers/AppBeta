@@ -1,12 +1,15 @@
 import React, { useRef, useEffect } from 'react'
-import { Editor, Range, Transforms, Text } from 'slate'
+import { Editor, Range } from 'slate'
 import { useFocused, useSlate } from 'slate-react'
-import { Bold, Italic, Underline, Code, Highlighter } from 'lucide-react'
+import { Bold, Italic, Underline, Code, Highlighter, GripHorizontal } from 'lucide-react'
+import { motion, useDragControls } from 'framer-motion'
+import { clsx } from 'clsx'
 
 export const FloatingToolbar: React.FC = () => {
     const ref = useRef<HTMLDivElement | null>(null)
     const editor = useSlate()
     const inFocus = useFocused()
+    const dragControls = useDragControls()
 
     useEffect(() => {
         const el = ref.current
@@ -20,7 +23,7 @@ export const FloatingToolbar: React.FC = () => {
             Range.isCollapsed(selection) ||
             Editor.string(editor, selection) === ''
         ) {
-            el.removeAttribute('style')
+            el.style.display = 'none'
             return
         }
 
@@ -29,10 +32,14 @@ export const FloatingToolbar: React.FC = () => {
 
         const domRange = domSelection.getRangeAt(0)
         const rect = domRange.getBoundingClientRect()
+        el.style.display = 'flex'
         el.style.opacity = '1'
-        el.style.top = `${rect.top + window.pageYOffset - el.offsetHeight}px`
-        el.style.left = `${rect.left + window.pageXOffset - el.offsetWidth / 2 + rect.width / 2}px`
-    })
+        // Initial positioning near selection, but user can drag it afterwards
+        if (el.style.top === '' || el.style.top === '0px') {
+            el.style.top = `${rect.top + window.pageYOffset - el.offsetHeight - 15}px`
+            el.style.left = `${rect.left + window.pageXOffset - el.offsetWidth / 2 + rect.width / 2}px`
+        }
+    }, [editor, inFocus])
 
     const toggleMark = (format: string) => {
         const isActive = isMarkActive(editor, format)
@@ -49,51 +56,68 @@ export const FloatingToolbar: React.FC = () => {
     }
 
     return (
-        <div
+        <motion.div
             ref={ref}
+            drag
+            dragMomentum={false}
+            dragControls={dragControls}
+            dragListener={false}
+            className="glass-effect no-select"
             style={{
                 position: 'absolute',
-                zIndex: 1,
-                top: '-10000px',
-                left: '-10000px',
-                marginTop: '-6px',
+                zIndex: 1000,
+                display: 'none',
                 opacity: 0,
-                backgroundColor: '#1e293b',
-                borderRadius: '4px',
-                transition: 'opacity 0.75s',
-                display: 'flex',
-                padding: '4px',
+                borderRadius: '24px',
+                padding: '6px 12px',
                 gap: '4px',
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                border: '1px solid #334155'
+                alignItems: 'center',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.05)',
+                touchAction: 'none'
             }}
         >
-            <ToolbarButton onMouseDown={() => toggleMark('bold')}>
-                <Bold size={14} className={isMarkActive(editor, 'bold') ? 'text-violet-500' : 'text-slate-300'} />
+            {/* Drag Handle */}
+            <div
+                onPointerDown={(e) => dragControls.start(e)}
+                className="p-2 cursor-grab active:cursor-grabbing text-slate-500 hover:text-blue-400 transition-colors"
+                title="Arrastrar herramienta"
+            >
+                <GripHorizontal size={18} />
+            </div>
+
+            <div className="w-[1px] h-6 bg-white/10 mx-1" />
+
+            <ToolbarButton active={isMarkActive(editor, 'bold')} onClick={() => toggleMark('bold')}>
+                <Bold size={18} />
             </ToolbarButton>
-            <ToolbarButton onMouseDown={() => toggleMark('italic')}>
-                <Italic size={14} className={isMarkActive(editor, 'italic') ? 'text-violet-500' : 'text-slate-300'} />
+            <ToolbarButton active={isMarkActive(editor, 'italic')} onClick={() => toggleMark('italic')}>
+                <Italic size={18} />
             </ToolbarButton>
-            <ToolbarButton onMouseDown={() => toggleMark('underline')}>
-                <Underline size={14} className={isMarkActive(editor, 'underline') ? 'text-violet-500' : 'text-slate-300'} />
+            <ToolbarButton active={isMarkActive(editor, 'underline')} onClick={() => toggleMark('underline')}>
+                <Underline size={18} />
             </ToolbarButton>
-            <ToolbarButton onMouseDown={() => toggleMark('code')}>
-                <Code size={14} className={isMarkActive(editor, 'code') ? 'text-violet-500' : 'text-slate-300'} />
+            <ToolbarButton active={isMarkActive(editor, 'code')} onClick={() => toggleMark('code')}>
+                <Code size={18} />
             </ToolbarButton>
-            <ToolbarButton onMouseDown={() => toggleMark('highlight')}>
-                <Highlighter size={14} className={isMarkActive(editor, 'highlight') ? 'text-violet-500' : 'text-slate-300'} />
+            <ToolbarButton active={isMarkActive(editor, 'highlight')} onClick={() => toggleMark('highlight')}>
+                <Highlighter size={18} />
             </ToolbarButton>
-        </div>
+        </motion.div>
     )
 }
 
-const ToolbarButton: React.FC<{ onMouseDown: () => void; children: React.ReactNode }> = ({ onMouseDown, children }) => (
+const ToolbarButton: React.FC<{ onClick: () => void; children: React.ReactNode, active?: boolean }> = ({ onClick, children, active }) => (
     <button
         onMouseDown={e => {
             e.preventDefault()
-            onMouseDown()
+            onClick()
         }}
-        className="p-1 hover:bg-slate-800 rounded transition-colors"
+        className={clsx(
+            "p-3 rounded-xl transition-all duration-200 active:scale-90 touch-target",
+            active
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                : "text-slate-400 hover:text-white hover:bg-white/5"
+        )}
     >
         {children}
     </button>

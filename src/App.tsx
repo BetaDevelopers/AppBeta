@@ -2,23 +2,27 @@ import React, { useState, useEffect } from 'react'
 import { FilesystemPanel } from './features/filesystem/components/FilesystemPanel'
 import { BetaEditor } from './features/editor/components/BetaEditor'
 import { BetaProvider } from './shared/components/BetaProvider'
-import { SummaryPanel } from './features/ai/components/SummaryPanel'
+import { InsightsPanel } from './features/ai/components/InsightsPanel'
 import { SmartFormGenerator } from './features/ai/components/SmartFormGenerator'
 import { CaptureModal } from './features/camera/components/CaptureModal'
 import { useFilesystemStore } from './features/filesystem/store/useFilesystemStore'
 import {
     Maximize2, Minimize2, Sun, Moon, Sparkles,
     MoreVertical, User, FileText, Camera, BookOpen,
-    FolderOpen, Settings, Plus, Wand2, ChevronRight
+    FolderOpen, Settings, Plus, Wand2, ChevronRight, X, Globe, ShieldCheck, Database, Save
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAIAssistant } from './hooks/useAIAssistant'
+import { SettingsModal } from './features/settings/components/SettingsModal'
 
 type ActivityTab = 'notes' | 'folders' | 'ai' | 'camera' | 'settings'
 
 const App: React.FC = () => {
-    const { notes, activeNoteId, renameNote } = useFilesystemStore()
+    const { notes, activeNoteId, renameNote, updateNote } = useFilesystemStore()
+    const { optimizeNote, isOptimizing } = useAIAssistant()
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [isProfileOpen, setIsProfileOpen] = useState(false)
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false)
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [isCameraOpen, setIsCameraOpen] = useState(false)
     const [sidebarTab, setSidebarTab] = useState<'notes' | 'ai'>('notes')
@@ -43,6 +47,15 @@ const App: React.FC = () => {
         } else {
             document.exitFullscreen()
             setIsFullscreen(false)
+        }
+    }
+
+    // 3. Define handleOptimize
+    const handleOptimize = async () => {
+        if (!activeNote) return
+        const optimized = await optimizeNote(activeNote.content as any)
+        if (optimized) {
+            updateNote(activeNote.id, { content: optimized }) // 5. Ensure updateNote is called
         }
     }
 
@@ -137,7 +150,7 @@ const App: React.FC = () => {
                                             <div style={{ fontSize: '11px', color: 'var(--beta-text-muted)' }}>Estudiante Premium</div>
                                         </div>
                                         <ProfileMenuItem icon={<User size={14} />} label="Mi Perfil" />
-                                        <ProfileMenuItem icon={<Settings size={14} />} label="Ajustes" />
+                                        <ProfileMenuItem onClick={() => setIsSettingsOpen(true)} icon={<Settings size={14} />} label="Ajustes" />
                                         <ProfileMenuItem icon={<Sparkles size={14} />} label="Plan Beta AI" />
                                         <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 8px' }} />
                                         <ProfileMenuItem icon={<Minimize2 size={14} />} label="Cerrar Sesión" color="#ef4444" />
@@ -161,6 +174,19 @@ const App: React.FC = () => {
                 </header>
 
                 <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+                    {/* Tablet Edge Gutter (Swipe Trigger) */}
+                    <motion.div
+                        onPan={(_, info) => {
+                            if (info.offset.x < -50 && !isSidebarOpen) {
+                                setIsSidebarOpen(true)
+                            }
+                        }}
+                        style={{
+                            position: 'absolute', right: 0, top: 0, bottom: 0,
+                            width: '30px', zIndex: 100, cursor: 'w-resize',
+                            background: 'transparent'
+                        }}
+                    />
 
                     {/* ── Main Canvas (The "Hoja") ─────────────────────── */}
                     <main style={{
@@ -191,9 +217,15 @@ const App: React.FC = () => {
                                             {activeNote ? 'Editando Documento' : 'Nuevo Apunte'}
                                         </span>
                                         <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button style={toolBtnStyle} title="Mejorar Escritura">
-                                                <Wand2 size={14} />
-                                                <span>Optimizar</span>
+                                            {/* 4. Replace static 'Optimizar' button logic */}
+                                            <button
+                                                onClick={handleOptimize}
+                                                disabled={isOptimizing}
+                                                style={{ ...toolBtnStyle, opacity: isOptimizing ? 0.7 : 1 }}
+                                                title="Mejorar Escritura"
+                                            >
+                                                <Wand2 size={14} className={isOptimizing ? 'animate-spin' : ''} /> {/* 4. Show spinner */}
+                                                <span>{isOptimizing ? 'Optimizando...' : 'Optimizar'}</span> {/* 4. Change text */}
                                             </button>
                                         </div>
                                     </div>
@@ -280,9 +312,7 @@ const App: React.FC = () => {
                                         {sidebarTab === 'notes' ? (
                                             <FilesystemPanel />
                                         ) : (
-                                            <div style={{ padding: '0 16px' }}>
-                                                <SummaryPanel content="" isOpen={true} onClose={() => { }} />
-                                            </div>
+                                            <InsightsPanel />
                                         )}
                                     </div>
 
@@ -329,13 +359,15 @@ const App: React.FC = () => {
                     min-height: calc(100vh - 56px);
                 }
             `}} />
+                <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
             </div>
         </BetaProvider>
     )
 }
 
-const ProfileMenuItem: React.FC<{ icon: React.ReactNode, label: string, color?: string }> = ({ icon, label, color }) => (
+const ProfileMenuItem: React.FC<{ icon: React.ReactNode, label: string, color?: string, onClick?: () => void }> = ({ icon, label, color, onClick }) => (
     <div
+        onClick={onClick}
         style={{
             display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px',
             borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s',
