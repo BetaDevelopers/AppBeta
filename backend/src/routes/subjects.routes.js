@@ -1,13 +1,11 @@
-const express = require('express');
-const router = express.Router();
-const subjectsController = require('../controllers/subjects.controller');
+const router = require('express').Router();
 const { verifyToken } = require('../middleware/auth');
+const subjects = require('../controllers/subjects.controller');
 
 router.use(verifyToken);
-
-router.get('/', subjectsController.getAll);
-router.post('/', subjectsController.create);
-router.put('/:id', subjectsController.update);
-router.delete('/:id', subjectsController.remove);
+router.get('/',    subjects.getAll);
+router.post('/',   subjects.create);
+router.put('/:id', subjects.update);
+router.delete('/:id', subjects.remove);
 
 module.exports = router;
