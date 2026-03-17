@@ -2,30 +2,42 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
-export const LoginPage: React.FC = () => {
+export const RegisterPage: React.FC = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    const login = useAuthStore((s) => s.login);
+    const register = useAuthStore((s) => s.register);
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
 
-        if (!email || !password) {
+        // Validations
+        if (!email || !password || !confirmPassword) {
             setError('Omple tots els camps');
+            return;
+        }
+
+        if (password.length < 4) {
+            setError('La contrasenya ha de tenir mínim 4 caràcters');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError('Les contrasenyes no coincideixen');
             return;
         }
 
         setIsLoading(true);
         try {
-            await login(email, password);
+            await register(email, password);
             navigate('/dashboard');
         } catch (err: any) {
-            setError(err.message || 'Error en iniciar sessió');
+            setError(err.message || 'Error en crear el compte');
         } finally {
             setIsLoading(false);
         }
@@ -42,9 +54,9 @@ export const LoginPage: React.FC = () => {
 
             <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 <div className="p-8">
-                    <h2 className="text-xl font-semibold text-slate-800 mb-2">Iniciar sessió</h2>
+                    <h2 className="text-xl font-semibold text-slate-800 mb-2">Crear compte</h2>
                     <p className="text-slate-500 text-sm mb-6">
-                        Sense compte? <Link to="/register" className="text-teal-600 font-medium hover:underline">Registra't</Link>
+                        Ja tens compte? <Link to="/login" className="text-teal-600 font-medium hover:underline">Inicia sessió</Link>
                     </p>
 
                     {error && (
@@ -71,14 +83,29 @@ export const LoginPage: React.FC = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="password">
-                                Contrasenya
+                                Contrasenya <span className="text-slate-400 font-normal">(Mínim 4 caràcters)</span>
                             </label>
                             <input
                                 id="password"
                                 type="password"
-                                autoComplete="current-password"
+                                autoComplete="new-password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                className="w-full py-3 px-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400"
+                                placeholder="••••••••"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="confirmPassword">
+                                Repeteix la contrasenya
+                            </label>
+                            <input
+                                id="confirmPassword"
+                                type="password"
+                                autoComplete="new-password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
                                 className="w-full py-3 px-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400"
                                 placeholder="••••••••"
                             />
@@ -95,10 +122,10 @@ export const LoginPage: React.FC = () => {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
-                                    <span>Iniciant sessió...</span>
+                                    <span>Creant compte...</span>
                                 </>
                             ) : (
-                                <span>Iniciar sessió</span>
+                                <span>Crear compte</span>
                             )}
                         </button>
                     </form>

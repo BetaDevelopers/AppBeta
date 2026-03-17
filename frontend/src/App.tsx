@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { BetaProvider } from './shared/components/BetaProvider'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
+import { RegisterPage } from './pages/RegisterPage'
 import { PerfilPage } from './pages/PerfilPage'
 import { PrivateRoute } from './components/PrivateRoute'
 
@@ -11,8 +12,10 @@ const App: React.FC = () => {
         <BetaProvider>
             <Router>
                 <Routes>
+                    {/* Public Routes */}
                     <Route path="/login" element={<LoginPage />} />
-                    
+                    <Route path="/register" element={<RegisterPage />} />
+
                     {/* Protected Routes */}
                     <Route element={<PrivateRoute />}>
                         <Route path="/dashboard" element={<DashboardPage />} />
