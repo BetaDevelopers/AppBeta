@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAIAssistant } from './hooks/useAIAssistant'
 import { SettingsModal } from './features/settings/components/SettingsModal'
+import { PerfilModal } from './features/perfil/components/PerfilModal'
 
 type ActivityTab = 'notes' | 'folders' | 'ai' | 'camera' | 'settings'
 
@@ -23,6 +24,7 @@ const App: React.FC = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [isProfileOpen, setIsProfileOpen] = useState(false)
     const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+    const [isPerfilOpen, setIsPerfilOpen] = useState(false)
     const [isFullscreen, setIsFullscreen] = useState(false)
     const [isCameraOpen, setIsCameraOpen] = useState(false)
     const [sidebarTab, setSidebarTab] = useState<'notes' | 'ai'>('notes')
@@ -40,6 +42,16 @@ const App: React.FC = () => {
     }, [theme])
 
     const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark')
+
+    const handleLogout = () => {
+        setIsProfileOpen(false)
+        // Clear all app data from localStorage
+        localStorage.removeItem('beta-theme')
+        localStorage.removeItem('beta-filesystem')
+        localStorage.removeItem('gemini-filesystem')
+        // Reload the page — since there's no router, this resets all state
+        window.location.reload()
+    }
     const toggleFullscreen = () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen()
@@ -149,11 +161,24 @@ const App: React.FC = () => {
                                             <div style={{ fontWeight: '800', fontSize: '14px' }}>Nacho del Río</div>
                                             <div style={{ fontSize: '11px', color: 'var(--beta-text-muted)' }}>Estudiante Premium</div>
                                         </div>
-                                        <ProfileMenuItem icon={<User size={14} />} label="Mi Perfil" />
-                                        <ProfileMenuItem onClick={() => setIsSettingsOpen(true)} icon={<Settings size={14} />} label="Ajustes" />
+                                        <ProfileMenuItem
+                                            icon={<User size={14} />}
+                                            label="Mi Perfil"
+                                            onClick={() => { setIsPerfilOpen(true); setIsProfileOpen(false) }}
+                                        />
+                                        <ProfileMenuItem
+                                            onClick={() => { setIsSettingsOpen(true); setIsProfileOpen(false) }}
+                                            icon={<Settings size={14} />}
+                                            label="Ajustes"
+                                        />
                                         <ProfileMenuItem icon={<Sparkles size={14} />} label="Plan Beta AI" />
                                         <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '4px 8px' }} />
-                                        <ProfileMenuItem icon={<Minimize2 size={14} />} label="Cerrar Sesión" color="#ef4444" />
+                                        <ProfileMenuItem
+                                            icon={<Minimize2 size={14} />}
+                                            label="Cerrar Sesión"
+                                            color="#ef4444"
+                                            onClick={handleLogout}
+                                        />
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -337,6 +362,7 @@ const App: React.FC = () => {
                 </div>
 
                 <CaptureModal isOpen={isCameraOpen} onClose={() => setIsCameraOpen(false)} />
+                <PerfilModal isOpen={isPerfilOpen} onClose={() => setIsPerfilOpen(false)} />
 
                 <style dangerouslySetInnerHTML={{
                     __html: `
