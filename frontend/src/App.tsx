@@ -19,7 +19,7 @@ import { PerfilModal } from './features/perfil/components/PerfilModal'
 type ActivityTab = 'notes' | 'folders' | 'ai' | 'camera' | 'settings'
 
 const App: React.FC = () => {
-    const { notes, activeNoteId, renameNote, updateNote } = useFilesystemStore()
+    const { notes, activeNoteId, renameNote, updateNote, subjects, createNote, createSubject } = useFilesystemStore()
     const { optimizeNote, isOptimizing } = useAIAssistant()
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [isProfileOpen, setIsProfileOpen] = useState(false)
@@ -343,7 +343,19 @@ const App: React.FC = () => {
 
                                     <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                                         <button
-                                            onClick={() => setIsSidebarOpen(false)}
+                                            onClick={async () => {
+                                                let subjectId: string | null = subjects.length > 0 ? subjects[0].id : null
+                                                if (!subjectId) {
+                                                    // Auto-create a first subject if none exist
+                                                    await createSubject({ workspaceId: 'default-workspace', name: 'General', color: '#2563eb', icon: 'folder', order: 0 })
+                                                    const freshSubjects = useFilesystemStore.getState().subjects
+                                                    subjectId = freshSubjects[0]?.id ?? null
+                                                }
+                                                if (subjectId) {
+                                                    await createNote({ subjectId, title: 'Nuevo Apunte', content: [], tags: [], isPinned: 0, isTrashed: 0, wordCount: 0 })
+                                                }
+                                                setIsSidebarOpen(false)
+                                            }}
                                             style={{
                                                 width: '100%', padding: '16px', background: accentColor, color: '#fff',
                                                 border: 'none', borderRadius: '16px', fontWeight: '800', cursor: 'pointer',

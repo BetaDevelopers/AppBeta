@@ -21,7 +21,8 @@ export const FilesystemPanel: React.FC = () => {
     const { exportNoteAsPDF, exportNoteAsMarkdown, exportSubjectAsZip } = useExport()
 
     const [expanded, setExpanded] = useState<Set<string>>(new Set())
-    const [hoveredId, setHoveredId] = useState<string | null>(null)
+    const [hoveredSubjectId, setHoveredSubjectId] = useState<string | null>(null)
+    const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null)
     const [search, setSearch] = useState('')
     const [showTrash, setShowTrash] = useState(false)
 
@@ -146,8 +147,10 @@ export const FilesystemPanel: React.FC = () => {
                                         display: 'flex', alignItems: 'center', gap: '12px',
                                         padding: '14px 16px', borderRadius: '16px', cursor: 'pointer',
                                         transition: 'all 0.2s',
-                                        background: hoveredId === subject.id ? 'rgba(37,99,235,0.08)' : 'transparent',
+                                        background: hoveredSubjectId === subject.id ? 'rgba(37,99,235,0.08)' : 'transparent',
                                     }}
+                                    onMouseEnter={() => setHoveredSubjectId(subject.id)}
+                                    onMouseLeave={() => setHoveredSubjectId(null)}
                                 >
                                     <div style={{ display: 'flex', alignItems: 'center', color: 'var(--beta-text-muted)' }}>
                                         {isOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
@@ -155,7 +158,7 @@ export const FilesystemPanel: React.FC = () => {
                                     <Folder size={20} style={{ color: subject.color }} />
                                     <span style={{ flex: 1, fontSize: '15px', fontWeight: '700', letterSpacing: '-0.01em' }}>{subject.name}</span>
 
-                                    <div style={{ display: 'flex', gap: '8px', opacity: hoveredId === subject.id ? 1 : 0.4 }}>
+                                    <div style={{ display: 'flex', gap: '8px', opacity: hoveredSubjectId === subject.id ? 1 : 0.4 }}>
                                         <button onClick={(e) => handleExportSubject(e, subject)} style={tinyBtnStyle} title="Exportar ZIP"><FileDown size={16} /></button>
                                         <button onClick={(e) => handleAddNote(e, subject.id)} style={tinyBtnStyle} title="Añadir Nota"><Plus size={16} /></button>
                                         <button onClick={(e) => handleRenameSub(e, subject.id, subject.name)} style={tinyBtnStyle} title="Renombrar"><Edit2 size={14} /></button>
@@ -178,13 +181,13 @@ export const FilesystemPanel: React.FC = () => {
                                                         <div
                                                             key={note.id}
                                                             onClick={() => setActiveNote(note.id)}
-                                                            onMouseEnter={() => setHoveredId(note.id)}
-                                                            onMouseLeave={() => setHoveredId(null)}
+                                                            onMouseEnter={() => setHoveredNoteId(note.id)}
+                                                            onMouseLeave={() => setHoveredNoteId(null)}
                                                             style={{
                                                                 display: 'flex', alignItems: 'center', gap: '12px',
                                                                 padding: '12px 16px', borderRadius: '14px', cursor: 'pointer',
                                                                 transition: 'all 0.15s',
-                                                                background: isActive ? 'rgba(37,99,235,0.15)' : (hoveredId === note.id ? 'rgba(255,255,255,0.04)' : 'transparent'),
+                                                                background: isActive ? 'rgba(37,99,235,0.15)' : (hoveredNoteId === note.id ? 'rgba(255,255,255,0.04)' : 'transparent'),
                                                             }}
                                                         >
                                                             <Hash size={18} style={{ color: isActive ? '#fff' : '#2563eb', opacity: isActive ? 1 : 0.5 }} />
@@ -196,7 +199,7 @@ export const FilesystemPanel: React.FC = () => {
                                                                 {note.title}
                                                             </span>
 
-                                                            <div style={{ display: 'flex', gap: '6px', opacity: (hoveredId === note.id || isActive) ? 1 : 0.3 }}>
+                                                            <div style={{ display: 'flex', gap: '6px', opacity: (hoveredNoteId === note.id || isActive) ? 1 : 0.3 }}>
                                                                 <button onClick={(e) => handleExportNote(e, note, 'pdf')} style={tinyBtnStyle} title="Exportar PDF"><FileDown size={14} /></button>
                                                                 <button onClick={(e) => handleExportNote(e, note, 'md')} style={tinyBtnStyle} title="Exportar Markdown"><Hash size={14} /></button>
                                                                 <button onClick={(e) => handleRenameN(e, note.id, note.title)} style={tinyBtnStyle}><Edit2 size={14} /></button>
@@ -267,8 +270,8 @@ export const FilesystemPanel: React.FC = () => {
                                     ) : trashedNotes.map(note => (
                                         <div
                                             key={note.id}
-                                            onMouseEnter={() => setHoveredId(note.id)}
-                                            onMouseLeave={() => setHoveredId(null)}
+                                            onMouseEnter={() => setHoveredNoteId(note.id)}
+                                            onMouseLeave={() => setHoveredNoteId(null)}
                                             style={{
                                                 display: 'flex', alignItems: 'center', gap: '10px',
                                                 padding: '8px 12px', borderRadius: '10px', opacity: 0.5
@@ -276,7 +279,7 @@ export const FilesystemPanel: React.FC = () => {
                                         >
                                             <Hash size={14} />
                                             <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', textDecoration: 'line-through' }}>{note.title}</span>
-                                            {hoveredId === note.id && (
+                                            {hoveredNoteId === note.id && (
                                                 <div style={{ display: 'flex', gap: '4px' }}>
                                                     <button onClick={(e) => handleRestoreN(e, note.id)} style={tinyBtnStyle} title="Restaurar"><RotateCcw size={12} /></button>
                                                     <button onClick={(e) => handlePermDeleteN(e, note.id)} style={{ ...tinyBtnStyle, color: '#ef4444' }} title="Eliminar definitivamente"><X size={12} /></button>

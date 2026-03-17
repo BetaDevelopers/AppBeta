@@ -48,3 +48,17 @@ export class BetaDatabase extends Dexie {
 }
 
 export const db = new BetaDatabase();
+
+/** Ensures the default workspace exists on first run. */
+export const bootstrapDB = async () => {
+    const existing = await db.workspaces.get('default-workspace');
+    if (!existing) {
+        await db.workspaces.add({
+            id: 'default-workspace',
+            name: 'Mi Espacio',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            ownerId: 'local',
+        });
+    }
+};

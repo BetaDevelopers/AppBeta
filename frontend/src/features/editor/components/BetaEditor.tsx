@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useCallback, useEffect } from 'react'
-import { createEditor, Descendant, Editor, Transforms, Range, Element as SlateElement } from 'slate'
-import { Slate, Editable, withReact, ReactEditor } from 'slate-react'
+import React, { useMemo, useState, useCallback } from 'react'
+import { createEditor, Descendant, Editor, Range } from 'slate'
+import { Slate, Editable, withReact } from 'slate-react'
 import { withHistory } from 'slate-history'
 import { FloatingToolbar } from './FloatingToolbar'
 import { SlashMenu } from './SlashMenu'
@@ -8,41 +8,25 @@ import { MathBlock } from './MathBlock'
 import { DrawingCanvas } from './DrawingCanvas'
 import { useFilesystemStore } from '../../filesystem/store/useFilesystemStore'
 
-const initialValue: Descendant[] = [
+const emptyValue: Descendant[] = [
     {
         type: 'paragraph',
         children: [{ text: '' }],
     } as any,
-];
+]
 
-export const BetaEditor: React.FC = () => {
-    const { activeNoteId, notes, updateNote } = useFilesystemStore()
-    const activeNote = useMemo(() => notes.find(n => n.id === activeNoteId), [activeNoteId, notes])
-
+/**
+ * BetaEditorInner – re-mounts every time activeNoteId changes (via the key prop in BetaEditor).
+ * This is the correct Slate pattern for switching documents without stale editor state.
+ */
+const BetaEditorInner: React.FC<{
+    initialContent: Descendant[]
+    noteId: string
+    onUpdate: (content: Descendant[]) => void
+}> = ({ initialContent, onUpdate }) => {
     const [target, setTarget] = useState<Range | null>(null)
     const [search, setSearch] = useState('')
     const editor = useMemo(() => withHistory(withReact(createEditor())), [])
-
-    // Internal state for the editor
-    const [value, setValue] = useState<Descendant[]>(initialValue)
-
-    // Sync editor with activeNote when selection changes
-    useEffect(() => {
-        if (activeNote) {
-            // Transform editor content if it's different from stored content
-            // Need to handle empty content cases
-            const content = (activeNote.content && activeNote.content.length > 0)
-                ? activeNote.content as Descendant[]
-                : [{ type: 'paragraph', children: [{ text: '' }] } as any]
-
-            // Set local state
-            setValue(content)
-
-            // Reset editor state
-            editor.children = content
-            editor.onChange()
-        }
-    }, [activeNoteId, editor])
 
     const renderElement = useCallback((props: any) => {
         switch (props.element.type) {
@@ -73,12 +57,7 @@ export const BetaEditor: React.FC = () => {
     }, [])
 
     const onChange = (val: Descendant[]) => {
-        setValue(val)
-
-        // Auto-save logic
-        if (activeNoteId) {
-            updateNote(activeNoteId, { content: val })
-        }
+        onUpdate(val)
 
         const { selection } = editor
         if (selection && Range.isCollapsed(selection)) {
@@ -95,7 +74,6 @@ export const BetaEditor: React.FC = () => {
                 setSearch('')
                 return
             }
-
             if (tagMatch) {
                 setTarget(beforeRange)
                 setSearch(tagMatch[1])
@@ -107,7 +85,7 @@ export const BetaEditor: React.FC = () => {
 
     return (
         <div style={{ position: 'relative', width: '100%' }}>
-            <Slate editor={editor} initialValue={value} onChange={onChange}>
+            <Slate editor={editor} initialValue={initialContent} onChange={onChange}>
                 <FloatingToolbar />
                 <SlashMenu target={target} search={search} onClose={() => setTarget(null)} />
                 <Editable
@@ -120,5 +98,37 @@ export const BetaEditor: React.FC = () => {
                 />
             </Slate>
         </div>
+    )
+}
+
+/**
+ * BetaEditor – outer shell that computes which note to load and passes a key so that
+ * BetaEditorInner completely re-mounts (fresh Slate instance) whenever the note changes.
+ */
+export const BetaEditor: React.FC = () => {
+    const { activeNoteId, notes, updateNote } = useFilesystemStore()
+    const activeNote = useMemo(() => notes.find(n => n.id === activeNoteId), [activeNoteId, notes])
+
+    // Only recompute initial content when the NOTE ID changes, not on every keystroke
+    const initialContent = useMemo<Descendant[]>(() => {
+        if (!activeNote) return emptyValue
+        const c = activeNote.content
+        return (c && Array.isArray(c) && c.length > 0) ? (c as Descendant[]) : emptyValue
+    }, [activeNoteId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleUpdate = useCallback((content: Descendant[]) => {
+        if (activeNoteId) {
+            updateNote(activeNoteId, { content })
+        }
+    }, [activeNoteId, updateNote])
+
+    // key={activeNoteId ?? 'empty'} forces a full remount of the inner editor when switching notes
+    return (
+        <BetaEditorInner
+            key={activeNoteId ?? 'empty'}
+            noteId={activeNoteId ?? ''}
+            initialContent={initialContent}
+            onUpdate={handleUpdate}
+        />
     )
 }

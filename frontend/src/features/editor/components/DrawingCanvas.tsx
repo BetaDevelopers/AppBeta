@@ -4,7 +4,7 @@ import { ReactEditor, useSlate, useSelected, useFocused } from 'slate-react'
 import { clsx } from 'clsx'
 import {
     Trash2, PenTool, Eraser, Sparkles, Wand2,
-    RefreshCw, Scissors, MousePointer2
+    RefreshCw, Scissors, MousePointer2, GripHorizontal
 } from 'lucide-react'
 import { useOCR } from '@/features/ai/hooks/useOCR'
 import { motion, AnimatePresence } from 'framer-motion'
