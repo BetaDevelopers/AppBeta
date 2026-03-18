@@ -8,10 +8,11 @@ export default {
     extend: {
       colors: {
         beta: {
-          primary: '#8b5cf6',
-          'primary-dark': '#7c3aed',
-          bg: '#0f172a',
-          'bg-card': '#1e293b',
+          bg: '#0a0f1e',
+          surface: '#0f172a',
+          'surface-light': '#1e293b',
+          accent: '#2563eb',
+          'accent-light': '#3b82f6',
         }
       }
     },

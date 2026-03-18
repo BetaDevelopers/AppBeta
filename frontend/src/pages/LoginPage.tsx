@@ -1,109 +1,93 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 
-export const LoginPage: React.FC = () => {
+export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const login = useAuthStore((s) => s.login);
     const navigate = useNavigate();
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
 
         if (!email || !password) {
-            setError('Omple tots els camps');
+            setError('Introduce tu correo y contraseña');
             return;
         }
 
-        setIsLoading(true);
+        setLoading(true);
         try {
             await login(email, password);
             navigate('/dashboard');
         } catch (err: any) {
-            setError(err.message || 'Error en iniciar sessió');
+            setError(err.message || 'Credenciales incorrectas');
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-            <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 bg-[#048A81] rounded-xl flex items-center justify-center shadow-lg shadow-teal-500/20">
-                    <span className="text-white font-bold text-lg">3M</span>
+        <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center p-4">
+            <div className="w-full max-w-[460px] bg-[#0f172a] rounded-[48px] shadow-2xl border border-white/5 p-8 sm:p-14">
+                <div className="text-center mb-12">
+                    <div className="inline-flex w-24 h-24 bg-blue-600 rounded-[32px] items-center justify-center mb-10 shadow-3xl shadow-blue-600/40 ring-12 ring-blue-600/5 relative">
+                        <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-7.714 2.286L11 21l-2.286-6.857L1 12l7.714-2.286L11 3z" />
+                        </svg>
+                        <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20 -z-10" />
+                    </div>
+                    <h1 className="text-4xl font-bold text-white tracking-tight mb-4">Bienvenido a Beta 3M</h1>
+                    <p className="text-slate-500 text-lg font-medium">Ingresa a tu cuenta para continuar</p>
                 </div>
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Beta 3M</h1>
-            </div>
 
-            <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="p-8">
-                    <h2 className="text-xl font-semibold text-slate-800 mb-2">Iniciar sessió</h2>
-                    <p className="text-slate-500 text-sm mb-6">
-                        Sense compte? <Link to="/register" className="text-teal-600 font-medium hover:underline">Registra't</Link>
+                {error && (
+                    <div className="bg-red-500/10 text-red-400 p-4 rounded-2xl text-sm mb-10 border border-red-500/20 animate-pulse">
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleLogin} className="space-y-8">
+                    <Input
+                        label="Correo Electrónico"
+                        type="email"
+                        placeholder="estudiante@ejemplo.com"
+                        value={email}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                    />
+                    <Input
+                        label="Contraseña"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                    />
+
+                    <div className="pt-4">
+                        <Button type="submit" loading={loading} className="w-full gap-4 text-xl h-16 rounded-2xl shadow-2xl shadow-blue-600/30">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M11 16l4-4m0 0l-4-4m4 4H4m13 4h1a2 2 0 002-2V7a2 2 0 00-2-2h-1" />
+                            </svg>
+                            Acceder
+                        </Button>
+                    </div>
+                </form>
+
+                <div className="text-center mt-12">
+                    <p className="text-slate-600 text-sm font-semibold">
+                        ¿No tienes cuenta?{' '}
+                        <Link to="/register" className="text-blue-500 hover:text-blue-400 transition-all">
+                            Regístrate gratis
+                        </Link>
                     </p>
-
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm mb-6 animate-in fade-in slide-in-from-top-1">
-                            {error}
-                        </div>
-                    )}
-
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="email">
-                                Correu electrònic
-                            </label>
-                            <input
-                                id="email"
-                                type="email"
-                                autoComplete="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full py-3 px-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400"
-                                placeholder="usuari@exemple.com"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1.5" htmlFor="password">
-                                Contrasenya
-                            </label>
-                            <input
-                                id="password"
-                                type="password"
-                                autoComplete="current-password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full py-3 px-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400"
-                                placeholder="••••••••"
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-md shadow-teal-600/10 transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <span>Iniciant sessió...</span>
-                                </>
-                            ) : (
-                                <span>Iniciar sessió</span>
-                            )}
-                        </button>
-                    </form>
                 </div>
             </div>
         </div>
     );
-};
+}

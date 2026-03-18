@@ -17,7 +17,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     if (res.status === 401) {
         useAuthStore.getState().logout();
         window.location.href = '/login';
-        throw new Error('No autoritzat');
+        throw new Error('Sessió expirada');
     }
 
     if (!res.ok) {

@@ -36,7 +36,7 @@ async function improveText(text) {
      Millora el text seguint aquestes regles:
      1. Corregeix ortografia i gramàtica
      2. Estructura amb títols markdown (# Títol, ## Subtítol)
-     3. Crea llistes amb punts (- element) cuando sigui adequat
+     3. Crea llistes amb punts (- element) quan sigui adequat
      4. Afegeix negretes (**text**) per paraules clau
      5. Separa en paràgrafs clars
      Respon SEMPRE en la mateixa llengua que el text d'entrada.

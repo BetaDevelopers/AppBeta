@@ -129,14 +129,20 @@ const search = async (req, res) => {
   if (!q) return res.json([]);
 
   try {
-    const queryText = `%${q}%`;
     const result = await pool.query(`
-      SELECT * FROM notes
-      WHERE user_id = $1
-      AND (title ILIKE $2 OR content ILIKE $2)
-      ORDER BY updated_at DESC
+      SELECT n.*, s.name as subject_name, s.color as subject_color,
+             ts_rank(n.search_vector, websearch_to_tsquery('simple', $2)) as rank
+      FROM notes n
+      LEFT JOIN subjects s ON n.subject_id = s.id
+      WHERE n.user_id = $1
+      AND (
+        n.search_vector @@ websearch_to_tsquery('simple', $2)
+        OR n.title ILIKE $3
+        OR n.content ILIKE $3
+      )
+      ORDER BY rank DESC, n.updated_at DESC
       LIMIT 20
-    `, [userId, queryText]);
+    `, [userId, q, `%${q}%`]);
     
     res.json(result.rows);
   } catch (err) {
