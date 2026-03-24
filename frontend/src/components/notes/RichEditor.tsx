@@ -11,7 +11,9 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { BubbleMenu as BubbleMenuExtension } from '@tiptap/extension-bubble-menu';
+import Mathematics from '@tiptap/extension-mathematics';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import 'katex/dist/katex.min.css';
 import { common, createLowlight } from 'lowlight';
 import { SlashCommandExtension } from './SlashCommands';
 
@@ -21,6 +23,7 @@ interface RichEditorProps {
     content: string;
     onChange: (html: string) => void;
     isTypingAI?: boolean;
+    onEditorReady?: (editor: any) => void;
 }
 
 function BubbleBtn({ onClick, active, children, title }: any) {
@@ -39,7 +42,7 @@ function BubbleBtn({ onClick, active, children, title }: any) {
     );
 }
 
-export default function RichEditor({ content, onChange, isTypingAI }: RichEditorProps) {
+export default function RichEditor({ content, onChange, isTypingAI, onEditorReady }: RichEditorProps) {
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -58,6 +61,7 @@ export default function RichEditor({ content, onChange, isTypingAI }: RichEditor
             TableCell,
             CodeBlockLowlight.configure({ lowlight }),
             BubbleMenuExtension,
+            Mathematics,
             SlashCommandExtension,
         ],
         content,
@@ -70,6 +74,12 @@ export default function RichEditor({ content, onChange, isTypingAI }: RichEditor
             },
         },
     });
+
+    useEffect(() => {
+        if (editor && onEditorReady) {
+            onEditorReady(editor);
+        }
+    }, [editor, onEditorReady]);
 
     useEffect(() => {
         if (editor && content !== editor.getHTML()) {

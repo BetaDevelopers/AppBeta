@@ -21,6 +21,7 @@ export interface Note {
     subject_color?: string;
     user_id: number;
     ai_processed: boolean;
+    content_plain?: string;
     created_at: string;
     updated_at: string;
 }

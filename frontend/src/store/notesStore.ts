@@ -11,7 +11,7 @@ interface NotesStore {
     activeSubjectId: number | null;
     fetchNotes: (subjectId?: number) => Promise<void>;
     createNote: (data?: Partial<Note>) => Promise<Note>;
-    updateNote: (id: number, data: Partial<Note>) => Promise<void>;
+    updateNote: (id: number, data: Partial<Note>, skipQueue?: boolean) => Promise<void>;
     deleteNote: (id: number) => Promise<void>;
     setCurrentNote: (note: Note | null) => void;
     setActiveSubject: (id: number | null) => void;
@@ -19,6 +19,43 @@ interface NotesStore {
     improveWithAI: (text: string) => Promise<string>;
     summarizeWithAI: (text: string) => Promise<string>;
 }
+
+// ── Sync Worker ─────────────────────────────────────────────
+// Guarda canvis a Dexie immediatament (capa 1)
+// Envia a l'API quan l'usuari porta 8s quiet o cada 30s (capa 2)
+
+interface PendingSync {
+    data: Partial<Note>;
+    timestamp: number;
+}
+
+const pendingSync = new Map<number, PendingSync>();
+let lastKeystroke = Date.now();
+let workerInterval: ReturnType<typeof setInterval> | null = null;
+
+const startWorker = (syncFn: (id: number, data: Partial<Note>) => Promise<void>) => {
+    if (workerInterval) return;
+    workerInterval = setInterval(async () => {
+        if (pendingSync.size === 0) return;
+        const idleMs = Date.now() - lastKeystroke;
+        // Sincronitza si portem 8s quiets O si tenim massa canvis acumulats (p.ex 5)
+        const shouldSync = idleMs > 8000 || pendingSync.size >= 5;
+        if (!shouldSync) return;
+
+        const entries = [...pendingSync.entries()];
+        pendingSync.clear();
+
+        for (const [noteId, { data }] of entries) {
+            try {
+                await syncFn(noteId, data);
+            } catch {
+                // Re-encua si falla (es provarà al proper cicle)
+                pendingSync.set(noteId, { data, timestamp: Date.now() });
+            }
+        }
+    }, 5000);
+};
+// ────────────────────────────────────────────────────────────
 
 export const useNotesStore = create<NotesStore>((set, get) => ({
     notes: [],
@@ -55,25 +92,61 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
         return note;
     },
 
-    updateNote: async (id, data) => {
-        set({ isSaving: true });
+    updateNote: async (id, data, skipQueue = false) => {
+        lastKeystroke = Date.now();
+
+        // CAPA 1: Dexie (instantani → UX fluida)
         try {
-            const updated = await apiClient.put<Note>(`/notes/${id}`, data);
-            await db.notes.put(updated);
-            set((s) => ({
-                notes: s.notes.map((n) => (n.id === id ? updated : n)),
-                currentNote: s.currentNote?.id === id ? updated : s.currentNote,
-                isSaving: false,
-            }));
+            await db.notes.update(id, {
+                ...data,
+                updated_at: new Date().toISOString(),
+            });
         } catch {
-            set({ isSaving: false });
-            throw new Error('Error al guardar la nota');
+            // Dexie pot fallar si la nota no existeix localment, ignora
+        }
+
+        // Actualitza l'estat React immediatament
+        set((s) => ({
+            notes: s.notes.map((n) => (n.id === id ? { ...n, ...data } : n)),
+            currentNote:
+                s.currentNote?.id === id ? { ...s.currentNote, ...data } : s.currentNote,
+        }));
+
+        if (skipQueue) {
+            // CAPA 2 directa: crida real a la API (des del worker)
+            set({ isSaving: true });
+            try {
+                const updated = await apiClient.put<Note>(`/notes/${id}`, data);
+                await db.notes.put(updated);
+                set((s) => ({
+                    notes: s.notes.map((n) => (n.id === id ? updated : n)),
+                    currentNote:
+                        s.currentNote?.id === id ? updated : s.currentNote,
+                    isSaving: false,
+                }));
+            } catch {
+                set({ isSaving: false });
+                throw new Error('Error al sincronitzar la nota');
+            }
+        } else {
+            // CAPA 2 diferida: encua per al worker
+            const existing = pendingSync.get(id);
+            pendingSync.set(id, {
+                data: { ...existing?.data, ...data }, // fusiona canvis pendents
+                timestamp: Date.now(),
+            });
+
+            // Arrenca el worker si no estava actiu
+            startWorker(async (noteId, noteData) => {
+                await get().updateNote(noteId, noteData, true);
+            });
         }
     },
 
     deleteNote: async (id) => {
         await apiClient.delete(`/notes/${id}`);
         await db.notes.delete(id);
+        pendingSync.delete(id); // Elimina de la cua si s'esborra
         set((s) => ({
             notes: s.notes.filter((n) => n.id !== id),
             currentNote: s.currentNote?.id === id ? null : s.currentNote,
@@ -83,14 +156,20 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     setCurrentNote: (note) => set({ currentNote: note }),
     setActiveSubject: (id) => set({ activeSubjectId: id }),
 
-    searchNotes: async (query) => {
+    searchNotes: async (query: string): Promise<Note[]> => {
+        if (query.trim().length < 2) return [];
         try {
-            return await apiClient.get<Note[]>(`/notes/search?q=${encodeURIComponent(query)}`);
+            return await apiClient.get<Note[]>(
+                `/notes/search?q=${encodeURIComponent(query.trim())}`
+            );
         } catch {
-            const all = await db.notes.toArray();
+            // Fallback offline: cerca a Dexie
             const q = query.toLowerCase();
+            const all = await db.notes.toArray();
             return all.filter(
-                (n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)
+                (n) =>
+                    n.title.toLowerCase().includes(q) ||
+                    (n.content_plain || '').toLowerCase().includes(q)
             );
         }
     },
