@@ -6,9 +6,13 @@ import { Spinner } from '../ui/Spinner';
 import RichEditor from './RichEditor';
 import CameraOCR from './CameraOCR';
 import DrawingCanvas from './DrawingCanvas';
+import MathVisionOCR from './MathVisionOCR';
+import DataVisionOCR from './DataVisionOCR';
+import { ChartBlock } from './ChartBlock';
+import { useMathOCR, MathRegion } from '@/features/ai/hooks/useMathOCR';
 
 export const NoteEditor: React.FC = () => {
-    const { currentNote, updateNote, deleteNote, setCurrentNote, improveWithAI, summarizeWithAI, isSaving } = useNotesStore();
+    const { currentNote, updateNote, deleteNote, setCurrentNote, improveWithAI, summarizeWithAI, suggestSubjectWithAI, isSaving } = useNotesStore();
     const [title, setTitle] = useState(currentNote?.title || '');
     const [content, setContent] = useState(currentNote?.content || '');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -19,9 +23,57 @@ export const NoteEditor: React.FC = () => {
     const [aiMode, setAiMode] = useState<'improve' | 'summarize' | null>(null);
     const [isTypingAI, setIsTypingAI] = useState(false);
     const [syncStatus, setSyncStatus] = useState<'local' | 'syncing' | 'synced'>('synced');
+    const [showMathVision, setShowMathVision] = useState(false);
+    const [showDataVision, setShowDataVision] = useState(false);
     const [editor, setEditor] = useState<any>(null);
+    const [chartData, setChartData] = useState<{ chartType: any; chartData: any; reasoning: string } | null>(null);
     const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const editorRef = useRef<any>(null);
+    useEffect(() => {
+        const handleOpenDrawing = () => setShowDrawing(true);
+        const handleOpenMathVision = () => setShowMathVision(true);
+        const handleOpenDataVision = () => setShowDataVision(true);
+        const handleAiOptimize = () => handleOptimize();
+        const handleAiSummarize = () => handleSummarize();
+        const handleAiSuggest = () => handleSuggestSubject();
+        const handleGenerateChartEvent = () => handleGenerateChart();
+        const handleImageUpload = () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async (e: any) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (re) => {
+                    const base64 = re.target?.result as string;
+                    editor?.chain().focus().setImage({ src: base64 }).run();
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        };
+
+        window.addEventListener('open-drawing-canvas', handleOpenDrawing);
+        window.addEventListener('open-math-vision', handleOpenMathVision);
+        window.addEventListener('open-data-vision', handleOpenDataVision);
+        window.addEventListener('trigger-ai-optimize', handleAiOptimize);
+        window.addEventListener('trigger-ai-summarize', handleAiSummarize);
+        window.addEventListener('trigger-ai-suggest', handleAiSuggest);
+        window.addEventListener('trigger-image-upload', handleImageUpload);
+        window.addEventListener('trigger-generate-chart', handleGenerateChartEvent);
+
+        return () => {
+            window.removeEventListener('open-drawing-canvas', handleOpenDrawing);
+            window.removeEventListener('open-math-vision', handleOpenMathVision);
+            window.removeEventListener('open-data-vision', handleOpenDataVision);
+            window.removeEventListener('trigger-ai-optimize', handleAiOptimize);
+            window.removeEventListener('trigger-ai-summarize', handleAiSummarize);
+            window.removeEventListener('trigger-ai-suggest', handleAiSuggest);
+            window.removeEventListener('trigger-image-upload', handleImageUpload);
+            window.removeEventListener('trigger-generate-chart', handleGenerateChartEvent);
+        };
+    }, []);
 
     useEffect(() => {
         if (currentNote) {
@@ -121,6 +173,18 @@ export const NoteEditor: React.FC = () => {
     };
 
     // Insereix el SVG del dibuix com a imatge inline a la nota
+    // Insereix Markdown directament (per a DataVision)
+    const handleInsertMarkdown = (markdown: string) => {
+        if (!editor || !markdown) return;
+        editor.chain()
+            .focus('end')
+            .insertContent('<hr />')
+            .insertContent(markdown)
+            .run();
+        setToast('Taula de dades inserida');
+        setTimeout(() => setToast(null), 3000);
+    };
+
     const handleInsertDrawingAsImage = (dataUrl: string) => {
         if (!editor) return;
         editor.chain()
@@ -144,6 +208,34 @@ export const NoteEditor: React.FC = () => {
             .insertContent('<p><strong>✏ Convertit des del dibuix:</strong></p>')
             .insertContent(markdownToHtml(markdown))
             .run();
+    };
+
+    // Insereix una equació LaTeX reconeguda com a fórmula inline ($...$)
+    // L'extensió Mathematics de Tiptap detecta automàticament el delimitador $
+    const handleInsertAsLatex = (latex: string) => {
+        if (!editor || !latex) return;
+        editor.chain()
+            .focus('end')
+            .insertContent(`$${latex}$`)
+            .run();
+    };
+
+    const handleInsertMathVisionRegions = (regions: MathRegion[]) => {
+        if (!editor || !regions.length) return;
+
+        const chain = editor.chain().focus('end').insertContent('<hr />');
+
+        regions.forEach(region => {
+            if (region.type === 'equation') {
+                chain.insertContent(`<p>$${region.latex}$</p>`);
+            } else {
+                chain.insertContent(`<p>${region.content}</p>`);
+            }
+        });
+
+        chain.run();
+        setToast(`${regions.length} regions inserides`);
+        setTimeout(() => setToast(null), 3000);
     };
 
     const handleOptimize = async () => {
@@ -192,11 +284,87 @@ export const NoteEditor: React.FC = () => {
         setAiMode('summarize');
         try {
             const result = await summarizeWithAI(plainText);
-            const summaryHtml = `<div style="background:rgba(59,130,246,0.05);padding:20px;border-radius:16px;margin:20px 0;border:1px border-blue-500/10;"><strong>📝 Resum Automàtic:</strong><br/>${result}</div>`;
+            const summaryHtml = `<div style="background:rgba(59,130,246,0.05);padding:20px;border-radius:16px;margin:20px 0;border:1px solid rgba(59,130,246,0.1);"><strong>📝 Resum Automàtic:</strong><br/>${result}</div>`;
             setContent(content + summaryHtml);
         } catch {
             setError('Error al generar resum.');
             setTimeout(() => setError(null), 4000);
+        } finally {
+            setAiLoading(false);
+            setAiMode(null);
+        }
+    };
+
+    const handleSuggestSubject = async () => {
+        const plainText = content.replace(/<[^>]*>/g, '');
+        if (plainText.length < 10) return;
+        setAiLoading(true);
+        try {
+            const subject = await suggestSubjectWithAI(plainText);
+            setToast(`💡 IA suggereix: ${subject}`);
+            setTimeout(() => setToast(null), 5000);
+            // No l'assignem automàticament per seguretat, només el suggerim
+        } catch {
+            setError('Error al suggerir assignatura.');
+            setTimeout(() => setError(null), 4000);
+        } finally {
+            setAiLoading(false);
+        }
+    };
+
+    const { fixMathText, tableToChart } = useMathOCR();
+
+    const handleGenerateChart = async () => {
+        const plainText = content.replace(/<[^>]*>/g, '');
+        if (!plainText.includes('|')) {
+            setError('No s\'ha trobat cap taula Markdown a la nota.');
+            setTimeout(() => setError(null), 4000);
+            return;
+        }
+
+        setAiLoading(true);
+        setAiMode('improve');
+        setError(null);
+
+        try {
+            const result = await tableToChart(plainText);
+            if (result) {
+                setChartData(result);
+                setToast('Gràfic generat!');
+                setTimeout(() => setToast(null), 3000);
+            }
+        } catch (err) {
+            setError('Error analitzant dades tabulars.');
+        } finally {
+            setAiLoading(false);
+            setAiMode(null);
+        }
+    };
+
+    const handleFixMath = async () => {
+        const plainText = content.replace(/<[^>]*>/g, '');
+        if (plainText.length < 10) return;
+
+        setAiLoading(true);
+        setAiMode('improve');
+        setError(null);
+
+        try {
+            const result = await fixMathText(plainText);
+            if (!result) return;
+
+            setIsTypingAI(true);
+            setContent(result.improved);
+            setIsTypingAI(false);
+
+            setToast(`Convertides ${result.equationsFound} equacions`);
+            setTimeout(() => setToast(null), 3000);
+
+            setSyncStatus('syncing');
+            await updateNote(currentNote!.id, { content: result.improved, ai_processed: true });
+            setSyncStatus('synced');
+        } catch (err) {
+            setError('Error al formatar fórmules.');
         } finally {
             setAiLoading(false);
             setAiMode(null);
@@ -255,6 +423,22 @@ export const NoteEditor: React.FC = () => {
                     isTypingAI={isTypingAI}
                     onEditorReady={setEditor}
                 />
+
+                {chartData && (
+                    <div className="relative group">
+                        <ChartBlock
+                            type={chartData.chartType}
+                            data={chartData.chartData}
+                            reasoning={chartData.reasoning}
+                        />
+                        <button
+                            onClick={() => setChartData(null)}
+                            className="absolute top-4 right-4 bg-red-500/20 text-red-100 p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                )}
             </div>
 
             {error && (
@@ -287,6 +471,33 @@ export const NoteEditor: React.FC = () => {
                     >
                         {aiLoading && aiMode === 'improve' ? <Spinner size="sm" className="text-white" /> : '✨'}
                         <span className="hidden sm:inline">Optimizar</span>
+                    </button>
+
+                    {/* TeXificar (Math) */}
+                    <button
+                        onClick={handleFixMath}
+                        disabled={aiLoading || content.replace(/<[^>]*>/g, '').length < 10}
+                        className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
+                    bg-purple-600 hover:bg-purple-500 text-white shadow-xl shadow-purple-600/20
+                    transition-all active:scale-95 disabled:opacity-20"
+                        title="Converteix expressionsinformals a TeX ($...$)"
+                    >
+                        ∑
+                        <span className="hidden sm:inline">TeXificar</span>
+                    </button>
+
+                    <button
+                        onClick={handleGenerateChart}
+                        disabled={aiLoading}
+                        className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
+                    bg-blue-500 hover:bg-blue-400 text-white shadow-xl shadow-blue-500/20
+                    transition-all active:scale-95 disabled:opacity-20"
+                        title="Analitza taules i genera gràfics estadístics"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span className="hidden lg:inline">Gràfic</span>
                     </button>
 
                     {/* Resumir */}
@@ -348,7 +559,22 @@ export const NoteEditor: React.FC = () => {
                 onClose={() => setShowDrawing(false)}
                 onInsertAsImage={handleInsertDrawingAsImage}
                 onConvertToText={handleDrawingToText}
+                onInsertAsLatex={handleInsertAsLatex}
             />
+
+            {showMathVision && (
+                <MathVisionOCR
+                    onClose={() => setShowMathVision(false)}
+                    onInsertRegions={handleInsertMathVisionRegions}
+                />
+            )}
+
+            {showDataVision && (
+                <DataVisionOCR
+                    onClose={() => setShowDataVision(false)}
+                    onResult={handleInsertMarkdown}
+                />
+            )}
         </div>
     );
 };

@@ -1,5 +1,8 @@
 const pool = require('../config/db');
 
+const stripHtml = (html) =>
+  (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
 const getAll = async (req, res) => {
   const { subject_id } = req.query;
   const userId = req.user.id;

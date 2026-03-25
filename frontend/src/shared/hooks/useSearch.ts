@@ -11,7 +11,7 @@ export const useSearch = (notes: NoteDocument[]) => {
 
     const search = (query: string) => {
         if (!query) return notes;
-        return fuse.search(query).map(result => result.item);
+        return fuse.search(query).map((result: any) => result.item);
     };
 
     return { search };

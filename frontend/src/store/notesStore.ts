@@ -18,6 +18,7 @@ interface NotesStore {
     searchNotes: (query: string) => Promise<Note[]>;
     improveWithAI: (text: string) => Promise<string>;
     summarizeWithAI: (text: string) => Promise<string>;
+    suggestSubjectWithAI: (text: string) => Promise<string>;
 }
 
 // ── Sync Worker ─────────────────────────────────────────────
@@ -182,5 +183,9 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     summarizeWithAI: async (text) => {
         const { result } = await apiClient.post<{ result: string }>('/ai/summarize', { text });
         return result;
+    },
+    suggestSubjectWithAI: async (text) => {
+        const { subject } = await apiClient.post<{ subject: string }>('/ai/suggest', { text });
+        return subject;
     },
 }));

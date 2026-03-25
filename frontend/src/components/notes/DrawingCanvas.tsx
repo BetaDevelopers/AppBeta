@@ -2,10 +2,12 @@ import {
     useState,
     useCallback,
     useRef,
+    useEffect,
     lazy,
     Suspense,
 } from 'react';
 import { Spinner } from '../ui/Spinner';
+import { useMathOCR } from '@/features/ai/hooks/useMathOCR';
 
 // Lazy loading per no bloquejar el bundle principal
 const Excalidraw = lazy(() =>
@@ -17,6 +19,8 @@ interface DrawingCanvasProps {
     onClose: () => void;
     onInsertAsImage: (dataUrl: string) => void;
     onConvertToText: (markdown: string) => void;
+    /** Crida quan s'ha reconegut una equació matemàtica → latex vàlid per a KaTeX */
+    onInsertAsLatex?: (latex: string) => void;
 }
 
 export default function DrawingCanvas({
@@ -24,6 +28,7 @@ export default function DrawingCanvas({
     onClose,
     onInsertAsImage,
     onConvertToText,
+    onInsertAsLatex,
 }: DrawingCanvasProps) {
     const excalidrawRef = useRef<any>(null);
     const [elements, setElements] = useState<readonly any[]>([]);
@@ -31,12 +36,21 @@ export default function DrawingCanvas({
     const [isConverting, setIsConverting] = useState(false);
     const [convertStep, setConvertStep] = useState('');
     const [error, setError] = useState('');
+    const [mathResult, setMathResult] = useState<{ latex: string; confidence: number } | null>(null);
     const isEmpty = elements.length === 0;
+    const { recognize, isProcessing: isMathProcessing } = useMathOCR();
 
     const handleChange = useCallback((els: readonly any[], state: any, files: any) => {
         setElements(els);
         setAppState(state);
     }, []);
+
+    // Escapada ràpida amb teclat
+    useEffect(() => {
+        const onEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onEsc);
+        return () => window.removeEventListener('keydown', onEsc);
+    }, [onClose]);
 
     // ── Insereix com a imatge SVG a la nota ──────────────────────────
     const handleInsertAsImage = async () => {
@@ -125,11 +139,87 @@ export default function DrawingCanvas({
         }
     };
 
+    // ── Reconèixer equació matemàtica (GPT-4o Vision) ────────────────────
+    const handleRecognizeMath = async () => {
+        if (isEmpty) return;
+        setError('');
+        setMathResult(null);
+
+        try {
+            // Exporta el canvas a PNG blob → base64
+            const { exportToBlob: expBlob } = await import('@excalidraw/excalidraw');
+            const blob = await expBlob({
+                elements,
+                appState: {
+                    ...appState,
+                    exportBackground: true,
+                    theme: 'dark',
+                },
+                files: excalidrawRef.current?.getFiles?.() ?? {},
+                mimeType: 'image/png',
+                quality: 0.92,
+            });
+
+            const arrayBuffer = await blob.arrayBuffer();
+            const bytes = new Uint8Array(arrayBuffer);
+            let binary = '';
+            bytes.forEach((b) => { binary += String.fromCharCode(b); });
+            const base64 = btoa(binary);
+
+            const result = await recognize([], base64);
+
+            if (!result) {
+                setError('Error al connectar amb la IA. Torna-ho a intentar.');
+                return;
+            }
+
+            if (!result.isEquation || !result.latex) {
+                setError(`No s\'ha detectat cap equació matemàtica (confiança: ${Math.round(result.confidence * 100)}%).`);
+                return;
+            }
+
+            setMathResult({ latex: result.latex, confidence: result.confidence });
+        } catch (err: any) {
+            setError('Error al reconèixer la matemàtica: ' + err.message);
+        }
+    };
+
+    const handleInsertLatex = () => {
+        if (!mathResult || !onInsertAsLatex) return;
+        onInsertAsLatex(mathResult.latex);
+        onClose();
+    };
+
     if (!isOpen) return null;
 
     return (
-        // Pantalla completa absoluta (funciona dins del <main relative> del Dashboard)
-        <div className="absolute inset-0 z-50 flex flex-col bg-[#0d1117]">
+        // Overlay totalment transparent per "escriure directament al portafolis"
+        <div className="drawing-canvas-overlay absolute inset-0 z-[100] flex flex-col bg-transparent animate-in fade-in duration-300">
+            <style>{`
+                .drawing-canvas-overlay .excalidraw,
+                .drawing-canvas-overlay .excalidraw .Island,
+                .drawing-canvas-overlay .excalidraw .App-main,
+                .drawing-canvas-overlay .excalidraw .App-top-bar,
+                .drawing-canvas-overlay .excalidraw .App-bottom-bar {
+                    background-color: transparent !important;
+                    background: transparent !important;
+                }
+                .drawing-canvas-overlay .excalidraw__canvas {
+                    background-color: transparent !important;
+                }
+                /* Amaga l'UI interna d'Excalidraw que molesta */
+                .drawing-canvas-overlay .layer-ui__wrapper__footer-center,
+                .drawing-canvas-overlay .zen-mode-transition,
+                .drawing-canvas-overlay .sidebar-trigger,
+                .drawing-canvas-overlay .layer-ui__wrapper__top-left {
+                    display: none !important;
+                }
+                /* Amaga el menú de "Shapes" vertical */
+                .drawing-canvas-overlay .Stack.Stack_vertical {
+                    display: none !important;
+                }
+            `}</style>
+
 
             {/* ── Header ───────────────────────────────────────────────── */}
             <div className="
@@ -164,7 +254,7 @@ export default function DrawingCanvas({
                 </div>
 
                 {/* Botons d'acció */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
 
                     {/* Inserir com imatge */}
                     <button
@@ -187,6 +277,36 @@ export default function DrawingCanvas({
                         </svg>
                         Inserir com imatge
                     </button>
+
+                    {/* Reconèixer equació → LaTeX */}
+                    {onInsertAsLatex && (
+                        <button
+                            onClick={handleRecognizeMath}
+                            disabled={isEmpty || isMathProcessing || isConverting}
+                            className="
+              flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium
+              bg-indigo-600 hover:bg-indigo-500 text-white
+              transition-colors active:scale-95
+              disabled:opacity-40 disabled:cursor-not-allowed
+            "
+                            title="Detecta equacions i les insereix com a fórmula LaTeX"
+                        >
+                            {isMathProcessing ? (
+                                <>
+                                    <Spinner size="sm" />
+                                    <span className="text-xs">Analitzant…</span>
+                                </>
+                            ) : (
+                                <>
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M4 7h16M4 12h10M4 17h16" />
+                                        <circle cx="18" cy="12" r="3" />
+                                    </svg>
+                                    ∑ Equació
+                                </>
+                            )}
+                        </button>
+                    )}
 
                     {/* Convertir a text */}
                     <button
@@ -251,6 +371,33 @@ export default function DrawingCanvas({
                 </div>
             )}
 
+            {/* Math result preview + confirm */}
+            {mathResult && (
+                <div className="
+          absolute top-16 left-1/2 -translate-x-1/2 z-50
+          flex items-center gap-3
+          bg-indigo-600/20 border border-indigo-500/40
+          rounded-xl px-5 py-3 text-xs text-indigo-200
+          shadow-xl backdrop-blur-sm
+        ">
+                    <span className="opacity-70">∑</span>
+                    <code className="font-mono text-indigo-100 max-w-[260px] truncate">{mathResult.latex}</code>
+                    <span className="text-indigo-400 font-medium">{Math.round(mathResult.confidence * 100)}%</span>
+                    <button
+                        onClick={handleInsertLatex}
+                        className="ml-2 px-3 py-1 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white text-xs font-bold transition-colors"
+                    >
+                        Inserir ✓
+                    </button>
+                    <button
+                        onClick={() => setMathResult(null)}
+                        className="text-indigo-400 hover:text-indigo-200 font-bold"
+                    >
+                        ✕
+                    </button>
+                </div>
+            )}
+
             {/* ── Canvas Excalidraw ─────────────────────────────────────── */}
             <div className="flex-1 overflow-hidden">
                 <Suspense
@@ -261,12 +408,15 @@ export default function DrawingCanvas({
                     }
                 >
                     <Excalidraw
-                        ref={(api: any) => (excalidrawRef.current = api)}
+                        excalidrawAPI={(api: any) => (excalidrawRef.current = api)}
                         initialData={{
                             elements,
                             appState: {
                                 theme: 'dark',
-                                viewBackgroundColor: '#0d1117',
+                                viewBackgroundColor: 'transparent',
+                                activeTool: { type: 'freedraw' },
+                                zenModeEnabled: true,
+                                gridModeEnabled: false,
                                 ...appState,
                             },
                         }}
@@ -279,8 +429,6 @@ export default function DrawingCanvas({
                                 saveToActiveFile: false,
                                 changeViewBackgroundColor: false,
                             },
-                            // Amaga el peu de pàgina de Excalidraw (més net)
-                            dockedSidebarBreakpoint: 0,
                         }}
                         langCode="ca"
                     />
