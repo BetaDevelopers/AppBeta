@@ -193,7 +193,6 @@ export default function DrawingCanvas({
     if (!isOpen) return null;
 
     return (
-        // Overlay totalment transparent per "escriure directament al portafolis"
         <div className="drawing-canvas-overlay absolute inset-0 z-[100] flex flex-col bg-transparent animate-in fade-in duration-300">
             <style>{`
                 .drawing-canvas-overlay .excalidraw,
