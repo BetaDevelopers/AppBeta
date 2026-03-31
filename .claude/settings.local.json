@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(wc -l /c/Users/Nacho/Documents/GitHub/App_3M/backend/src/controllers/*.js)",
+      "Bash(find c:/Users/Nacho/Documents/GitHub/App_3M -name *.jsx -not -path */node_modules/*)"
     ]
   }
 }

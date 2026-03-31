@@ -39,6 +39,7 @@ export default function App() {
                 <Route path="/plans" element={
                     <PrivateRoute><PlansPage /></PrivateRoute>
                 } />
+
             </Routes>
         </BrowserRouter>
     );

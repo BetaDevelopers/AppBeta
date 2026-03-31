@@ -1,14 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNotesStore } from '../store/notesStore';
 import { useSubjectsStore } from '../store/subjectsStore';
 import { Toolbar } from '../components/layout/Toolbar';
 import { Sidebar } from '../components/layout/Sidebar';
 import { NoteList } from '../components/notes/NoteList';
 import { NoteEditor } from '../components/notes/NoteEditor';
+import RightPanel from '../components/layout/RightPanel';
+import MathToolsModals from '../components/math/MathToolsModals';
 
 export default function DashboardPage() {
     const { fetchNotes, currentNote } = useNotesStore();
     const { fetchSubjects } = useSubjectsStore();
+    const [rightPanelOpen, setRightPanelOpen] = useState(false);
 
     useEffect(() => {
         fetchSubjects();
@@ -29,7 +32,12 @@ export default function DashboardPage() {
                         <NoteList />
                     )}
                 </main>
+                <RightPanel
+                    open={rightPanelOpen}
+                    onToggle={() => setRightPanelOpen(v => !v)}
+                />
             </div>
+            <MathToolsModals />
         </div>
     );
 }

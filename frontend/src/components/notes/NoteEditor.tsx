@@ -4,11 +4,10 @@ import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { Spinner } from '../ui/Spinner';
 import RichEditor from './RichEditor';
-import CameraOCR from './CameraOCR';
 import DrawingCanvas from './DrawingCanvas';
 import MathVisionOCR from './MathVisionOCR';
 import DataVisionOCR from './DataVisionOCR';
-import { ChartBlock } from './ChartBlock';
+import { useMathToolsStore } from '../../store/mathToolsStore';
 import { useMathOCR, MathRegion } from '@/features/ai/hooks/useMathOCR';
 
 export const NoteEditor: React.FC = () => {
@@ -26,7 +25,7 @@ export const NoteEditor: React.FC = () => {
     const [showMathVision, setShowMathVision] = useState(false);
     const [showDataVision, setShowDataVision] = useState(false);
     const [editor, setEditor] = useState<any>(null);
-    const [chartData, setChartData] = useState<{ chartType: any; chartData: any; reasoning: string } | null>(null);
+    const { openTool, setEditor: storeSetEditor } = useMathToolsStore();
     const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const editorRef = useRef<any>(null);
     useEffect(() => {
@@ -36,7 +35,7 @@ export const NoteEditor: React.FC = () => {
         const handleAiOptimize = () => handleOptimize();
         const handleAiSummarize = () => handleSummarize();
         const handleAiSuggest = () => handleSuggestSubject();
-        const handleGenerateChartEvent = () => handleGenerateChart();
+        const handleGenerateChartEvent = () => openTool('tableToChart');
         const handleImageUpload = () => {
             const input = document.createElement('input');
             input.type = 'file';
@@ -106,6 +105,12 @@ export const NoteEditor: React.FC = () => {
             setSyncStatus('synced');
         }
     }, [isSaving]);
+
+    // Registra l'editor al store global (per als modals i RightPanel)
+    useEffect(() => {
+        if (editor) storeSetEditor(editor);
+        return () => { storeSetEditor(null); };
+    }, [editor]);
 
     // Helper: converteix markdown bàsic a HTML compatible amb Tiptap
     const markdownToHtml = (md: string): string => {
@@ -312,65 +317,6 @@ export const NoteEditor: React.FC = () => {
         }
     };
 
-    const { fixMathText, tableToChart } = useMathOCR();
-
-    const handleGenerateChart = async () => {
-        const plainText = content.replace(/<[^>]*>/g, '');
-        if (!plainText.includes('|')) {
-            setError('No s\'ha trobat cap taula Markdown a la nota.');
-            setTimeout(() => setError(null), 4000);
-            return;
-        }
-
-        setAiLoading(true);
-        setAiMode('improve');
-        setError(null);
-
-        try {
-            const result = await tableToChart(plainText);
-            if (result) {
-                setChartData(result);
-                setToast('Gràfic generat!');
-                setTimeout(() => setToast(null), 3000);
-            }
-        } catch (err) {
-            setError('Error analitzant dades tabulars.');
-        } finally {
-            setAiLoading(false);
-            setAiMode(null);
-        }
-    };
-
-    const handleFixMath = async () => {
-        const plainText = content.replace(/<[^>]*>/g, '');
-        if (plainText.length < 10) return;
-
-        setAiLoading(true);
-        setAiMode('improve');
-        setError(null);
-
-        try {
-            const result = await fixMathText(plainText);
-            if (!result) return;
-
-            setIsTypingAI(true);
-            setContent(result.improved);
-            setIsTypingAI(false);
-
-            setToast(`Convertides ${result.equationsFound} equacions`);
-            setTimeout(() => setToast(null), 3000);
-
-            setSyncStatus('syncing');
-            await updateNote(currentNote!.id, { content: result.improved, ai_processed: true });
-            setSyncStatus('synced');
-        } catch (err) {
-            setError('Error al formatar fórmules.');
-        } finally {
-            setAiLoading(false);
-            setAiMode(null);
-        }
-    };
-
     const handleDelete = async () => {
         if (currentNote) {
             await deleteNote(currentNote.id);
@@ -424,21 +370,6 @@ export const NoteEditor: React.FC = () => {
                     onEditorReady={setEditor}
                 />
 
-                {chartData && (
-                    <div className="relative group">
-                        <ChartBlock
-                            type={chartData.chartType}
-                            data={chartData.chartData}
-                            reasoning={chartData.reasoning}
-                        />
-                        <button
-                            onClick={() => setChartData(null)}
-                            className="absolute top-4 right-4 bg-red-500/20 text-red-100 p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                            ✕
-                        </button>
-                    </div>
-                )}
             </div>
 
             {error && (
@@ -473,25 +404,24 @@ export const NoteEditor: React.FC = () => {
                         <span className="hidden sm:inline">Optimizar</span>
                     </button>
 
-                    {/* TeXificar (Math) */}
+                    {/* TeXificar → MathEditor */}
                     <button
-                        onClick={handleFixMath}
-                        disabled={aiLoading || content.replace(/<[^>]*>/g, '').length < 10}
+                        onClick={() => openTool('mathEditor')}
                         className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
                     bg-purple-600 hover:bg-purple-500 text-white shadow-xl shadow-purple-600/20
-                    transition-all active:scale-95 disabled:opacity-20"
-                        title="Converteix expressionsinformals a TeX ($...$)"
+                    transition-all active:scale-95"
+                        title="Converteix expressions informals a TeX ($...$)"
                     >
                         ∑
                         <span className="hidden sm:inline">TeXificar</span>
                     </button>
 
+                    {/* Gràfic → TableToChart */}
                     <button
-                        onClick={handleGenerateChart}
-                        disabled={aiLoading}
+                        onClick={() => openTool('tableToChart')}
                         className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
                     bg-blue-500 hover:bg-blue-400 text-white shadow-xl shadow-blue-500/20
-                    transition-all active:scale-95 disabled:opacity-20"
+                    transition-all active:scale-95"
                         title="Analitza taules i genera gràfics estadístics"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -512,21 +442,54 @@ export const NoteEditor: React.FC = () => {
                         <span className="hidden sm:inline">Resumir</span>
                     </button>
 
-                    {/* Escanejar (Càmera OCR) */}
-                    <CameraOCR onResult={handleOCRResult} />
-
-                    {/* Mode Llapis */}
+                    {/* Càmera → SmartCamera */}
                     <button
-                        onClick={() => setShowDrawing(true)}
+                        onClick={() => openTool('smartCamera')}
                         className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
                     border border-white/5 bg-white/5 text-slate-300 hover:bg-white/10
                     transition-all active:scale-95"
+                        title="Escanejar amb càmera intel·ligent"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span className="hidden sm:inline">Càmera</span>
+                    </button>
+
+                    {/* Lápiz → MathOCR (Lápiz Intel·ligent) */}
+                    <button
+                        onClick={() => openTool('mathOCR')}
+                        className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
+                    border border-white/5 bg-white/5 text-slate-300 hover:bg-white/10
+                    transition-all active:scale-95"
+                        title="Lápiz Intel·ligent — dibuix a LaTeX amb correcció de formes"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>
                         <span className="hidden sm:inline">Lápiz</span>
                     </button>
+
+                    {/* Pujar → FileUploadOCR */}
+                    <button
+                        onClick={() => openTool('fileUpload')}
+                        className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
+                    border border-white/5 bg-white/5 text-slate-300 hover:bg-white/10
+                    transition-all active:scale-95"
+                        title="Pujar imatge o fitxer i fer OCR"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <span className="hidden lg:inline">Pujar</span>
+                    </button>
+
+                    {/* ── Eines addicionals (icones petites) ── */}
+                    <button onClick={() => openTool('mathOCRImage')} className="p-3 rounded-2xl text-sm border border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200 transition-all active:scale-95" title="Imatge → OCR Matemàtic">🖼</button>
+                    <button onClick={() => openTool('geometry')} className="p-3 rounded-2xl text-sm border border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200 transition-all active:scale-95" title="Geometria → SVG perfecte">🎨</button>
+                    <button onClick={() => openTool('diagram')} className="p-3 rounded-2xl text-sm border border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200 transition-all active:scale-95" title="Diagrama dibuixat → Chart">📉</button>
+                    <button onClick={() => openTool('calibrate')} className="p-3 rounded-2xl text-sm border border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200 transition-all active:scale-95" title="Calibrar escriptura">📐</button>
                 </div>
 
                 <div className="flex items-center gap-5 pr-4 flex-shrink-0">
@@ -575,6 +538,7 @@ export const NoteEditor: React.FC = () => {
                     onResult={handleInsertMarkdown}
                 />
             )}
+
         </div>
     );
 };
