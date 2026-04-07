@@ -59,4 +59,30 @@ const suggest = async (req, res) => {
   }
 };
 
-module.exports = { improve, summarize, suggest };
+const chat = async (req, res) => {
+  const { messages, context } = req.body;
+
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return res.status(400).json({ error: 'Cal enviar un historial de missatges' });
+  }
+
+  const systemPrompt = [
+    'Ets un assistent d\'estudi intel·ligent que ajuda estudiants a entendre els seus apunts.',
+    'Respon sempre en la mateixa llengua que l\'estudiant (català, castellà, anglès...).',
+    'Sigues concís, clar i pedagògic. Usa markdown per estructurar les respostes llargues.',
+    context
+      ? `\nTens accés als apunts de l\'estudiant:\n\n${context}`
+      : '\nL\'estudiant no té cap nota oberta en aquest moment.',
+  ].join('\n');
+
+  try {
+    const reply = await openaiService.chatWithHistory(systemPrompt, messages);
+    incrementAiUsage(req.user.id);
+    res.json({ reply });
+  } catch (err) {
+    console.error('chat error:', err.message);
+    res.status(500).json({ error: 'Error intern' });
+  }
+};
+
+module.exports = { improve, summarize, suggest, chat };

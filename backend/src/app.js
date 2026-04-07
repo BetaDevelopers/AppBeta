@@ -1,27 +1,22 @@
 require('dotenv').config();
-const express   = require('express');
-const cors      = require('cors');
-const rateLimit = require('express-rate-limit');
+const express = require('express');
+const cors    = require('cors');
+const { globalLimiter, authLimiter, aiLimiter } = require('./middleware/rateLimiters');
 
 const app = express();
 
 app.use(cors({ origin: '*' }));
 app.use(express.json({ limit: '10mb' }));
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: 'Massa intents. Torna-ho a provar en 15 minuts.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// ── Limitador global (primer de tot) ──────────────────────────────────────
+app.use(globalLimiter);
 
-// Rutes
+// ── Rutes ──────────────────────────────────────────────────────────────────
 app.use('/api/auth',     authLimiter, require('./routes/auth.routes'));
-app.use('/api/users',    require('./routes/users.routes'));
-app.use('/api/subjects', require('./routes/subjects.routes'));
-app.use('/api/notes',    require('./routes/notes.routes'));
-app.use('/api/ai',       require('./routes/ai.routes'));
+app.use('/api/users',                 require('./routes/users.routes'));
+app.use('/api/subjects',              require('./routes/subjects.routes'));
+app.use('/api/notes',                 require('./routes/notes.routes'));
+app.use('/api/ai',       aiLimiter,   require('./routes/ai.routes'));
 
 // Health check
 app.get('/', (req, res) => {

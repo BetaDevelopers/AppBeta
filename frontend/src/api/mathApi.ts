@@ -1,4 +1,46 @@
 import { apiClient } from './client';
+import { useAuthStore } from '../store/authStore';
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+/**
+ * OCR general per a SmartCamera.
+ * Envia { image, mime_type } amb un AbortSignal per al timeout de 30s.
+ */
+export async function ocrImage(
+    imageBase64: string,
+    signal?: AbortSignal
+): Promise<{
+    title: string;
+    content_markdown: string;
+    has_formulas: boolean;
+    has_tables: boolean;
+    language: string;
+}> {
+    const token = useAuthStore.getState().token;
+    const res = await fetch(`${BASE_URL}/ai/ocr`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ image: imageBase64, mime_type: 'image/jpeg' }),
+        signal,
+    });
+
+    if (res.status === 401) {
+        useAuthStore.getState().logout();
+        window.location.href = '/login';
+        throw new Error('Sessió expirada');
+    }
+
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any).error || 'Error del servidor');
+    }
+
+    return res.json();
+}
 
 export function mathOCR(strokes: { x: number; y: number }[][], imageBase64?: string) {
     return apiClient.post<{ isEquation: boolean; latex: string; confidence: number }>(
@@ -14,7 +56,7 @@ export function mathOCRImage(imageBase64: string) {
         has_formulas: boolean;
         has_tables: boolean;
         language: string;
-    }>('/ai/ocr', { imageBase64 });
+    }>('/ai/ocr', { image: imageBase64, mime_type: 'image/jpeg' });
 }
 
 export function mathFix(text: string) {

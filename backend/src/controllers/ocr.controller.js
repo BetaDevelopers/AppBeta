@@ -115,9 +115,7 @@ REGLES per al camp content_markdown:
     res.json(parsed);
   } catch (err) {
     console.error('OCR error:', err.message);
-    res.status(500).json({
-      error: err.message || 'Error al processar la imatge amb IA',
-    });
+    res.status(500).json({ error: 'Error intern' });
   }
 };
 

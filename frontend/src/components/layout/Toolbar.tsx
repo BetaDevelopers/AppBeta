@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useNotesStore } from '../../store/notesStore';
 
-export const Toolbar: React.FC = () => {
+interface ToolbarProps {
+    onToggleChat?: () => void;
+    chatOpen?: boolean;
+}
+
+export const Toolbar: React.FC<ToolbarProps> = ({ onToggleChat, chatOpen }) => {
     const { user, logout } = useAuthStore();
     const { isSaving, searchNotes, fetchNotes } = useNotesStore();
     const navigate = useNavigate();
@@ -57,25 +62,39 @@ export const Toolbar: React.FC = () => {
                 {isSaving && (
                     <div className="flex items-center gap-3 bg-blue-500/5 px-4 py-2 rounded-xl border border-blue-500/10 animate-pulse">
                         <div className="w-2 h-2 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
-                        <span className="text-blue-400 text-[10px] font-black uppercase tracking-widest">Sincronizando</span>
+                        <span className="text-blue-400 text-[10px] font-medium">Sincronitzant</span>
                     </div>
                 )}
 
-                <div className="flex items-center gap-4 border-l border-white/5 pl-6">
+                <div className="flex items-center gap-3 border-l border-white/5 pl-6">
+                    {/* Botó IA — xatbot */}
+                    <button
+                        onClick={onToggleChat}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[11px] font-medium transition-colors
+                            ${chatOpen
+                                ? 'bg-emerald-600/20 border-emerald-500/30 text-emerald-300'
+                                : 'bg-emerald-600/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-600/20'
+                            }`}
+                        title="Assistent IA d'estudi"
+                    >
+                        <span>💬</span>
+                        <span className="hidden sm:inline">IA</span>
+                    </button>
+
                     <button
                         onClick={() => navigate('/plans')}
                         className="px-3 py-1.5 bg-blue-600/10 border border-blue-500/20 rounded-full
-                       text-[10px] font-black text-blue-400 hover:bg-blue-600/20
-                       transition-colors uppercase tracking-widest"
+                       text-[11px] font-medium text-blue-400 hover:bg-blue-600/20
+                       transition-colors"
                     >
-                        FREE
+                        Free
                     </button>
 
                     <div className="hidden md:flex flex-col items-end">
                         <span className="text-xs font-black text-white leading-none mb-1 truncate max-w-[120px]">
                             {user?.email}
                         </span>
-                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">PRO MEMBER</span>
+                        <span className="text-[10px] font-medium text-slate-600">Membre</span>
                     </div>
 
                     <div className="w-10 h-10 rounded-full bg-blue-600/10 border border-blue-500/20

@@ -157,9 +157,7 @@ El camp "confidence" és un float entre 0 i 1 que reflecteix la certesa del reco
     res.json(result);
   } catch (err) {
     console.error('math-ocr error:', err.message);
-    res.status(500).json({
-      error: err.message || 'Error al reconèixer matemàtiques amb IA',
-    });
+    res.status(500).json({ error: 'Error intern' });
   }
 };
 
@@ -304,7 +302,7 @@ REGLES CRÍTIQUES:
     res.json(result);
   } catch (err) {
     console.error('segment-math error:', err);
-    res.status(500).json({ error: err.message || 'Error en el processament de segmentació' });
+    res.status(500).json({ error: 'Error intern' });
   }
 };
 
@@ -381,7 +379,7 @@ REGLES:
     res.json(result);
   } catch (err) {
     console.error('fix-math error:', err);
-    res.status(500).json({ error: err.message || 'Error al corregir matemàtiques' });
+    res.status(500).json({ error: 'Error intern' });
   }
 };
 
@@ -467,7 +465,7 @@ REGLES:
     res.json(result);
   } catch (err) {
     console.error('table-to-chart error:', err);
-    res.status(500).json({ error: err.message || 'Error al analitzar la taula' });
+    res.status(500).json({ error: 'Error intern' });
   }
 };
 
@@ -561,7 +559,7 @@ REGLES:
     res.json(result);
   } catch (err) {
     console.error('chart-to-table error:', err);
-    res.status(500).json({ error: err.message || 'Error al extreure dades del gràfic' });
+    res.status(500).json({ error: 'Error intern' });
   }
 };
 
@@ -637,7 +635,7 @@ REGLES:
     res.json(result);
   } catch (err) {
     console.error('vectorize-shape error:', err);
-    res.status(500).json({ error: err.message || 'Error al vectoritzar la figura' });
+    res.status(500).json({ error: 'Error intern' });
   }
 };
 
@@ -712,7 +710,7 @@ REGLES:
     res.json(result);
   } catch (err) {
     console.error('interpret-diagram error:', err);
-    res.status(500).json({ error: err.message || 'Error al interpretar el diagrama' });
+    res.status(500).json({ error: 'Error intern' });
   }
 };
 
@@ -788,7 +786,7 @@ REGLES:
     res.json(result);
   } catch (err) {
     console.error('calibrate error:', err);
-    res.status(500).json({ error: err.message || 'Error al calibrar l\'escriptura' });
+    res.status(500).json({ error: 'Error intern' });
   }
 };
 
@@ -859,7 +857,7 @@ REGLES:
     res.json(result);
   } catch (err) {
     console.error('table-assist error:', err);
-    res.status(500).json({ error: err.message || 'Error al crear la taula' });
+    res.status(500).json({ error: 'Error intern' });
   }
 };
 

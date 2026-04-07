@@ -10,6 +10,26 @@ import DataVisionOCR from './DataVisionOCR';
 import { useMathToolsStore } from '../../store/mathToolsStore';
 import { useMathOCR, MathRegion } from '@/features/ai/hooks/useMathOCR';
 
+// ── Definit FORA de NoteEditor per evitar desmuntatge en cada re-render ──
+function ToolBtn({ onClick, disabled, title, accent, children }: {
+    onClick: () => void; disabled?: boolean; title?: string; accent?: boolean; children: React.ReactNode;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            title={title}
+            className={`flex-shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all active:scale-95 disabled:opacity-25 min-w-[48px] border
+                ${accent
+                    ? 'bg-blue-600/20 border-blue-500/20 text-blue-300 hover:bg-blue-600/30'
+                    : 'bg-white/[0.04] border-white/5 text-slate-400 hover:bg-white/[0.08] hover:text-slate-200'
+                }`}
+        >
+            {children}
+        </button>
+    );
+}
+
 export const NoteEditor: React.FC = () => {
     const { currentNote, updateNote, deleteNote, setCurrentNote, improveWithAI, summarizeWithAI, suggestSubjectWithAI, isSaving } = useNotesStore();
     const [title, setTitle] = useState(currentNote?.title || '');
@@ -390,122 +410,104 @@ export const NoteEditor: React.FC = () => {
                 </div>
             )}
 
-            <div className="p-3 border-t border-white/5 bg-[#0d1117]/80 backdrop-blur-xl sticky bottom-0 z-[100] flex items-center justify-between gap-3 overflow-x-auto scrollbar-hide">
-                <div className="flex items-center gap-2">
-                    {/* Optimitzar */}
-                    <button
+            {/* ── Toolbar inferior ── */}
+            <div className="border-t border-white/5 bg-[#0a0f1e]/60 backdrop-blur-md sticky bottom-0 z-[100]">
+                <div className="flex items-center gap-1 px-3 py-2 overflow-x-auto scrollbar-hide">
+
+                    {/* 1 · Lápiz */}
+                    <ToolBtn onClick={() => openTool('mathOCR')} title="Lápiz intel·ligent">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                        Lápiz
+                    </ToolBtn>
+
+                    {/* 2 · Càmera */}
+                    <ToolBtn onClick={() => openTool('smartCamera')} title="Escanejar amb càmera">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Càmera
+                    </ToolBtn>
+
+                    {/* 3 · Gràfic */}
+                    <ToolBtn onClick={() => openTool('tableToChart')} title="Taula → gràfic">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        Gràfic
+                    </ToolBtn>
+
+                    {/* 4 · TeXificar */}
+                    <ToolBtn onClick={() => openTool('mathEditor')} title="Text → LaTeX">
+                        <span className="text-lg leading-none">∑</span>
+                        TeXificar
+                    </ToolBtn>
+
+                    {/* divider */}
+                    <div className="w-px h-8 bg-white/5 flex-shrink-0 mx-1" />
+
+                    {/* 5 · Optimitzar */}
+                    <ToolBtn
                         onClick={handleOptimize}
                         disabled={aiLoading || content.replace(/<[^>]*>/g, '').length < 20}
-                        className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
-                    bg-blue-600 hover:bg-blue-500 text-white shadow-xl shadow-blue-600/20
-                    transition-all active:scale-95 disabled:opacity-20"
+                        title="Millorar amb IA"
+                        accent
                     >
-                        {aiLoading && aiMode === 'improve' ? <Spinner size="sm" className="text-white" /> : '✨'}
-                        <span className="hidden sm:inline">Optimizar</span>
-                    </button>
+                        {aiLoading && aiMode === 'improve' ? <Spinner size="sm" className="text-white" /> : <span className="text-base leading-none">✨</span>}
+                        Optimitzar
+                    </ToolBtn>
 
-                    {/* TeXificar → MathEditor */}
-                    <button
-                        onClick={() => openTool('mathEditor')}
-                        className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
-                    bg-purple-600 hover:bg-purple-500 text-white shadow-xl shadow-purple-600/20
-                    transition-all active:scale-95"
-                        title="Converteix expressions informals a TeX ($...$)"
-                    >
-                        ∑
-                        <span className="hidden sm:inline">TeXificar</span>
-                    </button>
-
-                    {/* Gràfic → TableToChart */}
-                    <button
-                        onClick={() => openTool('tableToChart')}
-                        className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
-                    bg-blue-500 hover:bg-blue-400 text-white shadow-xl shadow-blue-500/20
-                    transition-all active:scale-95"
-                        title="Analitza taules i genera gràfics estadístics"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                        <span className="hidden lg:inline">Gràfic</span>
-                    </button>
-
-                    {/* Resumir */}
-                    <button
+                    {/* 6 · Resumir */}
+                    <ToolBtn
                         onClick={handleSummarize}
                         disabled={aiLoading || content.replace(/<[^>]*>/g, '').length < 20}
-                        className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
-                    border border-white/5 bg-white/5 text-slate-300 hover:bg-white/10
-                    transition-all active:scale-95 disabled:opacity-20"
+                        title="Generar resum"
                     >
-                        {aiLoading && aiMode === 'summarize' ? <Spinner size="sm" className="text-blue-400" /> : '📝'}
-                        <span className="hidden sm:inline">Resumir</span>
-                    </button>
+                        {aiLoading && aiMode === 'summarize' ? <Spinner size="sm" className="text-blue-400" /> : <span className="text-base leading-none">📝</span>}
+                        Resumir
+                    </ToolBtn>
 
-                    {/* Càmera → SmartCamera */}
-                    <button
-                        onClick={() => openTool('smartCamera')}
-                        className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
-                    border border-white/5 bg-white/5 text-slate-300 hover:bg-white/10
-                    transition-all active:scale-95"
-                        title="Escanejar amb càmera intel·ligent"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    {/* 7 · Pujar */}
+                    <ToolBtn onClick={() => openTool('fileUpload')} title="Pujar fitxer OCR">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
-                        <span className="hidden sm:inline">Càmera</span>
-                    </button>
+                        Pujar
+                    </ToolBtn>
 
-                    {/* Lápiz → MathOCR (Lápiz Intel·ligent) */}
-                    <button
-                        onClick={() => openTool('mathOCR')}
-                        className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
-                    border border-white/5 bg-white/5 text-slate-300 hover:bg-white/10
-                    transition-all active:scale-95"
-                        title="Lápiz Intel·ligent — dibuix a LaTeX amb correcció de formes"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        <span className="hidden sm:inline">Lápiz</span>
-                    </button>
+                    {/* divider */}
+                    <div className="w-px h-8 bg-white/5 flex-shrink-0 mx-1" />
 
-                    {/* Pujar → FileUploadOCR */}
-                    <button
-                        onClick={() => openTool('fileUpload')}
-                        className="flex items-center gap-2 px-5 py-3 rounded-2xl text-xs font-black uppercase tracking-widest
-                    border border-white/5 bg-white/5 text-slate-300 hover:bg-white/10
-                    transition-all active:scale-95"
-                        title="Pujar imatge o fitxer i fer OCR"
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
-                        <span className="hidden lg:inline">Pujar</span>
-                    </button>
-
-                    {/* ── Eines addicionals (icones petites) ── */}
-                    <button onClick={() => openTool('mathOCRImage')} className="p-3 rounded-2xl text-sm border border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200 transition-all active:scale-95" title="Imatge → OCR Matemàtic">🖼</button>
-                    <button onClick={() => openTool('geometry')} className="p-3 rounded-2xl text-sm border border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200 transition-all active:scale-95" title="Geometria → SVG perfecte">🎨</button>
-                    <button onClick={() => openTool('diagram')} className="p-3 rounded-2xl text-sm border border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200 transition-all active:scale-95" title="Diagrama dibuixat → Chart">📉</button>
-                    <button onClick={() => openTool('calibrate')} className="p-3 rounded-2xl text-sm border border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200 transition-all active:scale-95" title="Calibrar escriptura">📐</button>
+                    {/* Eines extra — icones compactes */}
+                    {[
+                        { tool: 'mathOCRImage', icon: '🖼', title: 'Imatge → OCR matemàtic' },
+                        { tool: 'geometry',     icon: '📐', title: 'Geometria → SVG' },
+                        { tool: 'diagram',      icon: '🗂', title: 'Diagrama' },
+                        { tool: 'calibrate',    icon: '🎯', title: 'Calibrar escriptura' },
+                    ].map(({ tool, icon, title }) => (
+                        <button
+                            key={tool}
+                            onClick={() => openTool(tool as any)}
+                            title={title}
+                            className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-base border border-white/5 bg-white/[0.03] text-slate-500 hover:bg-white/[0.07] hover:text-slate-300 transition-all active:scale-95"
+                        >
+                            {icon}
+                        </button>
+                    ))}
                 </div>
 
-                <div className="flex items-center gap-5 pr-4 flex-shrink-0">
-                    <div className="flex flex-col items-end">
-                        <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${syncStatus === 'synced' ? 'text-green-500' :
-                            syncStatus === 'syncing' ? 'text-blue-400 animate-pulse' :
-                                'text-slate-600'
-                            }`}>
-                            {syncStatus === 'synced' && '✓ Sincronitzat'}
-                            {syncStatus === 'syncing' && '⟳ Sincronitzant...'}
-                            {syncStatus === 'local' && '· Guardat localment'}
-                        </span>
-                        <span className="text-[9px] font-black text-slate-700 uppercase tracking-tighter mt-1">
-                            {wordCount} PALABRAS
-                        </span>
-                    </div>
+                {/* Estat de sincronització */}
+                <div className="flex items-center justify-end gap-4 px-4 pb-2">
+                    <span className={`text-[10px] font-medium transition-all duration-300 ${
+                        syncStatus === 'synced'  ? 'text-green-600' :
+                        syncStatus === 'syncing' ? 'text-blue-400 animate-pulse' : 'text-slate-700'
+                    }`}>
+                        {syncStatus === 'synced'  && '✓ Sincronitzat'}
+                        {syncStatus === 'syncing' && '⟳ Sincronitzant...'}
+                        {syncStatus === 'local'   && '· Guardat localment'}
+                    </span>
+                    <span className="text-[10px] text-slate-700">{wordCount} paraules</span>
                 </div>
             </div>
 

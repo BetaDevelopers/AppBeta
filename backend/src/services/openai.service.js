@@ -75,4 +75,36 @@ async function suggestSubject(text) {
   );
 }
 
-module.exports = { improveText, summarizeText, suggestSubject };
+/**
+ * chatWithHistory — conversa multi-torn amb historial complet.
+ * @param {string} systemPrompt - instruccions del sistema (inclou el context de notes)
+ * @param {Array<{role: string, content: string}>} messages - historial de la conversa
+ */
+async function chatWithHistory(systemPrompt, messages) {
+  const response = await fetch(OPENAI_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 1500,
+      temperature: 0.7,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages,
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error?.message || 'Error OpenAI API');
+  }
+
+  const data = await response.json();
+  return data.choices[0].message.content.trim();
+}
+
+module.exports = { improveText, summarizeText, suggestSubject, chatWithHistory };

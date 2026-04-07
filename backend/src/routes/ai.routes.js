@@ -14,22 +14,70 @@ const {
   createTableAssist,
 } = require('../controllers/math.controller');
 const { checkPlanLimits }  = require('../middleware/checkPlanLimits');
+const { validateBody }     = require('../middleware/validate');
+
+const TEXT_RULE      = { type: 'string', required: true, maxLength: 50000 };
+const IMAGE_B64_RULE = { type: 'string', required: true, maxLength: 7000000 };
 
 router.use(verifyToken);
 router.use(checkPlanLimits);
 
-router.post('/improve',           ai.improve);
-router.post('/summarize',         ai.summarize);
-router.post('/suggest',           ai.suggest);
-router.post('/ocr',               ocrFromImage);
-router.post('/math-ocr',          mathOCR);
-router.post('/math-segment',      segmentMathOCR);
-router.post('/math-fix',          fixMathText);
-router.post('/table-to-chart',    analyzeTable);
-router.post('/chart-to-table',    extractChartData);
-router.post('/vectorize',         vectorizeShape);
-router.post('/interpret-diagram', interpretDiagram);
-router.post('/calibrate',         calibrateHandwriting);
-router.post('/table-assist',      createTableAssist);
+router.post('/chat',
+  validateBody({
+    messages: { type: 'array',  required: true },
+    context:  { type: 'string', maxLength: 50000 },
+  }),
+  ai.chat
+);
+router.post('/improve',    validateBody({ text: TEXT_RULE }), ai.improve);
+router.post('/summarize',  validateBody({ text: TEXT_RULE }), ai.summarize);
+router.post('/suggest',    validateBody({ text: TEXT_RULE }), ai.suggest);
+
+router.post('/ocr',
+  validateBody({ image: IMAGE_B64_RULE }),
+  ocrFromImage
+);
+router.post('/math-ocr',
+  validateBody({
+    imageBase64: { type: 'string', maxLength: 7000000 },
+    strokes:     { type: 'array' },
+  }),
+  mathOCR
+);
+router.post('/math-segment',
+  validateBody({ imageBase64: IMAGE_B64_RULE }),
+  segmentMathOCR
+);
+router.post('/math-fix',
+  validateBody({ text: TEXT_RULE }),
+  fixMathText
+);
+router.post('/table-to-chart',
+  validateBody({ tableMarkdown: { type: 'string', required: true, maxLength: 50000 } }),
+  analyzeTable
+);
+router.post('/chart-to-table',
+  validateBody({ imageBase64: IMAGE_B64_RULE }),
+  extractChartData
+);
+router.post('/vectorize',
+  validateBody({ points: { type: 'array', required: true } }),
+  vectorizeShape
+);
+router.post('/interpret-diagram',
+  validateBody({
+    strokes: { type: 'array',  required: true },
+    context: { type: 'string', maxLength: 50000 },
+  }),
+  interpretDiagram
+);
+router.post('/calibrate',
+  validateBody({ sampleStrokes: { type: 'array', required: true } }),
+  calibrateHandwriting
+);
+router.post('/table-assist',
+  validateBody({ instruction: { type: 'string', required: true, maxLength: 50000 } }),
+  createTableAssist
+);
 
 module.exports = router;
