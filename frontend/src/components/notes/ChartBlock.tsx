@@ -40,7 +40,7 @@ export const ChartBlock: React.FC<ChartBlockProps> = ({ type, data, reasoning })
                 position: 'top' as const,
                 labels: {
                     color: 'rgba(255, 255, 255, 0.7)',
-                    font: { weight: 'bold', size: 10 },
+                    font: { weight: 'bold' as const, size: 10 },
                 },
             },
             title: {
