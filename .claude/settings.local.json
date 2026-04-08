@@ -3,7 +3,22 @@
     "allow": [
       "Bash(npm install:*)",
       "Bash(wc -l /c/Users/Nacho/Documents/GitHub/App_3M/backend/src/controllers/*.js)",
-      "Bash(find c:/Users/Nacho/Documents/GitHub/App_3M -name *.jsx -not -path */node_modules/*)"
+      "Bash(find c:/Users/Nacho/Documents/GitHub/App_3M -name *.jsx -not -path */node_modules/*)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\")",
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)",
+      "Bash(git remote:*)",
+      "Bash(git push:*)",
+      "Bash(xargs -I{} curl -s -H \"Authorization: Bearer {}\" -H \"apikey: {}\" \"https://umalncxibvjoqmaklfsg.supabase.co/rest/v1/\")",
+      "mcp__plugin_supabase_supabase__list_projects",
+      "mcp__plugin_supabase_supabase__get_publishable_keys",
+      "mcp__plugin_supabase_supabase__get_project_url",
+      "mcp__plugin_supabase_supabase__list_tables",
+      "Bash(node -e ':*)",
+      "Bash(node src/app.js)",
+      "Bash(curl -s http://localhost:3000/)",
+      "mcp__plugin_supabase_supabase__execute_sql",
+      "Bash(node:*)"
     ]
   }
 }

@@ -156,7 +156,7 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
                     'Content-Type': 'application/json',
                     ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 },
-                body: JSON.stringify({ messages: history, context: buildContext() }),
+                body: JSON.stringify({ messages: history, context: buildContext(), note_id: currentNote?.id ?? null }),
                 signal: abortRef.current.signal,
             });
 

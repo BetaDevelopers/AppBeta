@@ -11,6 +11,7 @@ router.get('/me',       users.getMe);
 router.put('/me',
   validateBody({
     email:            { type: 'string', maxLength: 254, pattern: EMAIL_PATTERN },
+    display_name:     { type: 'string', maxLength: 80 },
     password:         { type: 'string', minLength: 8,   maxLength: 128 },
     current_password: { type: 'string', maxLength: 128 },
   }),

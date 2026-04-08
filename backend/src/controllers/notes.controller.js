@@ -75,9 +75,9 @@ const update = async (req, res) => {
     const { id } = req.params;
     const { title, content, subject_id, ai_processed } = req.body;
 
-    // Verifica propietat
+    // Verifica propietat i obté contingut actual per al historial
     const check = await pool.query(
-      'SELECT id FROM notes WHERE id = $1 AND user_id = $2',
+      'SELECT id, content, content_plain FROM notes WHERE id = $1 AND user_id = $2',
       [id, req.user.id]
     );
     if (check.rows.length === 0) {
@@ -115,6 +115,15 @@ const update = async (req, res) => {
 
     if (fields.length === 0) {
       return res.status(400).json({ error: 'Cap camp per actualitzar' });
+    }
+
+    // Desar versió anterior abans d'actualitzar (només si ve contingut nou)
+    if (content !== undefined) {
+      const prev = check.rows[0];
+      pool.query(
+        'INSERT INTO note_versions (note_id, content_html, content_plain, action, created_by) VALUES ($1, $2, $3, $4, $5)',
+        [id, prev.content || '', prev.content_plain || '', 'update', req.user.id]
+      ).catch(e => console.warn('note_versions insert error:', e.message));
     }
 
     // updated_at el gestiona el trigger automàticament, NO cal posar-ho aquí

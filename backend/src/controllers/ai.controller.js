@@ -59,8 +59,20 @@ const suggest = async (req, res) => {
   }
 };
 
+const saveChatMessages = (userId, noteId, userContent, assistantContent, context) => {
+  const nid = noteId || null;
+  pool.query(
+    'INSERT INTO chat_messages (user_id, note_id, role, content, context) VALUES ($1, $2, $3, $4, $5)',
+    [userId, nid, 'user', userContent, context || null]
+  ).catch(e => console.warn('chat_messages save error:', e.message));
+  pool.query(
+    'INSERT INTO chat_messages (user_id, note_id, role, content) VALUES ($1, $2, $3, $4)',
+    [userId, nid, 'assistant', assistantContent]
+  ).catch(e => console.warn('chat_messages save error:', e.message));
+};
+
 const chat = async (req, res) => {
-  const { messages, context } = req.body;
+  const { messages, context, note_id } = req.body;
 
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'Cal enviar un historial de missatges' });
@@ -78,6 +90,13 @@ const chat = async (req, res) => {
   try {
     const reply = await openaiService.chatWithHistory(systemPrompt, messages);
     incrementAiUsage(req.user.id);
+
+    // Persistir l'últim missatge de l'usuari + la resposta
+    const lastUserMsg = messages[messages.length - 1];
+    if (lastUserMsg?.role === 'user') {
+      saveChatMessages(req.user.id, note_id, lastUserMsg.content, reply, context);
+    }
+
     res.json({ reply });
   } catch (err) {
     console.error('chat error:', err.message);

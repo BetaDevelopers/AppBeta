@@ -11,6 +11,8 @@ interface AuthStore {
   register: (email: string, password: string) => Promise<void>;
   logout: () => void;
   initAuth: () => Promise<void>;
+  updateUser: (data: Partial<User>) => void;
+  forgotPassword: (email: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -53,5 +55,13 @@ export const useAuthStore = create<AuthStore>((set) => ({
   logout: () => {
     localStorage.removeItem('beta3m_token');
     set({ user: null, token: null, isAuthenticated: false });
+  },
+
+  updateUser: (data) => {
+    set((s) => ({ user: s.user ? { ...s.user, ...data } : s.user }));
+  },
+
+  forgotPassword: async (email) => {
+    await apiClient.post('/auth/forgot-password', { email });
   },
 }));

@@ -20,4 +20,11 @@ router.post('/login',
   auth.login
 );
 
+router.post('/forgot-password',
+  validateBody({
+    email: { type: 'string', required: true, maxLength: 254, pattern: EMAIL_PATTERN },
+  }),
+  auth.forgotPassword
+);
+
 module.exports = router;

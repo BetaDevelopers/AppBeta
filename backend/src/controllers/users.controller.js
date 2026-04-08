@@ -1,11 +1,13 @@
-const pool    = require('../config/db');
-const bcrypt  = require('bcryptjs');
+const pool = require('../config/db');
+const { supabaseAdmin, supabaseClient } = require('../config/supabase');
 
 // GET /api/users/me
 const getMe = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, email, plan, ai_uses_this_month, ai_uses_reset_at, created_at
+      `SELECT id, email, plan, ai_uses_this_month, ai_uses_reset_at,
+              display_name, avatar_url, language, theme, onboarding_done,
+              last_seen_at, created_at
        FROM users
        WHERE id = $1`,
       [req.user.id]
@@ -21,17 +23,19 @@ const getMe = async (req, res) => {
 };
 
 // PUT /api/users/me
-// Body (tots opcionals): { email, password, current_password }
+// Body (tots opcionals): { email, display_name, password, current_password }
 const updateMe = async (req, res) => {
-  const { email, password, current_password } = req.body;
+  const { email, display_name, password, current_password } = req.body;
 
-  if (!email && !password) {
+  if (!email && !display_name && !password) {
     return res.status(400).json({ error: 'Cal enviar almenys un camp per actualitzar' });
   }
 
   try {
-    // Carreguem l'usuari actual per verificar contrasenya i detectar duplicat d'email
-    const userRes = await pool.query('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    const userRes = await pool.query(
+      'SELECT id, email, supabase_id FROM users WHERE id = $1',
+      [req.user.id]
+    );
     if (userRes.rows.length === 0) {
       return res.status(404).json({ error: 'Usuari no trobat' });
     }
@@ -41,42 +45,76 @@ const updateMe = async (req, res) => {
     const values = [];
     let i = 1;
 
+    // Canvi de display_name
+    if (display_name !== undefined) {
+      fields.push(`display_name = $${i++}`);
+      values.push(display_name || null);
+    }
+
     // Canvi d'email
-    if (email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({ error: 'Format d\'email invàlid' });
+    if (email && email !== user.email) {
+      const exists = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, user.id]);
+      if (exists.rows.length > 0) {
+        return res.status(409).json({ error: 'Email ja en ús' });
       }
-      if (email !== user.email) {
-        const exists = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-        if (exists.rows.length > 0) {
-          return res.status(409).json({ error: 'Email ja en ús' });
+      // Actualitzar email a Supabase Auth
+      if (user.supabase_id) {
+        const { error: sbErr } = await supabaseAdmin.auth.admin.updateUserById(
+          user.supabase_id,
+          { email, email_confirm: true }
+        );
+        if (sbErr) {
+          console.error('Supabase email update error:', sbErr.message);
+          return res.status(400).json({ error: 'No s\'ha pogut actualitzar el email' });
         }
       }
       fields.push(`email = $${i++}`);
       values.push(email);
     }
 
-    // Canvi de contrasenya
+    // Canvi de contrasenya via Supabase
     if (password) {
-      if (password.length < 4) {
-        return res.status(400).json({ error: 'La contrasenya ha de tenir mínim 4 caràcters' });
-      }
       if (!current_password) {
         return res.status(400).json({ error: 'Cal la contrasenya actual per canviar-la' });
       }
-      const isMatch = await bcrypt.compare(current_password, user.password);
-      if (!isMatch) {
+      // Verificar contrasenya actual
+      const { error: signInErr } = await supabaseClient.auth.signInWithPassword({
+        email: user.email,
+        password: current_password,
+      });
+      if (signInErr) {
         return res.status(401).json({ error: 'Contrasenya actual incorrecta' });
       }
-      const hashed = await bcrypt.hash(password, 10);
-      fields.push(`password = $${i++}`);
-      values.push(hashed);
+      // Actualitzar contrasenya a Supabase
+      if (user.supabase_id) {
+        const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(
+          user.supabase_id,
+          { password }
+        );
+        if (pwErr) {
+          console.error('Supabase password update error:', pwErr.message);
+          return res.status(400).json({ error: 'No s\'ha pogut actualitzar la contrasenya' });
+        }
+      }
+      // No guardem la contrasenya a public.users
     }
 
-    values.push(req.user.id);
+    if (fields.length === 0) {
+      // Només canvi de contrasenya (no hi ha camps a actualitzar a public.users)
+      const updated = await pool.query(
+        `SELECT id, email, plan, ai_uses_this_month, ai_uses_reset_at,
+                display_name, avatar_url, created_at
+         FROM users WHERE id = $1`,
+        [user.id]
+      );
+      return res.json(updated.rows[0]);
+    }
+
+    values.push(user.id);
     const result = await pool.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${i} RETURNING id, email, plan, ai_uses_this_month, ai_uses_reset_at, created_at`,
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${i}
+       RETURNING id, email, plan, ai_uses_this_month, ai_uses_reset_at,
+                 display_name, avatar_url, created_at`,
       values
     );
 
@@ -88,7 +126,6 @@ const updateMe = async (req, res) => {
 };
 
 // GET /api/users/me/stats
-// Retorna estadístiques d'ús de l'usuari
 const getStats = async (req, res) => {
   const userId = req.user.id;
   try {
@@ -110,10 +147,10 @@ const getStats = async (req, res) => {
     ]);
 
     res.json({
-      notes:     parseInt(notesRes.rows[0].total),
-      subjects:  parseInt(subjectsRes.rows[0].total),
-      ai_usage:  aiLogsRes.rows,
-      plan:      userRes.rows[0].plan,
+      notes:              parseInt(notesRes.rows[0].total),
+      subjects:           parseInt(subjectsRes.rows[0].total),
+      ai_usage:           aiLogsRes.rows,
+      plan:               userRes.rows[0].plan,
       ai_uses_this_month: userRes.rows[0].ai_uses_this_month,
       ai_uses_reset_at:   userRes.rows[0].ai_uses_reset_at,
     });
@@ -124,7 +161,6 @@ const getStats = async (req, res) => {
 };
 
 // DELETE /api/users/me
-// Elimina el compte (CASCADE s'encarrega de les notes, subjects, logs)
 const deleteMe = async (req, res) => {
   const { password } = req.body;
 
@@ -133,17 +169,29 @@ const deleteMe = async (req, res) => {
   }
 
   try {
-    const userRes = await pool.query('SELECT password FROM users WHERE id = $1', [req.user.id]);
+    const userRes = await pool.query(
+      'SELECT email, supabase_id FROM users WHERE id = $1',
+      [req.user.id]
+    );
     if (userRes.rows.length === 0) {
       return res.status(404).json({ error: 'Usuari no trobat' });
     }
+    const { email, supabase_id } = userRes.rows[0];
 
-    const isMatch = await bcrypt.compare(password, userRes.rows[0].password);
-    if (!isMatch) {
+    // Verificar contrasenya
+    const { error: signInErr } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (signInErr) {
       return res.status(401).json({ error: 'Contrasenya incorrecta' });
     }
 
+    // Eliminar de public.users (CASCADE elimina notes, subjects, logs)
     await pool.query('DELETE FROM users WHERE id = $1', [req.user.id]);
+
+    // Eliminar de Supabase Auth
+    if (supabase_id) {
+      await supabaseAdmin.auth.admin.deleteUser(supabase_id).catch(() => {});
+    }
+
     res.json({ message: 'Compte eliminat correctament' });
   } catch (err) {
     console.error('deleteMe error:', err);
