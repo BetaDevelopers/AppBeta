@@ -132,12 +132,6 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
             {/* Bubble Menu — Contextual formatting */}
             <BubbleMenu
                 editor={editor}
-                tippyOptions={{
-                    duration: 150,
-                    placement: 'top',
-                    zIndex: 100,
-                    animation: 'shift-away'
-                }}
                 shouldShow={({ state }: { state: any }) => {
                     const { from, to } = state.selection;
                     return from !== to;
