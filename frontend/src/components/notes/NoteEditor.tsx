@@ -48,13 +48,19 @@ export const NoteEditor: React.FC = () => {
     const { openTool, setEditor: storeSetEditor } = useMathToolsStore();
     const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const editorRef = useRef<any>(null);
+    // Refs per evitar stale closures als event listeners dels slash commands
+    // S'inicialitzen amb no-op i s'actualitzen síncronament cada render (veure més avall)
+    const handleOptimizeRef = useRef<() => void>(() => {});
+    const handleSummarizeRef = useRef<() => void>(() => {});
+    const handleSuggestSubjectRef = useRef<() => void>(() => {});
+
     useEffect(() => {
         const handleOpenDrawing = () => setShowDrawing(true);
         const handleOpenMathVision = () => setShowMathVision(true);
         const handleOpenDataVision = () => setShowDataVision(true);
-        const handleAiOptimize = () => handleOptimize();
-        const handleAiSummarize = () => handleSummarize();
-        const handleAiSuggest = () => handleSuggestSubject();
+        const handleAiOptimize = () => handleOptimizeRef.current();
+        const handleAiSummarize = () => handleSummarizeRef.current();
+        const handleAiSuggest = () => handleSuggestSubjectRef.current();
         const handleGenerateChartEvent = () => openTool('tableToChart');
         const handleImageUpload = () => {
             const input = document.createElement('input');
@@ -336,6 +342,12 @@ export const NoteEditor: React.FC = () => {
             setAiLoading(false);
         }
     };
+
+    // Actualitza els refs síncronament cada render perquè els event listeners
+    // (registrats una sola vegada) cridin sempre la versió actual de les funcions
+    handleOptimizeRef.current = handleOptimize;
+    handleSummarizeRef.current = handleSummarize;
+    handleSuggestSubjectRef.current = handleSuggestSubject;
 
     const handleDelete = async () => {
         if (currentNote) {

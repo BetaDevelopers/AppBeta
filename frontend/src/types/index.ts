@@ -17,6 +17,8 @@ export interface Subject {
     id: number;
     name: string;
     color: string;
+    icon?: string | null;
+    position?: number | null;
     user_id: number;
     created_at?: string;
 }
@@ -31,6 +33,11 @@ export interface Note {
     user_id: number;
     ai_processed: boolean;
     content_plain?: string;
+    is_pinned?: boolean;
+    is_archived?: boolean;
+    tags?: string[] | null;
+    word_count?: number | null;
+    cover_color?: string | null;
     created_at: string;
     updated_at: string;
 }

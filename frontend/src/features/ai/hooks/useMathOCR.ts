@@ -41,7 +41,7 @@ export const useMathOCR = () => {
             setError(null);
             try {
                 const token = localStorage.getItem('beta3m_token');
-                const apiUrl = import.meta.env.VITE_API_URL;
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
                 const body: { strokes?: Point[][]; imageBase64?: string } = {};
 
                 if (imageBase64) {
@@ -88,7 +88,7 @@ export const useMathOCR = () => {
             setError(null);
             try {
                 const token = localStorage.getItem('beta3m_token');
-                const apiUrl = import.meta.env.VITE_API_URL;
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
                 const res = await fetch(`${apiUrl}/ai/math-segment`, {
                     method: 'POST',
@@ -126,7 +126,7 @@ export const useMathOCR = () => {
             setError(null);
             try {
                 const token = localStorage.getItem('beta3m_token');
-                const apiUrl = import.meta.env.VITE_API_URL;
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
                 const res = await fetch(`${apiUrl}/ai/math-fix`, {
                     method: 'POST',
@@ -169,7 +169,7 @@ export const useMathOCR = () => {
             setError(null);
             try {
                 const token = localStorage.getItem('beta3m_token');
-                const apiUrl = import.meta.env.VITE_API_URL;
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
                 const res = await fetch(`${apiUrl}/ai/table-to-chart`, {
                     method: 'POST',
@@ -210,7 +210,7 @@ export const useMathOCR = () => {
             setError(null);
             try {
                 const token = localStorage.getItem('beta3m_token');
-                const apiUrl = import.meta.env.VITE_API_URL;
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
                 const res = await fetch(`${apiUrl}/ai/chart-to-table`, {
                     method: 'POST',
@@ -256,7 +256,7 @@ export const useMathOCR = () => {
             setError(null);
             try {
                 const token = localStorage.getItem('beta3m_token');
-                const apiUrl = import.meta.env.VITE_API_URL;
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
                 const res = await fetch(`${apiUrl}/ai/vectorize`, {
                     method: 'POST',
@@ -301,7 +301,7 @@ export const useMathOCR = () => {
             setError(null);
             try {
                 const token = localStorage.getItem('beta3m_token');
-                const apiUrl = import.meta.env.VITE_API_URL;
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
                 const res = await fetch(`${apiUrl}/ai/interpret-diagram`, {
                     method: 'POST',
@@ -347,7 +347,7 @@ export const useMathOCR = () => {
             setError(null);
             try {
                 const token = localStorage.getItem('beta3m_token');
-                const apiUrl = import.meta.env.VITE_API_URL;
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
                 const res = await fetch(`${apiUrl}/ai/calibrate`, {
                     method: 'POST',
@@ -394,7 +394,7 @@ export const useMathOCR = () => {
             setError(null);
             try {
                 const token = localStorage.getItem('beta3m_token');
-                const apiUrl = import.meta.env.VITE_API_URL;
+                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
                 const res = await fetch(`${apiUrl}/ai/table-assist`, {
                     method: 'POST',

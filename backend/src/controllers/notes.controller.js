@@ -50,11 +50,6 @@ const getOne = async (req, res) => {
 const create = async (req, res) => {
   const { title = 'Sense títol', content = '', subject_id = null } = req.body;
   const userId = req.user.id;
-  
-  const stripHtml = (html) => (html || '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
 
   const contentPlain = stripHtml(content);
 
@@ -83,10 +78,6 @@ const update = async (req, res) => {
     if (check.rows.length === 0) {
       return res.status(404).json({ error: 'Nota no trobada' });
     }
-
-    // Genera content_plain fent strip d'HTML (per cerca FTS)
-    const stripHtml = (html) =>
-      (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 
     // Construeix query dinàmica — només actualitza els camps que venen al body
     const fields = [];

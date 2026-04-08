@@ -7,10 +7,10 @@ if (!process.env.DB_PASSWORD) {
 }
 
 const pool = new Pool({
-  host: 'aws-0-eu-west-1.pooler.supabase.com',
+  host: 'aws-0-eu-north-1.pooler.supabase.com',
   port: 6543,
   database: 'postgres',
-  user: 'postgres.hcxhgukqekyekybmbzgi',
+  user: 'postgres.umalncxibvjoqmaklfsg',
   password: process.env.DB_PASSWORD,
   ssl: { rejectUnauthorized: false },
   max: 10,

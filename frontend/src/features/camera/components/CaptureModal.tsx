@@ -15,6 +15,9 @@ export const CaptureModal: React.FC<{ isOpen: boolean; onClose: () => void }> = 
 
     const activeNote = notes.find(n => n.id === activeNoteId)
 
+    // Cleanup on unmount (evita que el stream segueixi actiu si el component es desmunta)
+    useEffect(() => () => stopCamera(), [])
+
     useEffect(() => {
         if (isOpen) {
             startCamera()

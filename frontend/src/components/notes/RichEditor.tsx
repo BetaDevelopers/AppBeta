@@ -86,7 +86,7 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
             // Evitar reset del cursor si el contingut és el mateix però s'ha salvat manualment
             editor.commands.setContent(content, { emitUpdate: false });
         }
-    }, [content]);
+    }, [content, editor]);
 
     if (!editor) return null;
 

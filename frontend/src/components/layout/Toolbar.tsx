@@ -83,11 +83,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({ onToggleChat, chatOpen }) => {
 
                     <button
                         onClick={() => navigate('/plans')}
-                        className="px-3 py-1.5 bg-blue-600/10 border border-blue-500/20 rounded-full
-                       text-[11px] font-medium text-blue-400 hover:bg-blue-600/20
-                       transition-colors"
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors border
+                            ${user?.plan === 'premium'
+                                ? 'bg-purple-600/10 border-purple-500/20 text-purple-400 hover:bg-purple-600/20'
+                                : user?.plan === 'pro'
+                                    ? 'bg-emerald-600/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-600/20'
+                                    : 'bg-blue-600/10 border-blue-500/20 text-blue-400 hover:bg-blue-600/20'
+                            }`}
                     >
-                        Free
+                        {user?.plan === 'premium' ? '👑 Premium' : user?.plan === 'pro' ? '⭐ Pro' : 'Free'}
                     </button>
 
                     <div className="hidden md:flex flex-col items-end">
