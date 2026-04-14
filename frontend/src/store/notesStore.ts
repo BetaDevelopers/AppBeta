@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { apiClient } from '../api/client';
 import { db } from '../db/dexie';
 import type { Note } from '../types';
+import { useAuthStore } from './authStore';
 
 interface NotesStore {
     notes: Note[];
@@ -15,10 +16,11 @@ interface NotesStore {
     deleteNote: (id: number) => Promise<void>;
     setCurrentNote: (note: Note | null) => void;
     setActiveSubject: (id: number | null) => void;
-    searchNotes: (query: string) => Promise<Note[]>;
+    searchNotes: (query: string) => Promise<void>;
     improveWithAI: (text: string) => Promise<string>;
     summarizeWithAI: (text: string) => Promise<string>;
     suggestSubjectWithAI: (text: string) => Promise<string>;
+    cleanup: () => void;
 }
 
 // ── Sync Worker ─────────────────────────────────────────────
@@ -68,12 +70,14 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     fetchNotes: async (subjectId) => {
         set({ isLoading: true });
         try {
+            if (useAuthStore.getState().isGuest) throw new Error('Guest mode');
             const path = subjectId ? `/notes?subject_id=${subjectId}` : '/notes';
             const notes = await apiClient.get<Note[]>(path);
             await db.notes.bulkPut(notes);
             set({ notes, isLoading: false });
         } catch {
-            const cached = await db.notes.toArray();
+            const userId = useAuthStore.getState().user?.id || 0;
+            const cached = await db.notes.where('user_id').equals(userId).toArray();
             const filtered = subjectId
                 ? cached.filter((n) => n.subject_id === subjectId)
                 : cached;
@@ -82,12 +86,30 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     },
 
     createNote: async (data = {}) => {
-        const note = await apiClient.post<Note>('/notes', {
-            title: 'Sense títol',
-            content: '',
-            subject_id: get().activeSubjectId,
-            ...data,
-        });
+        const isGuest = useAuthStore.getState().isGuest;
+        let note: Note;
+
+        if (isGuest) {
+            note = {
+                id: Math.floor(Math.random() * -1000000), // ID temporal negativo para notas locales
+                title: 'Sense títol',
+                content: '',
+                content_plain: '',
+                subject_id: get().activeSubjectId || null,
+                user_id: 0,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                ...data,
+            } as Note;
+        } else {
+            note = await apiClient.post<Note>('/notes', {
+                title: 'Sense títol',
+                content: '',
+                subject_id: get().activeSubjectId,
+                ...data,
+            });
+        }
+
         await db.notes.put(note);
         set((s) => ({ notes: [note, ...s.notes], currentNote: note }));
         return note;
@@ -114,6 +136,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
         }));
 
         if (skipQueue) {
+            if (useAuthStore.getState().isGuest) return;
             // CAPA 2 directa: crida real a la API (des del worker)
             set({ isSaving: true });
             try {
@@ -145,7 +168,13 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     },
 
     deleteNote: async (id) => {
-        await apiClient.delete(`/notes/${id}`);
+        if (!useAuthStore.getState().isGuest) {
+            try {
+                await apiClient.delete(`/notes/${id}`);
+            } catch {
+                // Si falla el borrado en servidor, permitimos borrar local igualmente
+            }
+        }
         await db.notes.delete(id);
         pendingSync.delete(id); // Elimina de la cua si s'esborra
         set((s) => ({
@@ -157,21 +186,38 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
     setCurrentNote: (note) => set({ currentNote: note }),
     setActiveSubject: (id) => set({ activeSubjectId: id }),
 
-    searchNotes: async (query: string): Promise<Note[]> => {
-        if (query.trim().length < 2) return [];
+    cleanup: () => {
+        if (workerInterval) {
+            clearInterval(workerInterval);
+            workerInterval = null;
+        }
+        pendingSync.clear();
+        set({ notes: [], currentNote: null, activeSubjectId: null });
+    },
+
+    searchNotes: async (query: string): Promise<void> => {
+        const trimmed = query.trim();
+        if (trimmed.length < 2) {
+            // Restaurar notas originales si la búsqueda es muy corta
+            await get().fetchNotes(get().activeSubjectId ?? undefined);
+            return;
+        }
         try {
-            return await apiClient.get<Note[]>(
-                `/notes/search?q=${encodeURIComponent(query.trim())}`
+            const results = await apiClient.get<Note[]>(
+                `/notes/search?q=${encodeURIComponent(trimmed)}`
             );
+            set({ notes: results });
         } catch {
             // Fallback offline: cerca a Dexie
-            const q = query.toLowerCase();
-            const all = await db.notes.toArray();
-            return all.filter(
+            const q = trimmed.toLowerCase();
+            const userId = useAuthStore.getState().user?.id || 0;
+            const all = await db.notes.where('user_id').equals(userId).toArray();
+            const filtered = all.filter(
                 (n) =>
                     n.title.toLowerCase().includes(q) ||
                     (n.content_plain || '').toLowerCase().includes(q)
             );
+            set({ notes: filtered });
         }
     },
 

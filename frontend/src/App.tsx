@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import AuthPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import PlansPage from './pages/PlansPage';
+import { PerfilPage } from './pages/PerfilPage';
+import { GuestAuthModal } from './components/auth/GuestAuthModal';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
     const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -31,16 +32,16 @@ export default function App() {
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/dashboard" element={
-                    <PrivateRoute><DashboardPage /></PrivateRoute>
-                } />
-                <Route path="/plans" element={
-                    <PrivateRoute><PlansPage /></PrivateRoute>
+                <Route path="/login" element={<AuthPage />} />
+                <Route path="/register" element={<AuthPage />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/plans" element={<PlansPage />} />
+                <Route path="/perfil" element={
+                    <PrivateRoute><PerfilPage /></PrivateRoute>
                 } />
 
             </Routes>
+            <GuestAuthModal />
         </BrowserRouter>
     );
 }

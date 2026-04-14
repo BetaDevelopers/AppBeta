@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useSubjectsStore } from '../../store/subjectsStore';
 import { useNotesStore } from '../../store/notesStore';
 import { useMathToolsStore } from '../../store/mathToolsStore';
+import { useAuthStore } from '../../store/authStore';
+import { useUIStore } from '../../store/uiStore';
 import { SubjectModal } from '../subjects/SubjectModal';
 import { Button } from '../ui/Button';
 
@@ -11,20 +13,23 @@ interface SidebarLeftProps {
 }
 
 const EINES = [
-    { tool: 'mathOCR',      icon: '✏️', label: 'Lápiz inteligente' },
-    { tool: 'mathOCRImage', icon: '🖼️', label: 'OCR imagen'        },
-    { tool: 'mathEditor',   icon: '∑',  label: 'TeXificar'          },
-    { tool: 'tableToChart', icon: '📊', label: 'Tabla → gráfico'    },
-    { tool: 'chartToTable', icon: '📉', label: 'Gráfico → tabla'    },
-    { tool: 'geometry',     icon: '📐', label: 'Geometría'          },
-    { tool: 'diagram',      icon: '🗂️', label: 'Diagrama'           },
-    { tool: 'calibrate',    icon: '🎯', label: 'Calibrar escritura' },
+    { tool: 'mathOCR', icon: '✏️', label: 'Lápiz inteligente' },
+    { tool: 'mathOCRImage', icon: '🖼️', label: 'OCR imagen' },
+    { tool: 'mathEditor', icon: '∑', label: 'TeXificar' },
+    { tool: 'tableToChart', icon: '📊', label: 'Tabla → gráfico' },
+    { tool: 'chartToTable', icon: '📉', label: 'Gráfico → tabla' },
+    { tool: 'geometry', icon: '📐', label: 'Geometría' },
+    { tool: 'diagram', icon: '🗂️', label: 'Diagrama' },
+    { tool: 'calibrate', icon: '🎯', label: 'Calibrar escritura' },
 ] as const;
 
 export const SidebarLeft: React.FC<SidebarLeftProps> = ({ collapsed, onToggle }) => {
     const { subjects } = useSubjectsStore();
     const { notes, activeSubjectId, setActiveSubject, fetchNotes, createNote } = useNotesStore();
     const { openTool } = useMathToolsStore();
+    const isGuest = useAuthStore((s) => s.isGuest);
+    const openAuthModal = useUIStore((s) => s.openAuthModal);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [einesOpen, setEinesOpen] = useState(false);
 
@@ -33,6 +38,22 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({ collapsed, onToggle })
     const handleSelectSubject = async (id: number | null) => {
         setActiveSubject(id);
         await fetchNotes(id || undefined);
+    };
+
+    const handleOpenSubjectModal = () => {
+        if (isGuest) {
+            openAuthModal('selection');
+        } else {
+            setIsModalOpen(true);
+        }
+    };
+
+    const handleOpenTool = (tool: any) => {
+        if (isGuest) {
+            openAuthModal('selection');
+        } else {
+            openTool(tool);
+        }
     };
 
     return (
@@ -107,7 +128,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({ collapsed, onToggle })
                                 Asignaturas
                             </span>
                             <button
-                                onClick={() => setIsModalOpen(true)}
+                                onClick={handleOpenSubjectModal}
                                 className="flex items-center justify-center rounded-lg text-[#484F58] hover:text-[#388BFD] hover:bg-[rgba(56,139,253,0.1)] transition-colors"
                                 style={{ width: '32px', height: '32px' }}
                                 aria-label="Afegir assignatura"
@@ -173,7 +194,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({ collapsed, onToggle })
                                 {EINES.map(({ tool, icon, label }) => (
                                     <button
                                         key={tool}
-                                        onClick={() => openTool(tool)}
+                                        onClick={() => handleOpenTool(tool)}
                                         className="w-full flex items-center gap-3 px-4 rounded-[var(--border-radius-md)] text-[13px] font-medium text-[#8B949E] hover:bg-[rgba(56,139,253,0.08)] hover:text-[#388BFD] transition-colors"
                                         style={{ height: '44px' }}
                                     >

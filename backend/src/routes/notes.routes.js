@@ -12,10 +12,12 @@ const noteBodyRules = {
 
 router.use(verifyToken);
 router.get('/search',       searchLimiter, notes.search);
+router.get('/trash',        notes.getTrash);
 router.get('/',             notes.getAll);
 router.get('/:id',          validateId, notes.getOne);
 router.get('/:id/versions', validateId, notes.getVersions);
 router.post('/',            validateBody(noteBodyRules), notes.create);
+router.put('/:id/restore',  validateId, notes.restore);
 router.put('/:id',          validateId, validateBody(noteBodyRules), notes.update);
 router.delete('/:id',       validateId, notes.remove);
 

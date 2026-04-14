@@ -130,7 +130,7 @@ const getStats = async (req, res) => {
   const userId = req.user.id;
   try {
     const [notesRes, subjectsRes, aiLogsRes, userRes] = await Promise.all([
-      pool.query('SELECT COUNT(*) AS total FROM notes WHERE user_id = $1', [userId]),
+      pool.query('SELECT COUNT(*) AS total FROM notes WHERE user_id = $1 AND deleted_at IS NULL', [userId]),
       pool.query('SELECT COUNT(*) AS total FROM subjects WHERE user_id = $1', [userId]),
       pool.query(
         `SELECT action, COUNT(*) AS total, SUM(tokens_used) AS tokens

@@ -161,13 +161,52 @@ const remove = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
   try {
-    const result = await pool.query('DELETE FROM notes WHERE id = $1 AND user_id = $2', [id, userId]);
+    const result = await pool.query(
+      'UPDATE notes SET deleted_at = NOW() WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL RETURNING id',
+      [id, userId]
+    );
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Nota no trobada' });
     }
     res.json({ message: 'Nota eliminada' });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+const getTrash = async (req, res) => {
+  const userId = req.user.id;
+  try {
+    const result = await pool.query(
+      `SELECT n.*, s.name as subject_name, s.color as subject_color
+       FROM notes n
+       LEFT JOIN subjects s ON n.subject_id = s.id
+       WHERE n.user_id = $1 AND n.deleted_at IS NOT NULL
+       ORDER BY n.deleted_at DESC`,
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('getTrash error:', err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+const restore = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  try {
+    const result = await pool.query(
+      'UPDATE notes SET deleted_at = NULL WHERE id = $1 AND user_id = $2 AND deleted_at IS NOT NULL RETURNING id',
+      [id, userId]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Nota no trobada a la paperera' });
+    }
+    res.json({ message: 'Nota restaurada' });
+  } catch (err) {
+    console.error('restore error:', err);
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
@@ -219,4 +258,4 @@ const search = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getOne, create, update, remove, search, getVersions };
+module.exports = { getAll, getOne, create, update, remove, search, getVersions, getTrash, restore };

@@ -38,8 +38,8 @@ const PLANS = [
         colorClass: 'border-blue-500/40 bg-blue-600/5',
         textClass: 'text-blue-400',
         btnClass: 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/25',
-        btnText: 'Començar Pro →',
-        btnDisabled: false,
+        btnText: 'Pròximament',
+        btnDisabled: true,
         features: [
             { text: 'Notes il·limitades', ok: true },
             { text: 'Assignatures il·limitades', ok: true },
@@ -61,8 +61,8 @@ const PLANS = [
         colorClass: 'border-purple-500/40 bg-purple-600/5',
         textClass: 'text-purple-400',
         btnClass: 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/25',
-        btnText: 'Començar Premium →',
-        btnDisabled: false,
+        btnText: 'Pròximament',
+        btnDisabled: true,
         features: [
             { text: 'Tot de Pro inclòs', ok: true },
             { text: 'IA il·limitada', ok: true },

@@ -19,7 +19,7 @@ export default function RegisterPage() {
         setError(null);
 
         if (!email || !password || !confirmPassword) {
-            setError('Omple tots els camps');
+            setError('Rellena todos los campos');
             return;
         }
 
@@ -29,7 +29,7 @@ export default function RegisterPage() {
         }
 
         if (password !== confirmPassword) {
-            setError('Les contrasenyes no coincideixen');
+            setError('Las contraseñas no coinciden');
             return;
         }
 
@@ -38,7 +38,7 @@ export default function RegisterPage() {
             await register(email, password);
             navigate('/dashboard');
         } catch (err: any) {
-            setError(err.message || 'Error en crear el compte');
+            setError(err.message || 'Error al crear la cuenta');
         } finally {
             setLoading(false);
         }

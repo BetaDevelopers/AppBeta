@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNotesStore } from '../../store/notesStore';
 import { useSubjectsStore } from '../../store/subjectsStore';
 import { useAuthStore } from '../../store/authStore';
-
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import { BASE_URL } from '../../api/client';
 
 // ── Tipus ────────────────────────────────────────────────────
 type ContextScope = 'current' | 'subject' | 'all';

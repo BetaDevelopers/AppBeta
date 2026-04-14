@@ -1,6 +1,6 @@
 import { useAuthStore } from '../store/authStore';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const token = useAuthStore.getState().token;
@@ -16,7 +16,8 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
     if (res.status === 401) {
         useAuthStore.getState().logout();
-        window.location.href = '/login';
+        // No redirigimos automáticamente a /login para permitir el Modo Invitado.
+        // Las rutas protegidas (PrivateRoute) se encargarán de pedir login si es necesario.
         throw new Error('Sessió expirada');
     }
 
@@ -32,5 +33,8 @@ export const apiClient = {
     get: <T>(path: string) => request<T>(path),
     post: <T>(path: string, body: unknown) => request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
     put: <T>(path: string, body: unknown) => request<T>(path, { method: 'PUT', body: JSON.stringify(body) }),
-    delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+    delete: <T>(path: string, body?: unknown) => request<T>(path, {
+        method: 'DELETE',
+        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    }),
 };

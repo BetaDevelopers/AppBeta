@@ -3,6 +3,8 @@ import { Extension } from '@tiptap/core';
 import Suggestion from '@tiptap/suggestion';
 import { ReactRenderer } from '@tiptap/react';
 import tippy from 'tippy.js';
+import { useAuthStore } from '../../store/authStore';
+import { useUIStore } from '../../store/uiStore';
 
 const COMMANDS = [
     // FORMAT
@@ -107,6 +109,14 @@ export const SlashCommandExtension = Extension.create({
             suggestion: {
                 char: '/',
                 command: ({ editor, range, props }: any) => {
+                    const isGuest = useAuthStore.getState().isGuest;
+                    const restrictedActions = ['ai-optimize', 'ai-summarize', 'ai-suggest', 'math-vision', 'data-vision', 'chart'];
+
+                    if (isGuest && (props.category === 'EINES IA' || restrictedActions.includes(props.action))) {
+                        useUIStore.getState().openAuthModal('selection');
+                        return;
+                    }
+
                     editor.chain().focus().deleteRange(range)
                         .command(({ tr }: any) => { tr.scrollIntoView(); return true; })
                         .run();

@@ -8,6 +8,8 @@ import DrawingCanvas from './DrawingCanvas';
 import MathVisionOCR from './MathVisionOCR';
 import DataVisionOCR from './DataVisionOCR';
 import { useMathToolsStore } from '../../store/mathToolsStore';
+import { useAuthStore } from '../../store/authStore';
+import { useUIStore } from '../../store/uiStore';
 import { useMathOCR, MathRegion } from '@/features/ai/hooks/useMathOCR';
 
 // ── Definit FORA de NoteEditor per evitar desmuntatge en cada re-render ──
@@ -48,20 +50,36 @@ export const NoteEditor: React.FC = () => {
     const { openTool, setEditor: storeSetEditor } = useMathToolsStore();
     const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const editorRef = useRef<any>(null);
+    const isGuest = useAuthStore(s => s.isGuest);
+    const openAuthModal = useUIStore(s => s.openAuthModal);
     // Refs per evitar stale closures als event listeners dels slash commands
     // S'inicialitzen amb no-op i s'actualitzen síncronament cada render (veure més avall)
     const handleOptimizeRef = useRef<() => void>(() => { });
     const handleSummarizeRef = useRef<() => void>(() => { });
     const handleSuggestSubjectRef = useRef<() => void>(() => { });
 
+    const handleOpenTool = (tool: any) => {
+        if (isGuest) {
+            openAuthModal('selection');
+        } else {
+            openTool(tool);
+        }
+    };
+
     useEffect(() => {
         const handleOpenDrawing = () => setShowDrawing(true);
-        const handleOpenMathVision = () => setShowMathVision(true);
-        const handleOpenDataVision = () => setShowDataVision(true);
+        const handleOpenMathVision = () => {
+            if (isGuest) openAuthModal('selection');
+            else setShowMathVision(true);
+        };
+        const handleOpenDataVision = () => {
+            if (isGuest) openAuthModal('selection');
+            else setShowDataVision(true);
+        };
         const handleAiOptimize = () => handleOptimizeRef.current();
         const handleAiSummarize = () => handleSummarizeRef.current();
         const handleAiSuggest = () => handleSuggestSubjectRef.current();
-        const handleGenerateChartEvent = () => openTool('tableToChart');
+        const handleGenerateChartEvent = () => handleOpenTool('tableToChart');
         const handleImageUpload = () => {
             const input = document.createElement('input');
             input.type = 'file';
@@ -270,6 +288,10 @@ export const NoteEditor: React.FC = () => {
     };
 
     const handleOptimize = async () => {
+        if (isGuest) {
+            openAuthModal('selection');
+            return;
+        }
         const plainText = content.replace(/<[^>]*>/g, '');
         if (plainText.length < 20) return;
 
@@ -279,24 +301,30 @@ export const NoteEditor: React.FC = () => {
 
         try {
             const improved = await improveWithAI(plainText);
+            if (!editor || !currentNote) return;
+
             setIsTypingAI(true);
 
-            setContent('');
+            // Escribir directamente en el editor para evitar que el useEffect
+            // de RichEditor compare texto plano con HTML y resetee el cursor
+            editor.commands.setContent('', false);
             await new Promise(r => setTimeout(r, 150));
 
             const words = improved.split(' ');
             let current = '';
-
             for (let i = 0; i < words.length; i++) {
                 current += (i === 0 ? '' : ' ') + words[i];
-                setContent(current);
+                editor.commands.setContent(`<p>${current}</p>`, false);
                 const delay = words[i].length > 6 ? 35 : words[i].endsWith('.') ? 80 : 25;
                 await new Promise(r => setTimeout(r, delay));
             }
 
+            // Sincronizar el estado React con el contenido final del editor
+            const finalHtml = editor.getHTML();
+            setContent(finalHtml);
             setIsTypingAI(false);
             setSyncStatus('syncing');
-            await updateNote(currentNote!.id, { content: current, ai_processed: true });
+            await updateNote(currentNote.id, { content: finalHtml, ai_processed: true });
             setSyncStatus('synced');
         } catch (err: any) {
             setIsTypingAI(false);
@@ -309,6 +337,10 @@ export const NoteEditor: React.FC = () => {
     };
 
     const handleSummarize = async () => {
+        if (isGuest) {
+            openAuthModal('selection');
+            return;
+        }
         const plainText = content.replace(/<[^>]*>/g, '');
         if (plainText.length < 20) return;
         setAiLoading(true);
@@ -327,6 +359,10 @@ export const NoteEditor: React.FC = () => {
     };
 
     const handleSuggestSubject = async () => {
+        if (isGuest) {
+            openAuthModal('selection');
+            return;
+        }
         const plainText = content.replace(/<[^>]*>/g, '');
         if (plainText.length < 10) return;
         setAiLoading(true);
@@ -440,14 +476,14 @@ export const NoteEditor: React.FC = () => {
 
                     {/* Primary Tools Group */}
                     <div className="flex items-center gap-1.5 mr-2">
-                        <ToolBtn onClick={() => openTool('mathOCR')} title="Escritura inteligente" accent>
+                        <ToolBtn onClick={() => handleOpenTool('mathOCR')} title="Escritura inteligente" accent>
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                             </svg>
                             <span className="text-[9px] uppercase tracking-tighter font-black">Lápiz</span>
                         </ToolBtn>
 
-                        <ToolBtn onClick={() => openTool('smartCamera')} title="Escaneo Rápido">
+                        <ToolBtn onClick={() => handleOpenTool('smartCamera')} title="Escaneo Rápido">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                             </svg>
@@ -482,7 +518,7 @@ export const NoteEditor: React.FC = () => {
 
                     {/* Data Tools Group */}
                     <div className="flex items-center gap-1.5 ml-2">
-                        <ToolBtn onClick={() => openTool('mathEditor')} title="Modo ecuaciones">
+                        <ToolBtn onClick={() => handleOpenTool('mathEditor')} title="Modo ecuaciones">
                             <span className="text-xl font-display leading-none mt-0.5">∑</span>
                             <span className="text-[9px] uppercase tracking-tighter font-black">Math</span>
                         </ToolBtn>
@@ -496,7 +532,7 @@ export const NoteEditor: React.FC = () => {
                             ].map(({ t, i }) => (
                                 <button
                                     key={t}
-                                    onClick={() => openTool(t as any)}
+                                    onClick={() => handleOpenTool(t as any)}
                                     className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 text-sm transition-all active:scale-90"
                                 >
                                     {i}

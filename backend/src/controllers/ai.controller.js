@@ -1,12 +1,6 @@
 const openaiService = require('../services/openai.service');
 const pool = require('../config/db');
-
-const incrementAiUsage = (userId) => {
-  pool.query(
-    'UPDATE users SET ai_uses_this_month = ai_uses_this_month + 1 WHERE id = $1',
-    [userId]
-  ).catch(e => console.warn('AI counter error:', e.message));
-};
+const { incrementAiUsage } = require('../middleware/checkPlanLimits');
 
 const improve = async (req, res) => {
   const { text } = req.body;
@@ -17,6 +11,7 @@ const improve = async (req, res) => {
 
   try {
     const result = await openaiService.improveText(text);
+    incrementAiUsage(req.user.id);
     res.json({ result });
   } catch (err) {
     console.error('improve error:', err.message);
@@ -33,6 +28,7 @@ const summarize = async (req, res) => {
 
   try {
     const result = await openaiService.summarizeText(text);
+    incrementAiUsage(req.user.id);
     res.json({ result });
   } catch (err) {
     console.error('summarize error:', err.message);
@@ -49,6 +45,7 @@ const suggest = async (req, res) => {
 
   try {
     const subject = await openaiService.suggestSubject(text);
+    incrementAiUsage(req.user.id);
     res.json({ subject });
   } catch (err) {
     console.error('suggest error:', err.message);
@@ -86,8 +83,7 @@ const chat = async (req, res) => {
 
   try {
     const reply = await openaiService.chatWithHistory(systemPrompt, messages);
-    // Nota: L'increment d'ús es gestiona per middleware o manualment si cal, 
-    // però aquí el traiem per evitar duplicats.
+    incrementAiUsage(req.user.id);
 
     // Persistir l'últim missatge de l'usuari + l'assistent
     const lastUserMsg = messages[messages.length - 1];

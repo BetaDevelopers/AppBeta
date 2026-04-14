@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { apiClient } from '../api/client';
 import { db } from '../db/dexie';
 import type { Subject } from '../types';
+import { useAuthStore } from './authStore';
 
 interface SubjectsStore {
     subjects: Subject[];
@@ -10,6 +11,7 @@ interface SubjectsStore {
     createSubject: (name: string, color: string) => Promise<void>;
     updateSubject: (id: number, name: string, color: string) => Promise<void>;
     deleteSubject: (id: number) => Promise<void>;
+    cleanup: () => void;
 }
 
 export const useSubjectsStore = create<SubjectsStore>((set) => ({
@@ -19,11 +21,13 @@ export const useSubjectsStore = create<SubjectsStore>((set) => ({
     fetchSubjects: async () => {
         set({ isLoading: true });
         try {
+            if (useAuthStore.getState().isGuest) throw new Error('Guest mode');
             const subjects = await apiClient.get<Subject[]>('/subjects');
             await db.subjects.bulkPut(subjects);
             set({ subjects, isLoading: false });
         } catch {
-            const cached = await db.subjects.toArray();
+            const userId = useAuthStore.getState().user?.id || 0;
+            const cached = await db.subjects.where('user_id').equals(userId).toArray();
             set({ subjects: cached, isLoading: false });
         }
     },
@@ -44,5 +48,9 @@ export const useSubjectsStore = create<SubjectsStore>((set) => ({
         await apiClient.delete(`/subjects/${id}`);
         await db.subjects.delete(id);
         set((s) => ({ subjects: s.subjects.filter((sub) => sub.id !== id) }));
+    },
+
+    cleanup: () => {
+        set({ subjects: [], isLoading: false });
     },
 }));

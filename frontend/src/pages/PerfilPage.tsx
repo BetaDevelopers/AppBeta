@@ -186,7 +186,7 @@ export const PerfilPage: React.FC = () => {
         if (!deletePw) return showToast('Introdueix la contrasenya', 'err');
         setDeletingAccount(true);
         try {
-            await apiClient.delete('/users/me');
+            await apiClient.delete('/users/me', { password: deletePw });
             logout();
             navigate('/login');
         } catch (e: any) {
