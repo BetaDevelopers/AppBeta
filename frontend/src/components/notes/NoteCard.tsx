@@ -1,13 +1,19 @@
 import React from 'react';
 import { useNotesStore } from '../../store/notesStore';
+import { useSubjectsStore } from '../../store/subjectsStore';
 import type { Note } from '../../types';
+import { MoreHorizontal, Trash2, Edit2, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
 
 interface NoteCardProps {
     note: Note;
 }
 
 export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
-    const { currentNote, setCurrentNote } = useNotesStore();
+    const { currentNote, setCurrentNote, deleteNote, updateNote } = useNotesStore();
+    const { subjects } = useSubjectsStore();
+    const [showMenu, setShowMenu] = useState(false);
+    const [showMove, setShowMove] = useState(false);
     const isActive = currentNote?.id === note.id;
 
     const formatDate = (date: string) => {
@@ -16,18 +22,17 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
         const diff = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
         if (diff === 0) return 'Hoy';
         if (diff === 1) return 'Ayer';
-        if (diff < 7)  return `hace ${diff} días`;
+        if (diff < 7) return `hace ${diff} días`;
         return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
     };
 
     return (
         <button
             onClick={() => setCurrentNote(note)}
-            className={`group relative w-full text-left p-5 rounded-[var(--border-radius-xl)] transition-all duration-200 overflow-hidden border ${
-                isActive
-                    ? 'bg-[rgba(56,139,253,0.08)] border-[rgba(56,139,253,0.4)] shadow-[0_0_24px_rgba(56,139,253,0.1)]'
-                    : 'bg-[#161B22] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)] hover:bg-[#1c2230]'
-            }`}
+            className={`group relative w-full text-left p-5 rounded-[var(--border-radius-xl)] transition-all duration-200 overflow-hidden border ${isActive
+                ? 'bg-[rgba(56,139,253,0.08)] border-[rgba(56,139,253,0.4)] shadow-[0_0_24px_rgba(56,139,253,0.1)]'
+                : 'bg-[#161B22] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)] hover:bg-[#1c2230]'
+                }`}
             style={{ minHeight: '140px' }}
         >
             {/* Active glow */}
@@ -39,19 +44,61 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                 {/* Title row */}
                 <div className="flex items-start justify-between gap-3 mb-2">
                     <h4
-                        className={`font-semibold leading-snug tracking-tight font-display ${
-                            isActive ? 'text-[#E6EDF3]' : 'text-[#C9D1D9] group-hover:text-[#E6EDF3]'
-                        }`}
+                        className={`font-semibold leading-snug tracking-tight font-display ${isActive ? 'text-[#E6EDF3]' : 'text-[#C9D1D9] group-hover:text-[#E6EDF3]'
+                            }`}
                         style={{ fontSize: 'var(--font-size-lg)' }}
                     >
                         {note.title || 'Sin título'}
                     </h4>
-                    {note.subject_color && (
-                        <div
-                            className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5"
-                            style={{ backgroundColor: note.subject_color }}
-                        />
-                    )}
+
+                    <div className="relative">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); setShowMove(false); }}
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-all"
+                        >
+                            <MoreHorizontal size={18} />
+                        </button>
+
+                        {showMenu && (
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-[#1c2128] border border-white/10 rounded-xl shadow-2xl z-[100] py-1 overflow-hidden" onClick={e => e.stopPropagation()}>
+                                {!showMove ? (
+                                    <>
+                                        <button onClick={() => {
+                                            const title = prompt('Nuevo título:', note.title);
+                                            if (title) updateNote(note.id, { title });
+                                            setShowMenu(false);
+                                        }} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/5 flex items-center gap-2">
+                                            <Edit2 size={12} /> Renombrar
+                                        </button>
+                                        <button onClick={() => setShowMove(true)} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/5 flex items-center gap-2">
+                                            <RotateCcw size={12} /> Mover a...
+                                        </button>
+                                        <div className="h-px bg-white/5 my-1" />
+                                        <button onClick={() => {
+                                            if (window.confirm('¿Borrar nota?')) deleteNote(note.id);
+                                            setShowMenu(false);
+                                        }} className="w-full text-left px-4 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 flex items-center gap-2">
+                                            <Trash2 size={12} /> Borrar
+                                        </button>
+                                    </>
+                                ) : (
+                                    <div className="max-h-48 overflow-y-auto scrollbar-hide">
+                                        <button onClick={() => setShowMove(false)} className="w-full text-left px-4 py-1 text-[10px] font-black text-blue-500 uppercase tracking-widest hover:bg-white/5 mb-1 px-4 py-2">
+                                            ← Volver
+                                        </button>
+                                        <button onClick={() => { updateNote(note.id, { subject_id: null }); setShowMenu(false); }} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/5">
+                                            (Sin carpeta)
+                                        </button>
+                                        {subjects.map(s => (
+                                            <button key={s.id} onClick={() => { updateNote(note.id, { subject_id: s.id }); setShowMenu(false); }} className="w-full text-left px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/5 flex items-center gap-2">
+                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} /> {s.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Preview */}

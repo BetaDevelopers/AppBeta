@@ -146,38 +146,36 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({ collapsed, onToggle })
                             </button>
                         </div>
 
-                        <div className="flex flex-col gap-0.5 max-h-44 overflow-y-auto scrollbar-hide">
+                        <div className="flex flex-col gap-0.5 max-h-56 overflow-y-auto scrollbar-hide">
                             {subjects.map((s) => (
-                                <button
+                                <div
                                     key={s.id}
-                                    onClick={() => handleSelectSubject(s.id)}
-                                    className={`w-full flex items-center gap-3 px-4 rounded-[var(--border-radius-md)] text-[15px] transition-colors
+                                    className={`group w-full flex items-center gap-3 px-4 rounded-[var(--border-radius-md)] text-[15px] transition-all cursor-pointer h-11
                                         ${activeSubjectId === s.id
                                             ? 'bg-[#21262D] text-[#E6EDF3] font-semibold'
-                                            : 'text-[#8B949E] hover:bg-[#21262D] hover:text-[#E6EDF3] font-medium'
+                                            : 'text-[#8B949E] hover:bg-[#21262D]/50 hover:text-[#E6EDF3] font-medium'
                                         }`}
-                                    style={{ height: '44px' }}
+                                    onClick={() => handleSelectSubject(s.id)}
                                 >
                                     <div
-                                        className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-transform"
+                                        className="w-2.5 h-2.5 rounded-full flex-shrink-0 transition-transform group-hover:scale-125"
                                         style={{
                                             backgroundColor: s.color,
-                                            boxShadow: activeSubjectId === s.id
-                                                ? `0 0 8px ${s.color}99`
-                                                : 'none',
+                                            boxShadow: activeSubjectId === s.id ? `0 0 10px ${s.color}` : 'none',
                                         }}
                                     />
                                     <span className="truncate flex-1 text-left">{s.name}</span>
+
                                     <button
                                         onClick={(e) => handleEditSubject(e, s)}
-                                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-[#2D333B] text-[#8B949E] hover:text-[#E6EDF3] transition-all"
-                                        aria-label="Editar"
+                                        className="opacity-20 group-hover:opacity-100 p-2 rounded-lg hover:bg-[#323942] text-[#8B949E] hover:text-white transition-all"
+                                        title="Opciones de carpeta"
                                     >
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                                         </svg>
                                     </button>
-                                </button>
+                                </div>
                             ))}
                             {subjects.length === 0 && (
                                 <div className="px-4 py-5 rounded-[var(--border-radius-md)] border border-dashed border-[rgba(255,255,255,0.08)] text-center">

@@ -18,7 +18,7 @@ export const FilesystemPanel: React.FC = () => {
     const {
         subjects, notes, trashedNotes, activeNoteId, setActiveNote, loadWorkspace, createSubject,
         createNote, renameSubject, deleteSubject, renameNote, deleteNote,
-        restoreNote, deleteNotePermanently
+        restoreNote, deleteNotePermanently, updateNote
     } = useFilesystemStore()
     const { exportNoteAsPDF, exportNoteAsMarkdown, exportSubjectAsZip } = useExport()
 
@@ -27,6 +27,7 @@ export const FilesystemPanel: React.FC = () => {
     const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null)
     const [search, setSearch] = useState('')
     const [showTrash, setShowTrash] = useState(false)
+    const [movingNoteId, setMovingNoteId] = useState<string | null>(null)
     const [isSubModalOpen, setIsSubModalOpen] = useState(false)
     const [editingSubject, setEditingSubject] = useState<any>(null)
 
@@ -148,24 +149,39 @@ export const FilesystemPanel: React.FC = () => {
                                     onClick={() => toggle(subject.id)}
                                     style={{
                                         display: 'flex', alignItems: 'center', gap: '12px',
-                                        padding: '14px 16px', borderRadius: '16px', cursor: 'pointer',
+                                        padding: '12px 16px', borderRadius: '18px', cursor: 'pointer',
                                         transition: 'all 0.2s',
-                                        background: hoveredSubjectId === subject.id ? 'rgba(37,99,235,0.08)' : 'transparent',
+                                        background: hoveredSubjectId === subject.id ? 'rgba(255,255,255,0.03)' : 'transparent',
+                                        border: hoveredSubjectId === subject.id ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent',
                                     }}
                                     onMouseEnter={() => setHoveredSubjectId(subject.id)}
                                     onMouseLeave={() => setHoveredSubjectId(null)}
                                 >
-                                    <div style={{ display: 'flex', alignItems: 'center', color: 'var(--beta-text-muted)' }}>
-                                        {isOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+                                    <div style={{ display: 'flex', alignItems: 'center', color: 'var(--beta-text-muted)', opacity: 0.5 }}>
+                                        {isOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                                     </div>
-                                    <Folder size={20} style={{ color: subject.color }} />
-                                    <span style={{ flex: 1, fontSize: '15px', fontWeight: '700', letterSpacing: '-0.01em' }}>{subject.name}</span>
+                                    <div style={{ position: 'relative' }}>
+                                        <Folder size={22} style={{ color: subject.color, fill: `${subject.color}22` }} />
+                                    </div>
+                                    <span style={{
+                                        flex: 1, fontSize: '14px', fontWeight: '800',
+                                        color: hoveredSubjectId === subject.id ? '#fff' : 'var(--beta-text-secondary)',
+                                        letterSpacing: '-0.02em', transition: 'color 0.2s'
+                                    }}>
+                                        {subject.name}
+                                    </span>
 
-                                    <div style={{ display: 'flex', gap: '8px', opacity: hoveredSubjectId === subject.id ? 1 : 0.4 }}>
-                                        <button onClick={(e) => handleExportSubject(e, subject)} style={tinyBtnStyle} title="Exportar ZIP"><FileDown size={16} /></button>
-                                        <button onClick={(e) => handleAddNote(e, subject.id)} style={tinyBtnStyle} title="Añadir Nota"><Plus size={16} /></button>
-                                        <button onClick={(e) => handleRenameSub(e, subject)} style={tinyBtnStyle} title="Renombrar"><Edit2 size={14} /></button>
-                                        <button onClick={(e) => handleDeleteSub(e, subject.id)} style={{ ...tinyBtnStyle, color: '#ef4444' }} title="Borrar"><Trash2 size={14} /></button>
+                                    <div style={{ display: 'flex', gap: '4px', opacity: hoveredSubjectId === subject.id ? 1 : 0.4 }}>
+                                        <button onClick={(e) => handleAddNote(e, subject.id)} style={tinyBtnStyle} title="Añadir Nota"><Plus size={18} /></button>
+                                        <button
+                                            onClick={(e) => handleRenameSub(e, subject)}
+                                            style={{ ...tinyBtnStyle, background: 'rgba(255,255,255,0.05)' }}
+                                            title="Opciones de carpeta"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                            </svg>
+                                        </button>
                                     </div>
                                 </div>
 
@@ -202,11 +218,34 @@ export const FilesystemPanel: React.FC = () => {
                                                                 {note.title}
                                                             </span>
 
-                                                            <div style={{ display: 'flex', gap: '6px', opacity: (hoveredNoteId === note.id || isActive) ? 1 : 0.3 }}>
-                                                                <button onClick={(e) => handleExportNote(e, note, 'pdf')} style={tinyBtnStyle} title="Exportar PDF"><FileDown size={14} /></button>
-                                                                <button onClick={(e) => handleExportNote(e, note, 'md')} style={tinyBtnStyle} title="Exportar Markdown"><Hash size={14} /></button>
-                                                                <button onClick={(e) => handleRenameN(e, note.id, note.title)} style={tinyBtnStyle}><Edit2 size={14} /></button>
-                                                                <button onClick={(e) => handleDeleteN(e, note.id)} style={{ ...tinyBtnStyle, color: '#ef4444' }}><Trash2 size={14} /></button>
+                                                            <div style={{ display: 'flex', gap: '4px', opacity: (hoveredNoteId === note.id || isActive) ? 1 : 0.3 }}>
+                                                                <button onClick={(e) => { e.stopPropagation(); setMovingNoteId(movingNoteId === note.id ? null : note.id); }} style={tinyBtnStyle} title="Mover a..."><RotateCcw size={14} /></button>
+
+                                                                {movingNoteId === note.id && (
+                                                                    <select
+                                                                        autoFocus
+                                                                        onBlur={() => setMovingNoteId(null)}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                        onChange={(e) => {
+                                                                            e.stopPropagation();
+                                                                            updateNote(note.id, { subjectId: e.target.value });
+                                                                            setMovingNoteId(null);
+                                                                        }}
+                                                                        style={{
+                                                                            position: 'absolute', right: '100%', top: 0, zIndex: 50,
+                                                                            background: '#161B22', color: '#fff', border: '1px solid rgba(255,255,255,0.1)',
+                                                                            borderRadius: '8px', padding: '4px', fontSize: '11px', outline: 'none'
+                                                                        }}
+                                                                    >
+                                                                        <option value="">(Sin carpeta)</option>
+                                                                        {subjects.map(s => (
+                                                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                                                        ))}
+                                                                    </select>
+                                                                )}
+
+                                                                <button onClick={(e) => handleRenameN(e, note.id, note.title)} style={tinyBtnStyle} title="Renombrar"><Edit2 size={14} /></button>
+                                                                <button onClick={(e) => handleDeleteN(e, note.id)} style={{ ...tinyBtnStyle, color: '#ef4444' }} title="Borrar"><Trash2 size={14} /></button>
                                                             </div>
                                                         </div>
                                                     )

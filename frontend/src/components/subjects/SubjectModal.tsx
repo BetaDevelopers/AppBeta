@@ -19,12 +19,14 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({ isOpen, onClose, sub
     const [name, setName] = useState(subject?.name || '');
     const [color, setColor] = useState(subject?.color || COLORS[0]);
     const { createSubject, updateSubject, deleteSubject } = useSubjectsStore();
+    const editorRef = React.useRef<HTMLDivElement>(null);
 
     // Reset state when opening/closing or when subject changes
     React.useLayoutEffect(() => {
         if (isOpen) {
             setName(subject?.name || '');
             setColor(subject?.color || COLORS[0]);
+            setTimeout(() => editorRef.current?.focus(), 50);
         } else {
             setName('');
             setColor(COLORS[0]);
@@ -57,15 +59,33 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({ isOpen, onClose, sub
             title={subject ? 'Editar asignatura' : 'Identidad asignatura'}
         >
             <div className="flex flex-col gap-10 p-2">
-                <Input
-                    label="Nombre de la asignatura"
-                    placeholder="Escribe el nombre aquí..."
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    autoFocus
-                    autoComplete="no-autosuggest-permitted"
-                    name="id-asig-input-v2"
-                />
+                <div className="flex flex-col gap-2 w-full">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2 font-display">
+                        Nombre
+                    </label>
+                    <div className="relative group">
+                        <div
+                            ref={editorRef}
+                            contentEditable="plaintext-only"
+                            onInput={(e) => setName(e.currentTarget.textContent || '')}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleSave();
+                                }
+                            }}
+                            dangerouslySetInnerHTML={{ __html: subject?.name || '' }}
+                            className="w-full py-4 px-6 bg-[#030712] border border-white/5 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 outline-none transition-all duration-300 text-slate-200 shadow-inner group-hover:border-white/10 min-h-[58px] empty:before:content-[attr(data-placeholder)] empty:before:text-slate-700"
+                            data-placeholder="Nombre de la asignatura..."
+                            style={{
+                                appearance: 'none',
+                                WebkitAppearance: 'none',
+                                userSelect: 'text'
+                            } as any}
+                        />
+                        <div className="absolute inset-0 rounded-2xl bg-blue-500/0 group-hover:bg-blue-500/[0.02] pointer-events-none transition-colors duration-500" />
+                    </div>
+                </div>
 
                 <div className="flex flex-col gap-6">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2 font-display">Identidad visual</label>
