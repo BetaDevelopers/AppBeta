@@ -1,12 +1,9 @@
-/**
- * DiagramCanvas.jsx — Dibuix diagrama → Chart.js / circuit.
- * Adaptat per al backend real: POST /api/ai/interpret-diagram
- * Resposta: { diagramType, description, chartConfig? }
- */
-
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { Bar, Line } from "react-chartjs-2";
 import { interpretDiagram } from "../../../api/mathApi";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend);
 
 export default function DiagramCanvas({ onResult } = {}) {
     const canvasRef = useRef(null);
@@ -17,7 +14,41 @@ export default function DiagramCanvas({ onResult } = {}) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    async function interpret(strokes) {
+    const CANVAS_W = 600;
+    const CANVAS_H = 380;
+
+    const redraw = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "rgba(167, 139, 250, 0.8)";
+
+        allStrokes.forEach(stroke => {
+            if (stroke.points.length < 2) return;
+            ctx.beginPath();
+            ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+            stroke.points.slice(1).forEach(pt => ctx.lineTo(pt.x, pt.y));
+            ctx.stroke();
+        });
+
+        if (currentStroke && currentStroke.length > 1) {
+            ctx.beginPath();
+            ctx.moveTo(currentStroke[0].x, currentStroke[0].y);
+            currentStroke.slice(1).forEach(pt => ctx.lineTo(pt.x, pt.y));
+            ctx.stroke();
+        }
+    }, [allStrokes, currentStroke]);
+
+    useEffect(() => {
+        redraw();
+    }, [redraw]);
+
+    async function handleInterpret(strokes) {
         if (strokes.length === 0) return;
         setLoading(true);
         setError(null);
@@ -32,121 +63,180 @@ export default function DiagramCanvas({ onResult } = {}) {
         }
     }
 
-    const getXY = (e) => {
-        const rect = canvasRef.current.getBoundingClientRect();
-        const x = (e.clientX || e.touches[0].clientX) - rect.left;
-        const y = (e.clientY || e.touches[0].clientY) - rect.top;
-        return { x, y };
+    const getPos = (e) => {
+        const canvas = canvasRef.current;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = CANVAS_W / rect.width;
+        const scaleY = CANVAS_H / rect.height;
+        const clientX = (e.clientX || (e.touches && e.touches[0].clientX));
+        const clientY = (e.clientY || (e.touches && e.touches[0].clientY));
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
     };
 
-    const onDown = (e) => { setIsDrawing(true); setCurrentStroke([getXY(e)]); };
+    const onStart = (e) => {
+        e.preventDefault();
+        setIsDrawing(true);
+        setCurrentStroke([getPos(e)]);
+        setResult(null);
+    };
 
     const onMove = (e) => {
         if (!isDrawing) return;
-        const pt = getXY(e);
-        setCurrentStroke(prev => [...prev, pt]);
-        const ctx = canvasRef.current.getContext("2d");
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = "#e2d9f3";
-        ctx.lineTo(pt.x, pt.y);
-        ctx.stroke();
+        e.preventDefault();
+        setCurrentStroke(prev => [...prev, getPos(e)]);
     };
 
-    const onUp = () => {
-        if (currentStroke) {
-            const updated = [...allStrokes, { points: currentStroke, timestamp: Date.now() }];
-            setAllStrokes(updated);
-            setCurrentStroke(null);
-        }
+    const onEnd = () => {
+        if (!isDrawing) return;
         setIsDrawing(false);
+        if (currentStroke) {
+            setAllStrokes(prev => [...prev, { points: currentStroke }]);
+        }
+        setCurrentStroke(null);
     };
 
     const clear = () => {
-        canvasRef.current.getContext("2d").clearRect(0, 0, 600, 350);
         setAllStrokes([]);
         setResult(null);
         setError(null);
     };
 
     return (
-        <div style={S.wrapper}>
-            <div style={S.header}>
-                <span style={S.icon}>📉</span>
-                <div>
-                    <h2 style={S.title}>Hand-drawn Diagram Interpreter</h2>
-                    <p style={S.subtitle}>Draw a bar chart, a line chart, or a circuit schematic.</p>
+        <div className="bg-[#0f172a]/60 p-8 rounded-[2.5rem] border border-white/10 backdrop-blur-2xl shadow-2xl max-w-5xl mx-auto font-sans">
+            <div className="flex items-center gap-5 mb-8">
+                <div className="w-14 h-14 rounded-[1.25rem] bg-violet-500/20 flex items-center justify-center text-3xl border border-violet-500/30 shadow-lg shadow-violet-500/10">
+                    📉
                 </div>
+                <div>
+                    <h2 className="text-2xl font-black text-white tracking-tight">Diagram Intelligence</h2>
+                    <p className="text-sm text-slate-400 font-medium">Draw axes, bars, or circuits → AI Structural Decoding</p>
+                </div>
+                {loading && (
+                    <div className="ml-auto flex items-center gap-3 px-4 py-2 rounded-2xl bg-violet-600/20 border border-violet-500/30">
+                        <div className="w-2 h-2 rounded-full bg-violet-400 animate-bounce" />
+                        <span className="text-[11px] font-black text-violet-300 uppercase tracking-[0.2em]">Analyzing...</span>
+                    </div>
+                )}
             </div>
 
-            <div style={S.grid}>
-                <div style={S.drawCol}>
-                    <div style={S.canvasWrap}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left: Canvas */}
+                <div className="space-y-4">
+                    <div className="relative bg-black/60 rounded-[2rem] border border-white/5 overflow-hidden shadow-inner aspect-[4/3] lg:aspect-auto h-full min-h-[380px]">
                         <canvas
-                            ref={canvasRef} width={600} height={350}
-                            style={S.canvas}
-                            onMouseDown={onDown} onMouseMove={onMove} onMouseUp={onUp}
-                            onTouchStart={onDown} onTouchMove={onMove} onTouchEnd={onUp}
+                            ref={canvasRef}
+                            width={CANVAS_W}
+                            height={CANVAS_H}
+                            className="w-full h-full cursor-crosshair touch-none"
+                            onMouseDown={onStart}
+                            onMouseMove={onMove}
+                            onMouseUp={onEnd}
+                            onMouseLeave={onEnd}
+                            onTouchStart={onStart}
+                            onTouchMove={onMove}
+                            onTouchEnd={onEnd}
                         />
-                        {allStrokes.length === 0 && <div style={S.hint}>Draw axes and bars/lines here...</div>}
-                    </div>
-                    <div style={S.btnRow}>
-                        <button style={S.clearBtn} onClick={clear}>🗑 Clear</button>
-                        <button
-                            style={S.mainBtn}
-                            onClick={() => interpret(allStrokes)}
-                            disabled={allStrokes.length === 0 || loading}
-                        >
-                            {loading ? "Interpreting..." : "⚡ Decode Schematic"}
-                        </button>
-                    </div>
-                    {error && <div style={S.errorBox}>⚠ {error}</div>}
-                </div>
 
-                <div style={S.resCol}>
-                    <div style={S.resBox}>
-                        {!result ? (
-                            <div style={S.empty}>Structural interpretation will appear here.</div>
-                        ) : (
-                            <div style={S.resultContent}>
-                                <span style={S.typeBadge}>TYPE: {result.diagramType.toUpperCase()}</span>
-                                {result.description && <p style={S.desc}>{result.description}</p>}
-                                {result.chartConfig && result.diagramType === "bar" && (
-                                    <div style={S.chartWrap}><Bar data={result.chartConfig.data} options={{ responsive: true, maintainAspectRatio: false }} /></div>
-                                )}
-                                {result.chartConfig && result.diagramType === "line" && (
-                                    <div style={S.chartWrap}><Line data={result.chartConfig.data} options={{ responsive: true, maintainAspectRatio: false }} /></div>
-                                )}
-                                {result.diagramType === "circuit" && <div style={S.circuitIcon}>🔌</div>}
+                        {allStrokes.length === 0 && !loading && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20">
+                                <span className="text-5xl mb-4">✍️</span>
+                                <p className="text-sm font-black uppercase tracking-widest text-slate-500">Dibuja tus ejes y datos</p>
                             </div>
                         )}
                     </div>
+
+                    <div className="flex gap-4">
+                        <button
+                            onClick={clear}
+                            className="px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest bg-white/5 border border-white/10 text-slate-400 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition-all flex items-center gap-2"
+                        >
+                            <span>🗑</span> Limpiar
+                        </button>
+                        <button
+                            onClick={() => handleInterpret(allStrokes)}
+                            disabled={allStrokes.length === 0 || loading}
+                            className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl shadow-violet-600/20 hover:shadow-violet-600/40 transition-all disabled:opacity-30 disabled:grayscale"
+                        >
+                            {loading ? "Interpretando..." : "⚡ Decodificar Esquema"}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Right: Results */}
+                <div className="bg-black/40 rounded-[2rem] border border-white/5 p-8 flex flex-col">
+                    {!result ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30">
+                            <div className="w-20 h-20 rounded-full border-2 border-dashed border-slate-600 flex items-center justify-center mb-4">
+                                <span className="text-3xl">🧩</span>
+                            </div>
+                            <p className="text-sm font-medium text-slate-500 max-w-[200px]">La interpretación estructural aparecerá aquí después de dibujar.</p>
+                        </div>
+                    ) : (
+                        <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div className="flex items-center gap-3 mb-6">
+                                <span className="px-4 py-1.5 rounded-full bg-violet-600 text-[10px] font-black uppercase tracking-[0.2em] text-white">
+                                    {result.diagramType}
+                                </span>
+                            </div>
+
+                            <p className="text-slate-300 text-sm leading-relaxed mb-8 font-medium italic">
+                                "{result.description}"
+                            </p>
+
+                            <div className="flex-1 bg-white/[0.03] rounded-2xl p-4 min-h-[240px] flex items-center justify-center border border-white/5 shadow-inner">
+                                {result.chartConfig && (result.diagramType === "bar" || result.diagramType === "line") ? (
+                                    <div className="w-full h-full max-h-[220px]">
+                                        {result.diagramType === "bar" ? (
+                                            <Bar
+                                                data={result.chartConfig.data}
+                                                options={{
+                                                    responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    scales: {
+                                                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false } },
+                                                        x: { grid: { display: false }, border: { display: false } }
+                                                    },
+                                                    plugins: { legend: { display: false } }
+                                                }}
+                                            />
+                                        ) : (
+                                            <Line
+                                                data={result.chartConfig.data}
+                                                options={{
+                                                    responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    elements: { line: { tension: 0.4 } },
+                                                    scales: {
+                                                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false } },
+                                                        x: { grid: { display: false }, border: { display: false } }
+                                                    },
+                                                    plugins: { legend: { display: false } }
+                                                }}
+                                            />
+                                        )}
+                                    </div>
+                                ) : result.diagramType === "circuit" ? (
+                                    <div className="flex flex-col items-center gap-4 text-violet-400">
+                                        <div className="text-6xl animate-pulse">🔌</div>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50">Esquema Eléctrico detectado</span>
+                                    </div>
+                                ) : (
+                                    <span className="text-slate-600 text-xs font-bold uppercase">Sin previsualización visual</span>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {error && (
+                <div className="mt-8 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold flex items-center gap-3">
+                    <span className="text-lg">⚠</span> {error}
+                </div>
+            )}
         </div>
     );
 }
-
-const S = {
-    wrapper: { background: "#060410", padding: "24px", borderRadius: "16px", border: "1px solid rgba(139,92,246,0.3)", maxWidth: "1000px", margin: "0 auto" },
-    header: { display: "flex", gap: "10px", marginBottom: "20px" },
-    title: { margin: 0, fontSize: "19px", color: "#f0e6ff" },
-    subtitle: { fontSize: "12px", color: "#9d8ec7" },
-    icon: { fontSize: "28px" },
-    grid: { display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "20px" },
-    drawCol: { display: "flex", flexDirection: "column", gap: "12px" },
-    canvasWrap: { background: "#000", border: "1.5px solid #1a1530", borderRadius: "14px", overflow: "hidden", position: "relative" },
-    canvas: { width: "100%", height: "auto", display: "block", cursor: "crosshair", touchAction: "none" },
-    btnRow: { display: "flex", gap: "10px" },
-    clearBtn: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#9d8ec7", padding: "8px 16px", borderRadius: "8px", cursor: "pointer" },
-    mainBtn: { background: "#7c3aed", color: "#fff", border: "none", padding: "10px 20px", borderRadius: "8px", fontWeight: 700, flex: 1, cursor: "pointer" },
-    hint: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", color: "#3a3062", pointerEvents: "none" },
-    errorBox: { background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", padding: "8px 12px", fontSize: "12px", color: "#fca5a5" },
-    resCol: { display: "flex", flexDirection: "column" },
-    resBox: { flex: 1, background: "rgba(0,0,0,0.3)", border: "1.5px solid rgba(139,92,246,0.15)", borderRadius: "14px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "center" },
-    empty: { color: "#5a507a", fontSize: "13px", textAlign: "center", fontStyle: "italic" },
-    resultContent: { width: "100%", height: "100%", display: "flex", flexDirection: "column" },
-    typeBadge: { background: "#7c3aed", padding: "3px 8px", borderRadius: "4px", fontSize: "10px", fontWeight: 800, alignSelf: "flex-start", marginBottom: "12px" },
-    desc: { fontSize: "13px", color: "#c4b5fd", lineHeight: 1.5, margin: "0 0 16px" },
-    chartWrap: { flex: 1, minHeight: "200px" },
-    circuitIcon: { fontSize: "60px", textAlign: "center", marginTop: "40px" },
-};

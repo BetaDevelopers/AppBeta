@@ -20,6 +20,7 @@ interface NotesStore {
     improveWithAI: (text: string) => Promise<string>;
     summarizeWithAI: (text: string) => Promise<string>;
     suggestSubjectWithAI: (text: string) => Promise<string>;
+    syncGuestData: () => Promise<void>;
     cleanup: () => void;
 }
 
@@ -221,17 +222,48 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
         }
     },
 
-    improveWithAI: async (text) => {
+    improveWithAI: async (text: string) => {
         const { result } = await apiClient.post<{ result: string }>('/ai/improve', { text });
         return result;
     },
 
-    summarizeWithAI: async (text) => {
+    summarizeWithAI: async (text: string) => {
         const { result } = await apiClient.post<{ result: string }>('/ai/summarize', { text });
         return result;
     },
-    suggestSubjectWithAI: async (text) => {
+    suggestSubjectWithAI: async (text: string) => {
         const { subject } = await apiClient.post<{ subject: string }>('/ai/suggest', { text });
         return subject;
+    },
+
+    syncGuestData: async () => {
+        const guestNotes = await db.notes.filter(n => n.id < 0).toArray();
+        if (guestNotes.length === 0) return;
+
+        console.log(`[Sync] Found ${guestNotes.length} guest notes to sync...`);
+
+        for (const guestNote of guestNotes) {
+            try {
+                // Post to server (ignoring local temp fields)
+                const serverNote = await apiClient.post<Note>('/notes', {
+                    title: guestNote.title,
+                    content: guestNote.content,
+                    subject_id: (guestNote.subject_id && guestNote.subject_id > 0) ? guestNote.subject_id : null,
+                });
+
+                // Remove temp and put real one
+                await db.notes.delete(guestNote.id);
+                await db.notes.put(serverNote);
+
+                set(s => ({
+                    notes: s.notes.map(n => n.id === guestNote.id ? serverNote : n)
+                }));
+            } catch (err) {
+                console.error(`[Sync] Failed to sync note ${guestNote.id}:`, err);
+            }
+        }
+
+        // Refresh to ensure everything is clean
+        await get().fetchNotes(get().activeSubjectId || undefined);
     },
 }));

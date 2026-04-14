@@ -27,4 +27,13 @@ router.post('/forgot-password',
   auth.forgotPassword
 );
 
+router.get('/verify', auth.verify);
+
+router.post('/resend-verify',
+  validateBody({
+    email: { type: 'string', required: true, maxLength: 254, pattern: EMAIL_PATTERN },
+  }),
+  auth.resendVerification
+);
+
 module.exports = router;

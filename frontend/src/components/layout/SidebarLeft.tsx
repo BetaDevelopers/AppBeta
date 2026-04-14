@@ -31,6 +31,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({ collapsed, onToggle })
     const openAuthModal = useUIStore((s) => s.openAuthModal);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingSubject, setEditingSubject] = useState<any>(null);
     const [einesOpen, setEinesOpen] = useState(false);
 
     const handleCreateNote = async () => { await createNote(); };
@@ -38,6 +39,12 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({ collapsed, onToggle })
     const handleSelectSubject = async (id: number | null) => {
         setActiveSubject(id);
         await fetchNotes(id || undefined);
+    };
+
+    const handleEditSubject = (e: React.MouseEvent, s: any) => {
+        e.stopPropagation();
+        setEditingSubject(s);
+        setIsModalOpen(true);
     };
 
     const handleOpenSubjectModal = () => {
@@ -161,6 +168,15 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({ collapsed, onToggle })
                                         }}
                                     />
                                     <span className="truncate flex-1 text-left">{s.name}</span>
+                                    <button
+                                        onClick={(e) => handleEditSubject(e, s)}
+                                        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-md hover:bg-[#2D333B] text-[#8B949E] hover:text-[#E6EDF3] transition-all"
+                                        aria-label="Editar"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                        </svg>
+                                    </button>
                                 </button>
                             ))}
                             {subjects.length === 0 && (
@@ -233,7 +249,14 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({ collapsed, onToggle })
                 </div>
             )}
 
-            <SubjectModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <SubjectModal
+                isOpen={isModalOpen}
+                subject={editingSubject}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingSubject(null);
+                }}
+            />
         </>
     );
 };

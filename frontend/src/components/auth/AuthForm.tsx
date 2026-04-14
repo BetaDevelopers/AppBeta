@@ -10,13 +10,17 @@ interface AuthFormProps {
 }
 
 export const AuthForm: React.FC<AuthFormProps> = ({ isRegisterInitial = false, onSuccess, onToggleView }) => {
-    const { login, register } = useAuthStore();
+    const { login, register, resendVerification } = useAuthStore();
     const [isRegister, setIsRegister] = useState(isRegisterInitial);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [showVerificationSent, setShowVerificationSent] = useState(false);
+    const [isUnverified, setIsUnverified] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
+    const [resendSuccess, setResendSuccess] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,17 +37,42 @@ export const AuthForm: React.FC<AuthFormProps> = ({ isRegisterInitial = false, o
         }
 
         setLoading(true);
+        setIsUnverified(false);
         try {
             if (isRegister) {
                 await register(email, password);
+                // Si el backend nos dio token (bypass), entramos directo
+                if (useAuthStore.getState().isAuthenticated) {
+                    onSuccess();
+                } else {
+                    setShowVerificationSent(true);
+                }
             } else {
                 await login(email, password);
+                onSuccess();
             }
-            onSuccess();
         } catch (err: any) {
             setError(err.message || 'Error en la autenticación');
+            if (err.code === 'EMAIL_NOT_VERIFIED') {
+                setIsUnverified(true);
+            }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResendVerification = async () => {
+        if (!email) return;
+        setResendLoading(true);
+        setError(null);
+        try {
+            await resendVerification(email);
+            setResendSuccess(true);
+            setTimeout(() => setResendSuccess(false), 5000);
+        } catch (err: any) {
+            setError(err.message || 'Error al reenviar email');
+        } finally {
+            setResendLoading(false);
         }
     };
 
@@ -53,6 +82,46 @@ export const AuthForm: React.FC<AuthFormProps> = ({ isRegisterInitial = false, o
         setError(null);
         if (onToggleView) onToggleView(newState);
     };
+
+    if (showVerificationSent) {
+        return (
+            <div className="w-full max-w-[440px] text-center animate-in fade-in zoom-in-95 duration-500">
+                <div className="inline-flex w-24 h-24 bg-gradient-to-br from-green-600 to-emerald-600 rounded-[32px] items-center justify-center mb-8 shadow-2xl shadow-green-600/30 ring-8 ring-green-600/10">
+                    <span className="text-5xl">📧</span>
+                </div>
+                <h2 className="text-4xl font-black text-white tracking-tight mb-4 font-display">
+                    ¡Revisa tu email!
+                </h2>
+                <p className="text-slate-400 text-lg font-medium mb-8 leading-relaxed">
+                    Te hemos enviado un enlace de confirmación a <br />
+                    <span className="text-white font-bold">{email}</span>
+                </p>
+                <div className="space-y-4">
+                    <Button
+                        onClick={() => setShowVerificationSent(false)}
+                        className="w-full h-14 font-bold rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all"
+                    >
+                        Volver al inicio
+                    </Button>
+                    <p className="text-sm text-slate-500 font-medium">
+                        ¿No lo encuentras?
+                        <button
+                            onClick={handleResendVerification}
+                            disabled={resendLoading}
+                            className="ml-2 text-blue-500 font-bold hover:text-blue-400 transition-colors underline decoration-2 underline-offset-4"
+                        >
+                            {resendLoading ? 'Reenviando...' : 'Reenviar email'}
+                        </button>
+                    </p>
+                </div>
+                {resendSuccess && (
+                    <div className="mt-6 text-green-400 text-sm font-bold animate-in slide-in-from-bottom-2">
+                        ✓ Nuevo enlace enviado correctamente
+                    </div>
+                )}
+            </div>
+        );
+    }
 
     return (
         <div className="w-full max-w-[440px] animate-in fade-in zoom-in-95 duration-300">
@@ -74,11 +143,35 @@ export const AuthForm: React.FC<AuthFormProps> = ({ isRegisterInitial = false, o
             {/* Form Section */}
             <form onSubmit={handleSubmit} className="space-y-5">
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-[13px] p-4 rounded-2xl font-bold flex items-start gap-3 animate-in slide-in-from-top-2">
-                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {error}
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-[13px] p-4 rounded-2xl font-bold flex flex-col gap-3 animate-in slide-in-from-top-2">
+                        <div className="flex items-start gap-3">
+                            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>{error}</span>
+                        </div>
+
+                        {isUnverified && (
+                            <button
+                                type="button"
+                                onClick={handleResendVerification}
+                                disabled={resendLoading}
+                                className="text-blue-500 hover:text-blue-400 transition-colors text-xs font-black uppercase tracking-widest text-left pl-7"
+                            >
+                                {resendLoading ? 'Procesando...' : 'Reenviar enlace de confirmación'}
+                            </button>
+                        )}
+
+                        {resendSuccess && !isUnverified && (
+                            <span className="text-green-400 text-xs font-black uppercase tracking-widest pl-7">✓ Reenviado</span>
+                        )}
+                    </div>
+                )}
+
+                {resendSuccess && isUnverified && (
+                    <div className="bg-green-500/10 border border-green-500/20 text-green-400 text-[13px] p-4 rounded-2xl font-bold flex items-center gap-3 animate-in slide-in-from-top-2">
+                        <span className="text-lg">✓</span>
+                        <span>Enlace de confirmación reenviado a {email}</span>
                     </div>
                 )}
 

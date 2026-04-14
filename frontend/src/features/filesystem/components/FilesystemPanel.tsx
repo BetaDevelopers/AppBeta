@@ -7,6 +7,8 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useExport } from '@/hooks/useExport'
+import { SubjectModal } from '@/components/subjects/SubjectModal'
+import { useSubjectsStore } from '@/store/subjectsStore'
 
 const SUBJECT_COLORS = [
     '#2563eb', '#7c3aed', '#0891b2', '#059669', '#d97706', '#dc2626'
@@ -25,6 +27,8 @@ export const FilesystemPanel: React.FC = () => {
     const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null)
     const [search, setSearch] = useState('')
     const [showTrash, setShowTrash] = useState(false)
+    const [isSubModalOpen, setIsSubModalOpen] = useState(false)
+    const [editingSubject, setEditingSubject] = useState<any>(null)
 
     useEffect(() => { loadWorkspace('default-workspace') }, [loadWorkspace])
 
@@ -53,9 +57,8 @@ export const FilesystemPanel: React.FC = () => {
     }
 
     const handleAddSubject = () => {
-        const name = 'Nueva Asignatura'
-        const color = SUBJECT_COLORS[subjects.length % SUBJECT_COLORS.length]
-        createSubject({ workspaceId: 'default-workspace', name, color, icon: 'folder', order: subjects.length })
+        setEditingSubject(null)
+        setIsSubModalOpen(true)
     }
 
     const handleAddNote = (e: React.MouseEvent, subjectId: string) => {
@@ -65,10 +68,10 @@ export const FilesystemPanel: React.FC = () => {
         if (!expanded.has(subjectId)) setExpanded(new Set(expanded).add(subjectId))
     }
 
-    const handleRenameSub = (e: React.MouseEvent, id: string, oldName: string) => {
+    const handleRenameSub = (e: React.MouseEvent, subject: any) => {
         e.stopPropagation()
-        const name = prompt('Renombrar asignatura:', oldName)
-        if (name && name !== oldName) renameSubject(id, name)
+        setEditingSubject(subject)
+        setIsSubModalOpen(true)
     }
 
     const handleDeleteSub = (e: React.MouseEvent, id: string) => {
@@ -161,7 +164,7 @@ export const FilesystemPanel: React.FC = () => {
                                     <div style={{ display: 'flex', gap: '8px', opacity: hoveredSubjectId === subject.id ? 1 : 0.4 }}>
                                         <button onClick={(e) => handleExportSubject(e, subject)} style={tinyBtnStyle} title="Exportar ZIP"><FileDown size={16} /></button>
                                         <button onClick={(e) => handleAddNote(e, subject.id)} style={tinyBtnStyle} title="Añadir Nota"><Plus size={16} /></button>
-                                        <button onClick={(e) => handleRenameSub(e, subject.id, subject.name)} style={tinyBtnStyle} title="Renombrar"><Edit2 size={14} /></button>
+                                        <button onClick={(e) => handleRenameSub(e, subject)} style={tinyBtnStyle} title="Renombrar"><Edit2 size={14} /></button>
                                         <button onClick={(e) => handleDeleteSub(e, subject.id)} style={{ ...tinyBtnStyle, color: '#ef4444' }} title="Borrar"><Trash2 size={14} /></button>
                                     </div>
                                 </div>
@@ -293,6 +296,15 @@ export const FilesystemPanel: React.FC = () => {
                     </AnimatePresence>
                 </div>
             </div>
+
+            <SubjectModal
+                isOpen={isSubModalOpen}
+                subject={editingSubject}
+                onClose={() => {
+                    setIsSubModalOpen(false)
+                    setEditingSubject(null)
+                }}
+            />
         </div>
     )
 }

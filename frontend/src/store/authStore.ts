@@ -19,6 +19,7 @@ interface AuthStore {
   initAuth: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
   forgotPassword: (email: string) => Promise<void>;
+  resendVerification: (email: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -53,6 +54,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     );
     localStorage.setItem('beta3m_token', data.token);
     set({ user: data.user, token: data.token, isAuthenticated: true, isGuest: false });
+    useNotesStore.getState().syncGuestData();
   },
 
   register: async (email, password) => {
@@ -61,6 +63,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
     );
     localStorage.setItem('beta3m_token', data.token);
     set({ user: data.user, token: data.token, isAuthenticated: true, isGuest: false });
+    useNotesStore.getState().syncGuestData();
   },
 
   logout: () => {
@@ -80,5 +83,9 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   forgotPassword: async (email) => {
     await apiClient.post('/auth/forgot-password', { email });
+  },
+
+  resendVerification: async (email) => {
+    await apiClient.post('/auth/resend-verify', { email });
   },
 }));

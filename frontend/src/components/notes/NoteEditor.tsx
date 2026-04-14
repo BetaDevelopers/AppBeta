@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { useMathOCR, MathRegion } from '@/features/ai/hooks/useMathOCR';
 import { markdownToHtml } from '../../utils/editorUtils';
+import { useSubjectsStore } from '../../store/subjectsStore';
 
 // ── Definit FORA de NoteEditor per evitar desmuntatge en cada re-render ──
 function ToolBtn({ onClick, disabled, title, accent, children }: {
@@ -35,6 +36,7 @@ function ToolBtn({ onClick, disabled, title, accent, children }: {
 
 export const NoteEditor: React.FC = () => {
     const { currentNote, updateNote, deleteNote, setCurrentNote, improveWithAI, summarizeWithAI, suggestSubjectWithAI, isSaving } = useNotesStore();
+    const { subjects } = useSubjectsStore();
     const [title, setTitle] = useState(currentNote?.title || '');
     const [content, setContent] = useState(currentNote?.content || '');
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -393,13 +395,31 @@ export const NoteEditor: React.FC = () => {
                         </svg>
                     </button>
                     <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                             <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest font-display">Editor en viu</span>
+                            <div className="relative group">
+                                <select
+                                    className="appearance-none bg-white/5 border border-white/10 rounded-lg pl-3 pr-8 py-1 text-[11px] font-black uppercase tracking-tighter text-blue-400 hover:text-white hover:bg-white/10 transition-all outline-none cursor-pointer"
+                                    value={currentNote.subject_id || ''}
+                                    onChange={(e) => {
+                                        const val = e.target.value === '' ? null : Number(e.target.value);
+                                        updateNote(currentNote.id, { subject_id: val });
+                                    }}
+                                >
+                                    <option value="" className="bg-[#161B22] text-slate-400 uppercase">Sense Assignatura</option>
+                                    {subjects.map(s => (
+                                        <option key={s.id} value={s.id} className="bg-[#161B22] text-white uppercase">
+                                            {s.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-blue-400/50">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
-                        {currentNote.subject_name && (
-                            <span className="text-[11px] font-bold text-blue-400 uppercase tracking-tighter">{currentNote.subject_name}</span>
-                        )}
                     </div>
                 </div>
                 <div className="flex items-center gap-4">

@@ -18,7 +18,18 @@ const COLORS = [
 export const SubjectModal: React.FC<SubjectModalProps> = ({ isOpen, onClose, subject }) => {
     const [name, setName] = useState(subject?.name || '');
     const [color, setColor] = useState(subject?.color || COLORS[0]);
-    const { createSubject, updateSubject } = useSubjectsStore();
+    const { createSubject, updateSubject, deleteSubject } = useSubjectsStore();
+
+    // Reset state when opening/closing or when subject changes
+    React.useLayoutEffect(() => {
+        if (isOpen) {
+            setName(subject?.name || '');
+            setColor(subject?.color || COLORS[0]);
+        } else {
+            setName('');
+            setColor(COLORS[0]);
+        }
+    }, [isOpen, subject]);
 
     const handleSave = async () => {
         if (!name.trim()) return;
@@ -31,6 +42,14 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({ isOpen, onClose, sub
         onClose();
     };
 
+    const handleDelete = async () => {
+        if (!subject) return;
+        if (window.confirm('¿Estás seguro de eliminar esta asignatura? Todas sus notas quedarán sin categoría.')) {
+            await deleteSubject(subject.id);
+            onClose();
+        }
+    };
+
     return (
         <Modal
             isOpen={isOpen}
@@ -40,10 +59,12 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({ isOpen, onClose, sub
             <div className="flex flex-col gap-10 p-2">
                 <Input
                     label="Nombre de la asignatura"
-                    placeholder="Ej: Física Cuántica, Historia..."
+                    placeholder="Escribe el nombre aquí..."
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     autoFocus
+                    autoComplete="no-autosuggest-permitted"
+                    name="id-asig-input-v2"
                 />
 
                 <div className="flex flex-col gap-6">
@@ -73,6 +94,15 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({ isOpen, onClose, sub
                 </div>
 
                 <div className="flex gap-4 pt-6">
+                    {subject && (
+                        <Button
+                            variant="secondary"
+                            className="flex-1 rounded-2xl py-6 border-red-500/20 hover:bg-red-500/10 hover:text-red-400 transition-all"
+                            onClick={handleDelete}
+                        >
+                            ELIMINAR
+                        </Button>
+                    )}
                     <Button variant="secondary" className="flex-1 rounded-2xl py-6" onClick={onClose}>DESCARTAR</Button>
                     <Button className="flex-1 rounded-2xl py-6" onClick={handleSave} disabled={!name.trim()}>ESTABLECER</Button>
                 </div>

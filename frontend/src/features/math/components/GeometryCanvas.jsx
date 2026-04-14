@@ -1,10 +1,4 @@
-/**
- * GeometryCanvas.jsx — Dibuix → SVG perfecte.
- * Adaptat per al backend real: POST /api/ai/vectorize
- * Resposta: { shape, svgElement }
- */
-
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { vectorizeShape } from "../../../api/mathApi";
 
 export default function GeometryCanvas({ onResult } = {}) {
@@ -15,6 +9,32 @@ export default function GeometryCanvas({ onResult } = {}) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    const CANVAS_W = 500;
+    const CANVAS_H = 320;
+
+    const redraw = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = "rgba(167, 139, 250, 0.6)";
+
+        if (points.length > 1) {
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            points.slice(1).forEach(pt => ctx.lineTo(pt.x, pt.y));
+            ctx.stroke();
+        }
+    }, [points]);
+
+    useEffect(() => {
+        redraw();
+    }, [redraw]);
+
     async function handleSnap(rawPoints) {
         if (rawPoints.length < 5) return;
         setLoading(true);
@@ -22,7 +42,10 @@ export default function GeometryCanvas({ onResult } = {}) {
         try {
             const data = await vectorizeShape(rawPoints);
             setResult(data);
-            if (data?.svgElement && onResult) onResult(data.svgElement);
+            if (data?.svgElement && onResult) {
+                // Return a clean version of the SVG for the editor
+                onResult(data.svgElement);
+            }
         } catch (e) {
             setError(e.message);
         } finally {
@@ -30,105 +53,127 @@ export default function GeometryCanvas({ onResult } = {}) {
         }
     }
 
-    const getXY = (e) => {
-        const rect = canvasRef.current.getBoundingClientRect();
-        return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const getPos = (e) => {
+        const canvas = canvasRef.current;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = CANVAS_W / rect.width;
+        const scaleY = CANVAS_H / rect.height;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
     };
 
-    const onDown = (e) => {
+    const onStart = (e) => {
+        e.preventDefault();
         setIsDrawing(true);
-        setPoints([getXY(e)]);
+        setPoints([getPos(e)]);
         setResult(null);
         setError(null);
     };
 
     const onMove = (e) => {
         if (!isDrawing) return;
-        const pt = getXY(e);
-        setPoints(prev => [...prev, pt]);
-        const ctx = canvasRef.current.getContext("2d");
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = "rgba(167,139,250,0.4)";
-        ctx.lineTo(pt.x, pt.y);
-        ctx.stroke();
+        e.preventDefault();
+        setPoints(prev => [...prev, getPos(e)]);
     };
 
-    const onUp = () => {
+    const onEnd = () => {
+        if (!isDrawing) return;
         setIsDrawing(false);
         if (points.length > 5) handleSnap(points);
     };
 
     const clear = () => {
-        const ctx = canvasRef.current.getContext("2d");
-        ctx.clearRect(0, 0, 500, 300);
         setPoints([]);
         setResult(null);
         setError(null);
     };
 
     return (
-        <div style={S.wrapper}>
-            <div style={S.header}>
-                <span style={S.icon}>🎨</span>
+        <div className="bg-[#0f172a]/40 p-6 rounded-[2rem] border border-white/10 backdrop-blur-xl shadow-2xl max-w-xl mx-auto font-sans">
+            <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-2xl border border-indigo-500/30">
+                    📐
+                </div>
                 <div>
-                    <h2 style={S.title}>Geometry Vectorizer</h2>
-                    <p style={S.subtitle}>Draw a rough shape → Snap to perfect SVG geometry.</p>
+                    <h2 className="text-xl font-black text-white tracking-tight">Geometry Lab</h2>
+                    <p className="text-xs text-slate-400 font-medium">Draw rough shapes → Get perfect SVG geometry</p>
                 </div>
             </div>
 
-            <div style={S.canvasWrap}>
+            <div className="relative bg-black/40 rounded-3xl border border-white/5 overflow-hidden shadow-inner group">
                 <canvas
                     ref={canvasRef}
-                    width={500} height={300}
-                    style={S.canvas}
-                    onMouseDown={onDown}
+                    width={CANVAS_W}
+                    height={CANVAS_H}
+                    className="w-full h-auto cursor-crosshair touch-none"
+                    onMouseDown={onStart}
                     onMouseMove={onMove}
-                    onMouseUp={onUp}
+                    onMouseUp={onEnd}
+                    onMouseLeave={onEnd}
+                    onTouchStart={onStart}
+                    onTouchMove={onMove}
+                    onTouchEnd={onEnd}
                 />
 
                 {result && result.shape !== "unknown" && (
-                    <svg style={S.overlay} width={500} height={300}>
-                        <g style={S.svgGroup} dangerouslySetInnerHTML={{ __html: result.svgElement }} />
-                    </svg>
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center bg-indigo-500/[0.03]">
+                        <svg
+                            viewBox={`0 0 ${CANVAS_W} ${CANVAS_H}`}
+                            className="w-full h-full animate-in zoom-in-95 duration-500"
+                        >
+                            <g
+                                style={{ stroke: "#4ade80", strokeWidth: 4, fill: "rgba(74, 222, 128, 0.15)", strokeLinecap: "round", strokeLinejoin: "round" }}
+                                dangerouslySetInnerHTML={{ __html: result.svgElement }}
+                            />
+                        </svg>
+                    </div>
                 )}
 
-                {loading && <div style={S.loader}>Snapping...</div>}
-                {!isDrawing && points.length === 0 && (
-                    <div style={S.hint}>Draw a circle, rectangle or triangle here.</div>
+                {loading && (
+                    <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-600/20 border border-indigo-500/30 backdrop-blur-md animate-pulse">
+                        <div className="w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
+                        <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Optimizing...</span>
+                    </div>
+                )}
+
+                {points.length === 0 && !loading && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20">
+                        <span className="text-4xl mb-2">✏️</span>
+                        <p className="text-sm font-bold text-slate-500">Dibuja una forma (círculo, polígono...)</p>
+                    </div>
                 )}
             </div>
 
-            {error && <div style={S.errorBox}>⚠ {error}</div>}
+            {error && (
+                <div className="mt-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold flex items-center gap-3">
+                    <span>⚠</span> {error}
+                </div>
+            )}
 
-            <div style={S.controls}>
-                <button style={S.clearBtn} onClick={clear}>🗑 Clear</button>
+            <div className="mt-6 flex items-center justify-between gap-4">
+                <button
+                    onClick={clear}
+                    className="px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-all disabled:opacity-30"
+                    disabled={points.length === 0}
+                >
+                    Reiniciar
+                </button>
+
                 {result && result.shape !== "unknown" && (
-                    <div style={S.resInfo}>
-                        <span style={S.badge}>{result.shape.toUpperCase()}</span>
-                        <code style={S.code}>{result.svgElement}</code>
+                    <div className="flex-1 flex items-center gap-3 animate-in slide-in-from-right-4">
+                        <span className="px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-[10px] font-black text-emerald-400 uppercase tracking-widest">
+                            {result.shape} detectado
+                        </span>
+                        <div className="flex-1 h-10 bg-black/40 border border-white/5 rounded-xl flex items-center px-4 overflow-hidden">
+                            <code className="text-[10px] text-slate-500 truncate font-mono">{result.svgElement}</code>
+                        </div>
                     </div>
                 )}
             </div>
         </div>
     );
 }
-
-const S = {
-    wrapper: { background: "#060410", padding: "24px", borderRadius: "16px", border: "1px solid rgba(139,92,246,0.3)", maxWidth: "550px", margin: "0 auto" },
-    header: { display: "flex", gap: "10px", marginBottom: "16px" },
-    icon: { fontSize: "22px" },
-    title: { margin: 0, fontSize: "17px", color: "#f0e6ff" },
-    subtitle: { fontSize: "11px", color: "#9d8ec7", margin: "2px 0 0" },
-    canvasWrap: { position: "relative", background: "#000", borderRadius: "12px", border: "1px solid #1a1530", overflow: "hidden" },
-    canvas: { display: "block", cursor: "crosshair" },
-    overlay: { position: "absolute", top: 0, left: 0, pointerEvents: "none" },
-    svgGroup: { stroke: "#4ade80", strokeWidth: 3, fill: "rgba(74,222,128,0.1)" },
-    loader: { position: "absolute", top: "10px", right: "10px", fontSize: "11px", color: "#a78bfa", background: "rgba(0,0,0,0.5)", padding: "4px 8px", borderRadius: "4px" },
-    hint: { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", fontSize: "13px", color: "#3a3062", pointerEvents: "none" },
-    errorBox: { marginTop: "10px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", padding: "8px 12px", fontSize: "12px", color: "#fca5a5" },
-    controls: { marginTop: "12px", display: "flex", alignItems: "center", gap: "12px" },
-    clearBtn: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#9d8ec7", padding: "6px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "12px" },
-    resInfo: { flex: 1, display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" },
-    badge: { fontSize: "10px", fontWeight: 800, background: "#4ade80", color: "#060410", padding: "2px 6px", borderRadius: "4px" },
-    code: { fontSize: "10px", color: "#9d8ec7", background: "rgba(0,0,0,0.3)", padding: "4px 8px", borderRadius: "4px", flex: 1, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" },
-};
