@@ -8,20 +8,53 @@ import FileUploadOCR from '../files/FileUploadOCR';
 
 function SectionHeader({ icon, title, subtitle }: { icon: string; title: string; subtitle?: string }) {
     return (
-        <div className="px-4 pt-4 pb-2">
-            <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-sm">{icon}</span>
-                <span className="text-[12px] font-semibold text-slate-300">{title}</span>
+        <div className="px-5 pt-4 pb-3">
+            <div className="flex items-center gap-2">
+                <span className="text-base">{icon}</span>
+                <span className="text-[11px] font-semibold text-[#484F58] uppercase tracking-widest">{title}</span>
             </div>
             {subtitle && (
-                <p className="text-[11px] text-slate-600 pl-6">{subtitle}</p>
+                <p className="text-[13px] text-[#8B949E] mt-1 pl-7 truncate">{subtitle}</p>
             )}
         </div>
     );
 }
 
 function Divider() {
-    return <div className="mx-4 border-t border-white/5 my-1" />;
+    return <div className="mx-5 border-t border-[rgba(255,255,255,0.08)] my-1" />;
+}
+
+function ActionButton({
+    onClick,
+    icon,
+    label,
+    disabled,
+    variant = 'default',
+}: {
+    onClick: () => void;
+    icon: string;
+    label: string;
+    disabled?: boolean;
+    variant?: 'default' | 'primary' | 'danger';
+}) {
+    const variantClass =
+        variant === 'primary'
+            ? 'bg-[#388BFD] text-white border-[#388BFD]/30 hover:bg-[#2f7be8]'
+            : variant === 'danger'
+            ? 'bg-transparent text-[#F78166] border-[rgba(247,129,102,0.2)] hover:bg-[rgba(247,129,102,0.08)]'
+            : 'bg-[#21262D] text-[#8B949E] border-[rgba(255,255,255,0.08)] hover:bg-[#2D333B] hover:text-[#E6EDF3]';
+
+    return (
+        <button
+            onClick={onClick}
+            disabled={disabled}
+            className={`w-full flex items-center gap-3 px-4 rounded-[var(--border-radius-md)] text-[13px] font-medium border transition-colors disabled:opacity-30 disabled:pointer-events-none ${variantClass}`}
+            style={{ height: '44px' }}
+        >
+            <span className="text-base flex-shrink-0">{icon}</span>
+            <span>{label}</span>
+        </button>
+    );
 }
 
 export default function SidebarRight() {
@@ -30,8 +63,8 @@ export default function SidebarRight() {
     const imageInputRef = useRef<HTMLInputElement>(null);
     const [showUpload, setShowUpload] = useState(false);
 
-    const insertText = (text: string) => editor?.chain().focus().insertContent(text).run();
-    const insertImage = (src: string) => editor?.chain().focus().setImage({ src }).run();
+    const insertText  = (text: string) => editor?.chain().focus().insertContent(text).run();
+    const insertImage = (src: string)  => editor?.chain().focus().setImage({ src }).run();
 
     const noteImages = useMemo(() => {
         if (!currentNote?.content) return [];
@@ -75,8 +108,9 @@ export default function SidebarRight() {
             pdf.setDrawColor(200, 200, 200); pdf.line(m, m + 9, pageW - m, m + 9);
             const cy = m + 14, avH = pageH - cy - m;
             const imgData = canvas.toDataURL('image/jpeg', 0.92);
-            if (imgH <= avH) { pdf.addImage(imgData, 'JPEG', m, cy, imgW, imgH); }
-            else {
+            if (imgH <= avH) {
+                pdf.addImage(imgData, 'JPEG', m, cy, imgW, imgH);
+            } else {
                 let y = 0;
                 while (y < imgH) {
                     if (y > 0) pdf.addPage();
@@ -103,41 +137,46 @@ export default function SidebarRight() {
     const noEditor = !editor;
 
     return (
-        <aside className="flex-shrink-0 w-60 bg-[#080d1a]/80 backdrop-blur-md border-l border-white/[0.06] flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto scrollbar-hide">
+        <aside className="flex-shrink-0 w-72 bg-[#161B22] border-l border-[rgba(255,255,255,0.08)] flex flex-col overflow-hidden shadow-xl z-[50]">
+            <div className="flex-1 overflow-y-auto scrollbar-hide py-2">
 
-                {/* ── Càmera ── */}
-                <SectionHeader icon="📷" title="Càmera" subtitle="Escaneja text i fórmules" />
-                <div className="px-3 pb-3">
+                {/* ── Laboratori ─── */}
+                <SectionHeader icon="📷" title="Laboratorio" subtitle="Escaneo con visión IA" />
+                <div className="px-4 pb-4">
                     {noEditor && (
-                        <p className="text-[11px] text-slate-700 mb-2 px-1">Selecciona una nota per inserir</p>
+                        <p className="text-[13px] text-[#484F58] mb-3 px-1">Abre una nota para activar el editor</p>
                     )}
-                    <SmartCamera onResult={noEditor ? undefined : insertText} />
+                    <div className="rounded-[var(--border-radius-lg)] overflow-hidden bg-[#21262D] border border-[rgba(255,255,255,0.08)]">
+                        <SmartCamera onResult={noEditor ? undefined : insertText} />
+                    </div>
                 </div>
 
                 <Divider />
 
-                {/* ── Fitxers ── */}
-                <SectionHeader icon="📂" title="Fitxers" subtitle="Adjunta contingut a la nota" />
-                <div className="px-3 pb-3 flex flex-col gap-1.5">
-
-                    {/* Pujar arxiu */}
+                {/* ── Recursos ─── */}
+                <SectionHeader icon="📂" title="Recursos" subtitle="Archivos adjuntos" />
+                <div className="px-4 pb-4 flex flex-col gap-2">
                     <button
                         onClick={() => setShowUpload(v => !v)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] transition-all border ${
+                        className={`w-full flex items-center gap-3 px-4 rounded-[var(--border-radius-md)] text-[13px] font-medium border transition-colors ${
                             showUpload
-                                ? 'bg-blue-600/10 border-blue-500/20 text-blue-300'
-                                : 'border-white/5 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200'
+                                ? 'bg-[rgba(56,139,253,0.1)] border-[rgba(56,139,253,0.3)] text-[#388BFD]'
+                                : 'bg-[#21262D] border-[rgba(255,255,255,0.08)] text-[#8B949E] hover:bg-[#2D333B] hover:text-[#E6EDF3]'
                         }`}
+                        style={{ height: '44px' }}
                     >
-                        <span className="text-sm">📎</span>
-                        <span>Pujar arxiu per OCR</span>
-                        <svg className={`w-3 h-3 ml-auto text-slate-600 transition-transform ${showUpload ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        <span className="text-base">📎</span>
+                        <span>OCR Express</span>
+                        <svg
+                            className={`w-3.5 h-3.5 ml-auto text-[#484F58] transition-transform duration-200 ${showUpload ? 'rotate-180' : ''}`}
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
+
                     {showUpload && (
-                        <div className="rounded-lg bg-black/20 border border-white/5 p-2.5">
+                        <div className="rounded-[var(--border-radius-lg)] bg-[#21262D] border border-[rgba(255,255,255,0.08)] p-3 animate-fade-in-down">
                             <FileUploadOCR
                                 onResult={noEditor ? undefined : insertText}
                                 onInsertImage={noEditor ? undefined : insertImage}
@@ -145,28 +184,38 @@ export default function SidebarRight() {
                         </div>
                     )}
 
-                    {/* Afegir imatge */}
-                    <button
+                    <ActionButton
                         onClick={() => imageInputRef.current?.click()}
+                        icon="🖼"
+                        label="Insertar imagen"
                         disabled={noEditor}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] border border-white/5 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200 transition-all disabled:opacity-25"
-                    >
-                        <span className="text-sm">🖼</span>
-                        <span>Afegir imatge a la nota</span>
-                    </button>
-                    <input ref={imageInputRef} type="file" accept="image/*" className="hidden"
-                        onChange={(e) => e.target.files?.[0] && addImageToNote(e.target.files[0])} />
+                    />
+                    <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => e.target.files?.[0] && addImageToNote(e.target.files[0])}
+                    />
 
-                    {/* Imatges existents */}
                     {noteImages.length > 0 && (
                         <div className="mt-1">
-                            <p className="text-[10px] text-slate-700 px-1 mb-1.5">
-                                {noteImages.length} imatge{noteImages.length !== 1 ? 's' : ''} a la nota
-                            </p>
-                            <div className="grid grid-cols-3 gap-1">
+                            <div className="flex items-center justify-between px-1 mb-2">
+                                <span className="text-[11px] font-semibold text-[#484F58] uppercase tracking-widest">Multimedia</span>
+                                <span className="text-[11px] font-medium text-[#388BFD]">{noteImages.length}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
                                 {noteImages.map((src, i) => (
-                                    <img key={i} src={src} alt={`Imatge ${i + 1}`}
-                                        className="w-full h-12 object-cover rounded-md border border-white/5 bg-black/20" />
+                                    <div
+                                        key={i}
+                                        className="group/img relative aspect-square rounded-[var(--border-radius-md)] overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[#21262D] cursor-zoom-in"
+                                    >
+                                        <img
+                                            src={src}
+                                            alt={`Imatge ${i + 1}`}
+                                            className="w-full h-full object-cover group-hover/img:scale-110 transition-transform duration-300"
+                                        />
+                                    </div>
                                 ))}
                             </div>
                         </div>
@@ -175,27 +224,35 @@ export default function SidebarRight() {
 
                 <Divider />
 
-                {/* ── Descarregar ── */}
-                <SectionHeader icon="⬇" title="Descarregar" subtitle={currentNote ? currentNote.title || 'Nota sense títol' : 'Cap nota seleccionada'} />
-                <div className="px-3 pb-4 flex flex-col gap-1">
+                {/* ── Exportar ─── */}
+                <SectionHeader
+                    icon="💾"
+                    title="Exportar"
+                    subtitle={currentNote ? (currentNote.title || 'Sin nombre') : undefined}
+                />
+                <div className="px-4 pb-6 flex flex-col gap-2">
                     {!currentNote ? (
-                        <p className="text-[11px] text-slate-700 px-1">Obre una nota per descarregar-la</p>
+                        <div className="px-4 py-5 rounded-[var(--border-radius-lg)] border border-dashed border-[rgba(255,255,255,0.08)] text-center">
+                            <p className="text-[13px] text-[#484F58]">Abre una nota para exportar</p>
+                        </div>
                     ) : (
                         <>
-                            {[
-                                { fn: downloadPDF, icon: '📄', label: 'PDF',       hover: 'hover:text-red-300 hover:border-red-500/20 hover:bg-red-500/5' },
-                                { fn: downloadMD,  icon: '📝', label: 'Markdown',  hover: 'hover:text-purple-300 hover:border-purple-500/20 hover:bg-purple-500/5' },
-                                { fn: downloadTXT, icon: '📃', label: 'Text pla',  hover: 'hover:text-slate-200 hover:border-slate-500/20 hover:bg-slate-500/5' },
-                            ].map(({ fn, icon, label, hover }) => (
-                                <button key={label} onClick={fn}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[12px] border border-white/5 bg-transparent text-slate-500 transition-all ${hover}`}
-                                >
-                                    <span>{icon}</span>
-                                    <span>{label}</span>
-                                </button>
-                            ))}
+                            <ActionButton onClick={downloadPDF} icon="📄" label="Exportar PDF"    variant="default" />
+                            <ActionButton onClick={downloadMD}  icon="📝" label="Exportar Markdown" variant="default" />
+                            <ActionButton onClick={downloadTXT} icon="📃" label="Exportar texto"  variant="default" />
                         </>
                     )}
+                </div>
+            </div>
+
+            {/* Status footer */}
+            <div className="p-4 border-t border-[rgba(255,255,255,0.08)]">
+                <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-[#484F58]">Estado IA</span>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#3FB950] animate-pulse" />
+                        <span className="text-[11px] text-[#3FB950] font-medium">Listo</span>
+                    </div>
                 </div>
             </div>
         </aside>

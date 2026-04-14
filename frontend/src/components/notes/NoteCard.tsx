@@ -14,39 +14,78 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
         const d = new Date(date);
         const now = new Date();
         const diff = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-
-        if (diff === 0) return 'Avui';
-        if (diff === 1) return 'Ahir';
-        if (diff < 7) return `fa ${diff} dies`;
-        return d.toLocaleDateString();
+        if (diff === 0) return 'Hoy';
+        if (diff === 1) return 'Ayer';
+        if (diff < 7)  return `hace ${diff} días`;
+        return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
     };
 
     return (
         <button
             onClick={() => setCurrentNote(note)}
-            className={`w-full text-left p-5 rounded-2xl transition-all border ${isActive
-                ? 'bg-blue-500/10 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
-                : 'bg-[#0f172a] border-slate-800 hover:border-slate-700 hover:bg-slate-800/50'
-                }`}
+            className={`group relative w-full text-left p-5 rounded-[var(--border-radius-xl)] transition-all duration-200 overflow-hidden border ${
+                isActive
+                    ? 'bg-[rgba(56,139,253,0.08)] border-[rgba(56,139,253,0.4)] shadow-[0_0_24px_rgba(56,139,253,0.1)]'
+                    : 'bg-[#161B22] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)] hover:bg-[#1c2230]'
+            }`}
+            style={{ minHeight: '140px' }}
         >
-            <div className="flex items-center justify-between mb-2">
-                <h4 className={`text-sm font-black truncate tracking-tight ${isActive ? 'text-blue-400' : 'text-slate-100'}`}>
-                    {note.title || 'Sense títol'}
-                </h4>
-                {note.subject_color && (
-                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: note.subject_color }} />
-                )}
-            </div>
-            <p className="text-xs text-slate-400 line-clamp-2 mb-4 leading-relaxed font-medium">
-                {note.content?.replace(/<[^>]*>/g, '').substring(0, 80) || 'Sin contenido...'}
-            </p>
-            <div className="flex items-center justify-between mt-auto">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{formatDate(note.updated_at)}</span>
-                {note.ai_processed && (
-                    <div className="p-1 px-2 bg-blue-500/10 border border-blue-500/20 rounded-md">
-                        <span className="text-[10px] font-black text-blue-400 uppercase tracking-tighter">AI Optimized</span>
+            {/* Active glow */}
+            {isActive && (
+                <div className="absolute top-0 right-0 w-24 h-24 bg-[#388BFD]/10 blur-3xl -mr-8 -mt-8 pointer-events-none" />
+            )}
+
+            <div className="relative z-10 flex flex-col h-full">
+                {/* Title row */}
+                <div className="flex items-start justify-between gap-3 mb-2">
+                    <h4
+                        className={`font-semibold leading-snug tracking-tight font-display ${
+                            isActive ? 'text-[#E6EDF3]' : 'text-[#C9D1D9] group-hover:text-[#E6EDF3]'
+                        }`}
+                        style={{ fontSize: 'var(--font-size-lg)' }}
+                    >
+                        {note.title || 'Sin título'}
+                    </h4>
+                    {note.subject_color && (
+                        <div
+                            className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1.5"
+                            style={{ backgroundColor: note.subject_color }}
+                        />
+                    )}
+                </div>
+
+                {/* Preview */}
+                <p
+                    className="text-[#8B949E] line-clamp-2 leading-relaxed flex-1 mb-4"
+                    style={{ fontSize: 'var(--font-size-sm)' }}
+                >
+                    {note.content?.replace(/<[^>]*>/g, '').substring(0, 100) || 'Sin contenido...'}
+                </p>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-3 border-t border-[rgba(255,255,255,0.06)]">
+                    <div className="flex items-center gap-1.5">
+                        <svg className="w-3 h-3 text-[#484F58]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-[#484F58]" style={{ fontSize: 'var(--font-size-xs)' }}>
+                            {formatDate(note.updated_at)}
+                        </span>
                     </div>
-                )}
+
+                    {note.ai_processed && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-[rgba(56,139,253,0.1)] rounded-[var(--border-radius-sm)] border border-[rgba(56,139,253,0.2)]">
+                            <span className="text-[#388BFD]" style={{ fontSize: 'var(--font-size-xs)' }}>✨ Smart</span>
+                        </div>
+                    )}
+
+                    {note.subject_name && !note.subject_color && (
+                        <span className="text-[#484F58]" style={{ fontSize: 'var(--font-size-xs)' }}>
+                            {note.subject_name}
+                        </span>
+                    )}
+                </div>
             </div>
         </button>
     );

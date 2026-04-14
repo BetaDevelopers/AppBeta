@@ -31,10 +31,10 @@ function BubbleBtn({ onClick, active, children, title }: any) {
         <button
             onClick={onClick}
             title={title}
-            className={`px-3 py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center min-w-[36px]
+            className={`px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest transition-all duration-300 flex items-center justify-center min-w-[36px] font-display
         ${active
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                    : 'text-slate-500 hover:text-white hover:bg-white/10'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 glow-primary scale-105'
+                    : 'text-slate-500 hover:text-white hover:bg-white/5'
                 }`}
         >
             {children}
@@ -51,7 +51,7 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
             }),
             Underline,
             Placeholder.configure({
-                placeholder: 'Empieza a escribir tus apuntes... (escribe / para ver opciones de formato)',
+                placeholder: 'Escribe tus pensamientos aquí... (escribe / para comandos mágicos)',
             }),
             TextAlign.configure({ types: ['heading', 'paragraph'] }),
             Highlight.configure({ multicolor: true }),
@@ -70,7 +70,7 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
         },
         editorProps: {
             attributes: {
-                class: `tiptap focus:outline-none py-10 px-0 min-h-[500px] w-full text-slate-300 ${isTypingAI ? 'ai-typing' : ''}`,
+                class: `tiptap focus:outline-none py-10 px-0 min-h-[600px] w-full text-slate-200 leading-relaxed text-lg ${isTypingAI ? 'ai-typing' : ''}`,
             },
         },
     });
@@ -83,7 +83,6 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
 
     useEffect(() => {
         if (editor && content !== editor.getHTML()) {
-            // Evitar reset del cursor si el contingut és el mateix però s'ha salvat manualment
             editor.commands.setContent(content, { emitUpdate: false });
         }
     }, [content, editor]);
@@ -92,44 +91,56 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
 
     return (
         <div className="flex-1 w-full max-w-4xl mx-auto flex flex-col">
-            {/* Toolbar Permanent — Word-like experience */}
-            <div className="flex items-center gap-1.5 bg-[#0f172a]/50 border-b border-white/5 px-2 py-3 mb-6 sticky top-[80px] z-[90] backdrop-blur-xl rounded-t-2xl">
-                <BubbleBtn onClick={() => editor.chain().focus().toggleBold().run()}
-                    active={editor.isActive('bold')} title="Negrita"><strong>B</strong></BubbleBtn>
-                <BubbleBtn onClick={() => editor.chain().focus().toggleItalic().run()}
-                    active={editor.isActive('italic')} title="Cursiva"><i>I</i></BubbleBtn>
-                <BubbleBtn onClick={() => editor.chain().focus().toggleUnderline().run()}
-                    active={editor.isActive('underline')} title="Subrayado"><u>U</u></BubbleBtn>
+            {/* Toolbar Permanent — Super Sleek */}
+            <div className="flex items-center gap-1.5 glass border border-white/5 px-3 py-2.5 mb-10 sticky top-[80px] z-[90] backdrop-blur-3xl rounded-2xl shadow-xl">
+                <div className="flex items-center gap-1 px-1">
+                    <BubbleBtn onClick={() => editor.chain().focus().toggleBold().run()}
+                        active={editor.isActive('bold')} title="Negrita"><strong>B</strong></BubbleBtn>
+                    <BubbleBtn onClick={() => editor.chain().focus().toggleItalic().run()}
+                        active={editor.isActive('italic')} title="Cursiva"><i>I</i></BubbleBtn>
+                    <BubbleBtn onClick={() => editor.chain().focus().toggleUnderline().run()}
+                        active={editor.isActive('underline')} title="Subrayado"><u>U</u></BubbleBtn>
+                </div>
 
-                <div className="w-px h-5 bg-white/10 mx-1" />
+                <div className="w-px h-6 bg-white/10 mx-2" />
 
-                <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                    active={editor.isActive('heading', { level: 1 })}>H1</BubbleBtn>
-                <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                    active={editor.isActive('heading', { level: 2 })}>H2</BubbleBtn>
-                <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                    active={editor.isActive('heading', { level: 3 })}>H3</BubbleBtn>
+                <div className="flex items-center gap-1">
+                    <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                        active={editor.isActive('heading', { level: 1 })}>H1</BubbleBtn>
+                    <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                        active={editor.isActive('heading', { level: 2 })}>H2</BubbleBtn>
+                    <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+                        active={editor.isActive('heading', { level: 3 })}>H3</BubbleBtn>
+                </div>
 
-                <div className="w-px h-5 bg-white/10 mx-1" />
+                <div className="w-px h-6 bg-white/10 mx-2" />
 
-                <BubbleBtn onClick={() => editor.chain().focus().toggleBulletList().run()}
-                    active={editor.isActive('bulletList')}>•</BubbleBtn>
-                <BubbleBtn onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                    active={editor.isActive('orderedList')}>1.</BubbleBtn>
+                <div className="flex items-center gap-1">
+                    <BubbleBtn onClick={() => editor.chain().focus().toggleBulletList().run()}
+                        active={editor.isActive('bulletList')}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </BubbleBtn>
+                    <BubbleBtn onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                        active={editor.isActive('orderedList')}>
+                        <span className="text-[9px]">1..</span>
+                    </BubbleBtn>
+                </div>
 
-                <div className="w-px h-5 bg-white/10 mx-1" />
+                <div className="w-px h-6 bg-white/10 mx-2" />
 
-                <BubbleBtn onClick={() => editor.chain().focus().setTextAlign('left').run()}
-                    active={editor.isActive({ textAlign: 'left' })}>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16" /></svg>
-                </BubbleBtn>
-                <BubbleBtn onClick={() => editor.chain().focus().setTextAlign('center').run()}
-                    active={editor.isActive({ textAlign: 'center' })}>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M4 18h16" /></svg>
-                </BubbleBtn>
+                <div className="flex items-center gap-1">
+                    <BubbleBtn onClick={() => editor.chain().focus().setTextAlign('left').run()}
+                        active={editor.isActive({ textAlign: 'left' })}>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16" /></svg>
+                    </BubbleBtn>
+                    <BubbleBtn onClick={() => editor.chain().focus().setTextAlign('center').run()}
+                        active={editor.isActive({ textAlign: 'center' })}>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M4 18h16" /></svg>
+                    </BubbleBtn>
+                </div>
             </div>
 
-            {/* Bubble Menu — Contextual formatting */}
+            {/* Bubble Menu — Contextual floating magic */}
             <BubbleMenu
                 editor={editor}
                 shouldShow={({ state }: { state: any }) => {
@@ -137,50 +148,26 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
                     return from !== to;
                 }}
             >
-                <div className="flex items-center gap-1.5 bg-[#0f172a] border border-white/10
-                        rounded-2xl px-2 py-2 shadow-[0_20px_50px_rgba(0,0,0,0.8)] glass-effect">
+                <div className="flex items-center gap-1 glass-card border border-white/10 rounded-2xl px-2 py-2 shadow-[0_32px_64px_rgba(0,0,0,0.8)] backdrop-blur-3xl ring-1 ring-white/10">
                     <BubbleBtn onClick={() => editor.chain().focus().toggleBold().run()}
-                        active={editor.isActive('bold')} title="Negrita (Ctrl+B)">
+                        active={editor.isActive('bold')} title="Negrita">
                         <strong>B</strong>
                     </BubbleBtn>
-                    <BubbleBtn onClick={() => editor.chain().focus().toggleItalic().run()}
-                        active={editor.isActive('italic')} title="Cursiva (Ctrl+I)">
-                        <span className="italic">I</span>
-                    </BubbleBtn>
-                    <BubbleBtn onClick={() => editor.chain().focus().toggleUnderline().run()}
-                        active={editor.isActive('underline')} title="Subrayado (Ctrl+U)">
-                        <span className="underline">U</span>
-                    </BubbleBtn>
-                    <BubbleBtn onClick={() => editor.chain().focus().toggleStrike().run()}
-                        active={editor.isActive('strike')} title="Tachado">
-                        <span className="line-through underline-offset-4">S</span>
-                    </BubbleBtn>
                     <BubbleBtn onClick={() => editor.chain().focus().toggleHighlight({ color: '#2563eb' }).run()}
-                        active={editor.isActive('highlight')} title="Destacar">
-                        <div className="w-4 h-4 rounded bg-blue-500/20 border border-blue-500/40" />
+                        active={editor.isActive('highlight')} title="Resaltar">
+                        <div className="w-3 h-3 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
                     </BubbleBtn>
 
                     <div className="w-px h-5 bg-white/10 mx-1" />
 
-                    <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                        active={editor.isActive('heading', { level: 1 })}>H1</BubbleBtn>
-                    <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                        active={editor.isActive('heading', { level: 2 })}>H2</BubbleBtn>
-                    <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                        active={editor.isActive('heading', { level: 3 })}>H3</BubbleBtn>
-
-                    <div className="w-px h-5 bg-white/10 mx-1" />
-
-                    <BubbleBtn onClick={() => editor.chain().focus().toggleBulletList().run()}
-                        active={editor.isActive('bulletList')} title="Lista de puntos">•</BubbleBtn>
-                    <BubbleBtn onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                        active={editor.isActive('orderedList')} title="Lista numerada">1.</BubbleBtn>
                     <BubbleBtn onClick={() => editor.chain().focus().toggleCode().run()}
-                        active={editor.isActive('code')} title="Código inline">&lt;/&gt;</BubbleBtn>
+                        active={editor.isActive('code')} title="Código">
+                        <span className="text-[10px]">&lt;/&gt;</span>
+                    </BubbleBtn>
                 </div>
             </BubbleMenu>
 
-            <EditorContent editor={editor} className="w-full" />
+            <EditorContent editor={editor} className="w-full prose prose-invert max-w-none" />
         </div>
     );
 }

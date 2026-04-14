@@ -52,7 +52,7 @@ const register = async (req, res) => {
 
     res.status(201).json({ token, user });
   } catch (err) {
-    console.error('register error:', err);
+    console.error('register error:', err.message, '| detail:', err.detail || '', '| code:', err.code || '');
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
@@ -84,7 +84,19 @@ const login = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      // Usuari existia a Supabase però no a public.users (cas migració)
+      // Comprova si l'usuari existeix per email però amb supabase_id null (cas migració)
+      const byEmail = await pool.query(
+        `SELECT id, email, plan, ai_uses_this_month, display_name, created_at
+         FROM users WHERE email = $1`,
+        [email]
+      );
+      if (byEmail.rows.length > 0) {
+        // Actualitza supabase_id per vincular el compte existent
+        await pool.query('UPDATE users SET supabase_id = $1 WHERE email = $2', [supabaseId, email]);
+        const user = byEmail.rows[0];
+        return res.json({ token: issueToken(user), user });
+      }
+      // Usuari nou: crear registre
       const newUser = await pool.query(
         `INSERT INTO users (email, supabase_id)
          VALUES ($1, $2)
@@ -104,7 +116,7 @@ const login = async (req, res) => {
 
     res.json({ token, user });
   } catch (err) {
-    console.error('login error:', err);
+    console.error('login error:', err.message, '| detail:', err.detail || '', '| code:', err.code || '');
     res.status(500).json({ error: 'Error del servidor' });
   }
 };

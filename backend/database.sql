@@ -49,11 +49,12 @@ INSERT INTO plans (id, name, ai_uses_limit, price_eur, features) VALUES
 CREATE TABLE users (
   id                   SERIAL PRIMARY KEY,
   email                TEXT UNIQUE NOT NULL,
-  password             TEXT NOT NULL,
+  supabase_id          UUID UNIQUE,                  -- Supabase Auth UUID (nullable per compatibilitat)
+  password             TEXT,                         -- NULL quan s'usa Supabase Auth
   plan                 TEXT NOT NULL DEFAULT 'free' REFERENCES plans(id),
   ai_uses_this_month   INT NOT NULL DEFAULT 0,
   ai_uses_reset_at     TIMESTAMP NOT NULL DEFAULT date_trunc('month', NOW() + INTERVAL '1 month'),
-  -- Nous camps
+  -- Camps de perfil
   display_name         TEXT,
   avatar_url           TEXT,
   language             TEXT NOT NULL DEFAULT 'ca',   -- 'ca', 'es', 'en'
@@ -64,6 +65,9 @@ CREATE TABLE users (
   created_at           TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at           TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- Índex per accelerar lookup per supabase_id (s'usa a cada login)
+CREATE INDEX idx_users_supabase_id ON users(supabase_id) WHERE supabase_id IS NOT NULL;
 
 -- -----------------------------------------------------
 -- 5. TAULA SUBJECTS
@@ -185,12 +189,21 @@ CREATE TRIGGER trg_update_users_updated_at
 -- Trigger per calcular word_count automàticament
 CREATE OR REPLACE FUNCTION calculate_word_count()
 RETURNS TRIGGER AS $$
+DECLARE
+  plain TEXT;
 BEGIN
-  NEW.word_count = array_length(
-    string_to_array(trim(regexp_replace(NEW.content_plain, '\s+', ' ', 'g')), ' '),
-    1
-  );
-  NEW.reading_time = GREATEST(1, ROUND(NEW.word_count::numeric / 200));
+  plain := COALESCE(NEW.content_plain, '');
+  IF plain = '' OR trim(plain) = '' THEN
+    NEW.word_count := 0;
+    NEW.reading_time := 1;
+  ELSE
+    NEW.word_count := array_length(
+      string_to_array(trim(regexp_replace(plain, '\s+', ' ', 'g')), ' '),
+      1
+    );
+    NEW.word_count := COALESCE(NEW.word_count, 0);
+    NEW.reading_time := GREATEST(1, ROUND(NEW.word_count::numeric / 200));
+  END IF;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -286,10 +299,12 @@ CREATE POLICY "plans_public_read"  ON plans FOR SELECT USING (true);
 -- -----------------------------------------------------
 -- 14. DADES DE DEMO
 -- -----------------------------------------------------
-INSERT INTO users (email, password, plan, display_name, onboarding_done)
+-- NOTA: El demo user NO té supabase_id perquè és un compte de prova local.
+-- Per fer login amb l'usuari demo caldria crear-lo primer a Supabase Auth
+-- i llavors actualitzar supabase_id aquí.
+INSERT INTO users (email, plan, display_name, onboarding_done)
 VALUES (
   'demo@beta3m.com',
-  '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.',
   'pro',
   'Usuari Demo',
   TRUE

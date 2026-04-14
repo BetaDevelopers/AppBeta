@@ -17,10 +17,9 @@ const improve = async (req, res) => {
 
   try {
     const result = await openaiService.improveText(text);
-    incrementAiUsage(req.user.id);
     res.json({ result });
   } catch (err) {
-    console.error(err);
+    console.error('improve error:', err.message);
     res.status(500).json({ error: 'Error al processar amb IA. Comprova la clau API.' });
   }
 };
@@ -34,10 +33,9 @@ const summarize = async (req, res) => {
 
   try {
     const result = await openaiService.summarizeText(text);
-    incrementAiUsage(req.user.id);
     res.json({ result });
   } catch (err) {
-    console.error(err);
+    console.error('summarize error:', err.message);
     res.status(500).json({ error: 'Error al processar amb IA. Comprova la clau API.' });
   }
 };
@@ -51,10 +49,9 @@ const suggest = async (req, res) => {
 
   try {
     const subject = await openaiService.suggestSubject(text);
-    incrementAiUsage(req.user.id);
     res.json({ subject });
   } catch (err) {
-    console.error(err);
+    console.error('suggest error:', err.message);
     res.status(500).json({ error: 'Error al processar amb IA.' });
   }
 };
@@ -89,9 +86,10 @@ const chat = async (req, res) => {
 
   try {
     const reply = await openaiService.chatWithHistory(systemPrompt, messages);
-    incrementAiUsage(req.user.id);
+    // Nota: L'increment d'ús es gestiona per middleware o manualment si cal, 
+    // però aquí el traiem per evitar duplicats.
 
-    // Persistir l'últim missatge de l'usuari + la resposta
+    // Persistir l'últim missatge de l'usuari + l'assistent
     const lastUserMsg = messages[messages.length - 1];
     if (lastUserMsg?.role === 'user') {
       saveChatMessages(req.user.id, note_id, lastUserMsg.content, reply, context);

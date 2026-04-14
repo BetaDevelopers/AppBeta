@@ -2,22 +2,23 @@ import React from 'react';
 import { Spinner } from './Spinner';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+    variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'glass';
     size?: 'sm' | 'md' | 'lg';
     loading?: boolean;
 }
 
 const variants = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20',
-    secondary: 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700',
-    danger: 'bg-red-500 text-white hover:bg-red-600',
-    ghost: 'bg-transparent text-slate-400 hover:bg-slate-800 hover:text-white',
+    primary: 'btn-premium text-white shadow-lg shadow-blue-500/10 border border-blue-400/20',
+    secondary: 'bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10 hover:text-white',
+    glass: 'glass text-white border border-white/5 hover:bg-white/10',
+    danger: 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white',
+    ghost: 'bg-transparent text-slate-400 hover:text-white hover:bg-white/5',
 };
 
 const sizes = {
-    sm: 'px-4 py-2 text-sm',
-    md: 'px-6 py-3 text-base',
-    lg: 'px-8 py-4 text-lg',
+    sm: 'px-3 py-1.5 text-xs h-9',
+    md: 'px-5 py-2 text-sm h-11',
+    lg: 'px-8 py-4 text-base h-14',
 };
 
 export const Button: React.FC<ButtonProps> = ({
@@ -31,7 +32,7 @@ export const Button: React.FC<ButtonProps> = ({
 }) => (
     <button
         disabled={disabled || loading}
-        className={`inline-flex items-center justify-center font-bold rounded-xl transition-all h-12 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
+        className={`inline-flex items-center justify-center font-bold rounded-xl transition-all duration-300 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
         {...props}
     >
         {loading ? <Spinner size="sm" className={variant === 'primary' || variant === 'danger' ? 'text-white' : ''} /> : children}

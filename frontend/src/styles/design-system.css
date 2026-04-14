@@ -1,0 +1,109 @@
+/* ═══════════════════════════════════════════════════
+   BETA 3M — DESIGN SYSTEM v2
+   Tablet-first (Android), touch-optimized, dark theme
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  /* ── Colors ─────────────────────────────────────── */
+  --color-bg-primary:     #0D1117;
+  --color-bg-secondary:   #161B22;
+  --color-bg-tertiary:    #21262D;
+  --color-bg-elevated:    #2D333B;
+
+  --color-border:         rgba(255, 255, 255, 0.08);
+  --color-border-strong:  rgba(255, 255, 255, 0.15);
+
+  --color-text-primary:   #E6EDF3;
+  --color-text-secondary: #8B949E;
+  --color-text-muted:     #484F58;
+
+  --color-accent-blue:    #388BFD;
+  --color-accent-purple:  #A371F7;
+  --color-accent-green:   #3FB950;
+  --color-accent-orange:  #F78166;
+  --color-accent-yellow:  #E3B341;
+
+  /* ── Typography ──────────────────────────────────── */
+  --font-size-xs:   11px;
+  --font-size-sm:   13px;
+  --font-size-md:   15px;
+  --font-size-lg:   17px;
+  --font-size-xl:   20px;
+  --font-size-2xl:  24px;
+  --font-size-3xl:  30px;
+
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+
+  --line-height-tight:   1.3;
+  --line-height-normal:  1.6;
+  --line-height-relaxed: 1.8;
+
+  /* ── Spacing ─────────────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+
+  /* ── Touch & Radius ──────────────────────────────── */
+  --touch-target:    48px;
+  --touch-target-lg: 56px;
+
+  --border-radius-sm:   6px;
+  --border-radius-md:   10px;
+  --border-radius-lg:   14px;
+  --border-radius-xl:   20px;
+  --border-radius-full: 9999px;
+
+  /* ── Animations (GPU-only, Android-safe) ────────── */
+  --transition-fast:   120ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow:   300ms ease;
+}
+
+/* ─── Touch base ─────────────────────────────────────── */
+/* Prevent tap highlight flash on Android Chrome */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Prevent double-tap zoom on buttons */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Prevent iOS/Android zoom on input focus */
+input, textarea, select {
+  font-size: max(16px, 1rem) !important;
+}
+
+/* Universal touch feedback */
+button:active,
+[role="button"]:active,
+.ds-touch-feedback:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
+}
+
+/* ─── Scroll touch ────────────────────────────────────── */
+.scroll-touch {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* ─── Sidebar scroll fix ──────────────────────────────── */
+/* Use opacity + visibility instead of width to avoid reflow */
+.sidebar-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.sidebar-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: all;
+}

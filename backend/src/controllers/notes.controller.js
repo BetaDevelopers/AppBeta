@@ -12,6 +12,8 @@ const getAll = async (req, res) => {
       FROM notes n
       LEFT JOIN subjects s ON n.subject_id = s.id
       WHERE n.user_id = $1
+        AND n.deleted_at IS NULL
+        AND n.is_archived = FALSE
     `;
     const params = [userId];
     if (subject_id) {
@@ -22,7 +24,7 @@ const getAll = async (req, res) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error('getAll notes error:', err.message, err.detail || '');
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
@@ -51,16 +53,21 @@ const create = async (req, res) => {
   const { title = 'Sense títol', content = '', subject_id = null } = req.body;
   const userId = req.user.id;
 
+  // subject_id ha de ser null o un enter positiu
+  const safeSubjectId = subject_id && Number.isInteger(subject_id) && subject_id > 0
+    ? subject_id
+    : null;
+
   const contentPlain = stripHtml(content);
 
   try {
     const result = await pool.query(
       'INSERT INTO notes (title, content, content_plain, subject_id, user_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [title, content, contentPlain, subject_id, userId]
+      [title, content, contentPlain, safeSubjectId, userId]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error('create note error:', err.message, err.detail || '');
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
@@ -182,6 +189,8 @@ const search = async (req, res) => {
                 ) AS rank
          FROM notes
          WHERE user_id = $2
+           AND deleted_at IS NULL
+           AND is_archived = FALSE
            AND to_tsvector('simple', coalesce(title,'') || ' ' || coalesce(content_plain,''))
                @@ plainto_tsquery('simple', $1)
          ORDER BY rank DESC, updated_at DESC
@@ -195,6 +204,8 @@ const search = async (req, res) => {
         `SELECT id, title, content_plain, subject_id, updated_at
          FROM notes
          WHERE user_id = $1
+           AND deleted_at IS NULL
+           AND is_archived = FALSE
            AND (title ILIKE $2 OR content_plain ILIKE $2)
          ORDER BY updated_at DESC
          LIMIT 20`,

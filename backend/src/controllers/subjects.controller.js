@@ -8,7 +8,7 @@ const getAll = async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error('getAll subjects error:', err.message);
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
@@ -27,7 +27,7 @@ const create = async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error('create subject error:', err.message, err.detail || '');
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
@@ -48,7 +48,7 @@ const update = async (req, res) => {
     );
     res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error('update subject error:', err.message);
     res.status(500).json({ error: 'Error del servidor' });
   }
 };
@@ -65,7 +65,7 @@ const remove = async (req, res) => {
     await pool.query('DELETE FROM subjects WHERE id = $1', [id]);
     res.json({ message: 'Assignatura eliminada' });
   } catch (err) {
-    console.error(err);
+    console.error('delete subject error:', err.message);
     res.status(500).json({ error: 'Error del servidor' });
   }
 };

@@ -117,6 +117,6 @@ function validateId(req, res, next) {
 
 // Patrons reutilitzables
 validateBody.EMAIL_PATTERN = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
-validateBody.HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
+validateBody.HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 module.exports = { sanitizeString, validateBody, validateId };

@@ -6,11 +6,18 @@ if (!process.env.DB_PASSWORD) {
   process.exit(1);
 }
 
+console.log('DB CONFIG:', {
+  host: 'aws-0-eu-west-1.pooler.supabase.com',
+  user: 'postgres.hcxhgukqekyekybmbzgi',
+  passwordLength: process.env.DB_PASSWORD?.length,
+  passwordFirst3: process.env.DB_PASSWORD?.substring(0, 3),
+});
+
 const pool = new Pool({
-  host: 'aws-0-eu-north-1.pooler.supabase.com',
+  host: 'aws-0-eu-west-1.pooler.supabase.com',
   port: 6543,
   database: 'postgres',
-  user: 'postgres.umalncxibvjoqmaklfsg',
+  user: 'postgres.hcxhgukqekyekybmbzgi',
   password: process.env.DB_PASSWORD,
   ssl: { rejectUnauthorized: false },
   max: 10,

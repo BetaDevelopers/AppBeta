@@ -19,7 +19,8 @@
       "Bash(curl -s http://localhost:3000/)",
       "mcp__plugin_supabase_supabase__execute_sql",
       "Bash(node:*)",
-      "Bash(npx vite:*)"
+      "Bash(npx vite:*)",
+      "mcp__plugin_supabase_supabase__get_project"
     ]
   }
 }

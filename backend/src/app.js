@@ -25,7 +25,7 @@ app.get('/', (req, res) => {
 
 // Gestió d'errors global
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('[GLOBAL ERROR]', err.stack);
   res.status(500).json({ error: 'Error intern del servidor' });
 });
 
