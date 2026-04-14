@@ -1,5 +1,6 @@
 import React from 'react';
 import { useMathToolsStore } from '../../store/mathToolsStore';
+import { markdownToHtml } from '../../utils/editorUtils';
 import MathToolModal from '../notes/MathToolModal';
 import MathOCR from '@/features/math/components/MathOCR';
 import MathOCRImage from '@/features/math/components/MathOCRImage';
@@ -15,19 +16,28 @@ import FileUploadOCR from '../files/FileUploadOCR';
 export default function MathToolsModals() {
     const { activeTool, pendingResult, editor, closeTool, setPendingResult } = useMathToolsStore();
 
-    const insert = (text: string) => {
-        if (!editor || !text) return;
-        editor.chain().focus().insertContent(text).run();
+    const insertHtml = (html: string) => {
+        if (!editor || !html) return;
+        editor.chain().focus().insertContent(html).run();
     };
 
-    const insertAndClose = (text: string) => {
-        insert(text);
-        closeTool();
+    const insertMarkdown = (md: string) => {
+        if (!editor || !md) return;
+        insertHtml(markdownToHtml(md));
     };
 
-    const insertImage = (src: string) => {
-        if (!editor) return;
-        editor.chain().focus().setImage({ src }).run();
+    const insertLatex = (latex: string) => {
+        if (!editor || !latex) return;
+        editor.chain().focus().insertContent(`$$${latex}$$`).run();
+    };
+
+    const insertAndClose = (type: 'html' | 'md' | 'latex' | 'image', content: string) => {
+        if (type === 'latex') insertLatex(content);
+        else if (type === 'md') insertMarkdown(content);
+        else if (type === 'image') {
+            editor?.chain().focus().setImage({ src: content }).run();
+        } else insertHtml(content);
+
         closeTool();
     };
 
@@ -39,9 +49,9 @@ export default function MathToolsModals() {
             <MathToolModal
                 isOpen={activeTool === 'mathOCR'}
                 onClose={closeTool}
-                title="Lápiz — Dibuix a LaTeX"
+                title="Lápiz inteligente — Reconocimiento"
                 canInsert={canInsert}
-                onInsert={() => insertAndClose(`$$${pendingResult}$$`)}
+                onInsert={() => insertAndClose('latex', pendingResult!)}
             >
                 <MathOCR onResult={setPendingResult} />
             </MathToolModal>
@@ -50,9 +60,9 @@ export default function MathToolsModals() {
             <MathToolModal
                 isOpen={activeTool === 'smartCamera'}
                 onClose={closeTool}
-                title="Càmera — Escanejar amb OCR"
+                title="Cámara — Escaneo con OCR"
                 canInsert={canInsert}
-                onInsert={() => insertAndClose(pendingResult!)}
+                onInsert={() => insertAndClose('md', pendingResult!)}
             >
                 <SmartCamera onResult={setPendingResult} />
             </MathToolModal>
@@ -61,13 +71,13 @@ export default function MathToolsModals() {
             <MathToolModal
                 isOpen={activeTool === 'fileUpload'}
                 onClose={closeTool}
-                title="Pujar arxiu — OCR"
+                title="Cargar archivo — OCR"
                 canInsert={canInsert}
-                onInsert={() => insertAndClose(pendingResult!)}
+                onInsert={() => insertAndClose('md', pendingResult!)}
             >
                 <FileUploadOCR
                     onResult={setPendingResult}
-                    onInsertImage={insertImage}
+                    onInsertImage={(src) => insertAndClose('image', src)}
                 />
             </MathToolModal>
 
@@ -75,9 +85,9 @@ export default function MathToolsModals() {
             <MathToolModal
                 isOpen={activeTool === 'mathOCRImage'}
                 onClose={closeTool}
-                title="Imatge — OCR Matemàtic"
+                title="OCR de Imagen — Matemáticas"
                 canInsert={canInsert}
-                onInsert={() => insertAndClose(pendingResult!)}
+                onInsert={() => insertAndClose('md', pendingResult!)}
             >
                 <MathOCRImage onResult={setPendingResult} />
             </MathToolModal>
@@ -86,9 +96,9 @@ export default function MathToolsModals() {
             <MathToolModal
                 isOpen={activeTool === 'mathEditor'}
                 onClose={closeTool}
-                title="TeXificar — Text a LaTeX"
+                title="TeXificar — Convertir a LaTeX"
                 canInsert={canInsert}
-                onInsert={() => insertAndClose(pendingResult!)}
+                onInsert={() => insertAndClose('md', pendingResult!)}
             >
                 <MathEditor onResult={setPendingResult} />
             </MathToolModal>
@@ -97,10 +107,15 @@ export default function MathToolsModals() {
             <MathToolModal
                 isOpen={activeTool === 'tableToChart'}
                 onClose={closeTool}
-                title="Gràfic — Taula a Gràfic"
+                title="Visualizador de Datos"
                 canInsert={canInsert}
-                onInsert={() => insertAndClose(`\n\n> 📊 ${pendingResult}`)}
-                insertLabel="Inserir descripció"
+                onInsert={() => {
+                    const block = `<div style="background:rgba(56,139,253,0.05);padding:20px;border-radius:16px;border:1px solid rgba(56,139,253,0.2);margin:16px 0;">
+                        <strong>📊 Gráfico Generado:</strong><br/>
+                        ${pendingResult}
+                    </div>`;
+                    insertAndClose('html', block);
+                }}
             >
                 <TableToChart onResult={setPendingResult} />
             </MathToolModal>
@@ -109,9 +124,9 @@ export default function MathToolsModals() {
             <MathToolModal
                 isOpen={activeTool === 'chartToTable'}
                 onClose={closeTool}
-                title="Gràfic → Taula de dades"
+                title="Gráfico → Tabla de datos"
                 canInsert={canInsert}
-                onInsert={() => insertAndClose(pendingResult!)}
+                onInsert={() => insertAndClose('md', pendingResult!)}
             >
                 <ChartToTable onResult={setPendingResult} />
             </MathToolModal>
@@ -120,10 +135,15 @@ export default function MathToolsModals() {
             <MathToolModal
                 isOpen={activeTool === 'geometry'}
                 onClose={closeTool}
-                title="Geometria — Dibuix a SVG"
+                title="Laboratorio de Geometría"
                 canInsert={canInsert}
-                onInsert={() => insertAndClose(pendingResult!)}
-                insertLabel="Inserir SVG"
+                onInsert={() => {
+                    // El result de geometría suele ser un SVG o una descripción
+                    const block = `<div style="background:rgba(139,92,246,0.05);padding:20px;border-radius:16px;border:1px solid rgba(139,92,246,0.2);margin:16px 0;">
+                        ${pendingResult}
+                    </div>`;
+                    insertAndClose('html', block);
+                }}
             >
                 <GeometryCanvas onResult={setPendingResult} />
             </MathToolModal>
@@ -132,18 +152,18 @@ export default function MathToolsModals() {
             <MathToolModal
                 isOpen={activeTool === 'diagram'}
                 onClose={closeTool}
-                title="Diagrama — Interpret Esquema"
+                title="Generador de Diagramas"
                 canInsert={canInsert}
-                onInsert={() => insertAndClose(pendingResult!)}
+                onInsert={() => insertAndClose('md', pendingResult!)}
             >
                 <DiagramCanvas onResult={setPendingResult} />
             </MathToolModal>
 
-            {/* ── Calibrar → HandwritingCalibrator (sense inserció) ── */}
+            {/* ── Calibrar → HandwritingCalibrator ── */}
             <MathToolModal
                 isOpen={activeTool === 'calibrate'}
                 onClose={closeTool}
-                title="Calibrar Escriptura"
+                title="Calibrar escritura"
             >
                 <HandwritingCalibrator />
             </MathToolModal>

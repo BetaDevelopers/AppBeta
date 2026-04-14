@@ -11,6 +11,7 @@ import { useMathToolsStore } from '../../store/mathToolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { useMathOCR, MathRegion } from '@/features/ai/hooks/useMathOCR';
+import { markdownToHtml } from '../../utils/editorUtils';
 
 // ── Definit FORA de NoteEditor per evitar desmuntatge en cada re-render ──
 function ToolBtn({ onClick, disabled, title, accent, children }: {
@@ -156,41 +157,6 @@ export const NoteEditor: React.FC = () => {
         return () => { storeSetEditor(null); };
     }, [editor]);
 
-    // Helper: converteix markdown bàsic a HTML compatible amb Tiptap
-    const markdownToHtml = (md: string): string => {
-        if (!md) return '';
-        return md
-            // Títols
-            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-            .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-            // Format
-            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.+?)\*/g, '<em>$1</em>')
-            .replace(/~~(.+?)~~/g, '<s>$1</s>')
-            // Llistes — agrupa els <li> dins <ul>
-            .replace(/((?:^- .+\n?)+)/gm, (block) => {
-                const items = block
-                    .trim()
-                    .split('\n')
-                    .map((l) => `<li>${l.replace(/^- /, '')}</li>`)
-                    .join('');
-                return `<ul>${items}</ul>`;
-            })
-            // Llistes numerades
-            .replace(/((?:^\d+\. .+\n?)+)/gm, (block) => {
-                const items = block
-                    .trim()
-                    .split('\n')
-                    .map((l) => `<li>${l.replace(/^\d+\. /, '')}</li>`)
-                    .join('');
-                return `<ol>${items}</ol>`;
-            })
-            // Paràgrafs (línies que no comencen per etiqueta HTML)
-            .replace(/^(?!<[a-z])(.*\S.*)$/gm, '<p>$1</p>')
-            // Neteja paràgrafs buits
-            .replace(/<p>\s*<\/p>/g, '');
-    };
 
     const handleOCRResult = (
         markdown: string,
@@ -347,8 +313,24 @@ export const NoteEditor: React.FC = () => {
         setAiMode('summarize');
         try {
             const result = await summarizeWithAI(plainText);
-            const summaryHtml = `<div style="background:rgba(59,130,246,0.05);padding:20px;border-radius:16px;margin:20px 0;border:1px solid rgba(59,130,246,0.1);"><strong>📝 Resum Automàtic:</strong><br/>${result}</div>`;
-            setContent(content + summaryHtml);
+            if (!editor) return;
+
+            const summaryHtml = `<div style="background:rgba(59,130,246,0.05);padding:24px;border-radius:24px;margin:24px 0;border:1px solid rgba(59,130,246,0.15);">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                    <span style="font-size:20px;">📝</span>
+                    <strong style="text-transform:uppercase;letter-spacing:0.1em;font-size:12px;color:#3b82f6;">Resumen Automático</strong>
+                </div>
+                ${markdownToHtml(result)}
+            </div>`;
+
+            editor.chain()
+                .focus('end')
+                .insertContent('<hr />')
+                .insertContent(summaryHtml)
+                .run();
+
+            setToast('Resumen generado e insertado');
+            setTimeout(() => setToast(null), 3000);
         } catch (err: any) {
             setError(err.message || 'Error al generar resum.');
             setTimeout(() => setError(null), 4000);
