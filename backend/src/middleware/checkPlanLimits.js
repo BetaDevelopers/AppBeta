@@ -30,16 +30,12 @@ const checkPlanLimits = async (req, res, next) => {
     }
 
     // 3. Validar límits segons el pla
-    if (plan === 'free') {
-      return res.status(403).json({
-        error: 'Actualitza el pla per usar la IA',
-        upgrade_url: '/plans'
-      });
-    }
+    const limits = { free: 10, pro: 50 };
+    const limit = limits[plan];
 
-    if (plan === 'pro' && ai_uses_this_month >= 50) {
+    if (limit !== undefined && ai_uses_this_month >= limit) {
       return res.status(403).json({
-        error: 'Has arribat al límit de 50 usos mensuals del pla Pro.',
+        error: `Has arribat al límit de ${limit} usos mensuals del pla ${plan}.`,
         upgrade_url: '/plans'
       });
     }

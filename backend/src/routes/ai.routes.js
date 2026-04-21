@@ -6,6 +6,7 @@ const {
   mathOCR,
   segmentMathOCR,
   fixMathText,
+  mathSolve,
   analyzeTable,
   extractChartData,
   vectorizeShape,
@@ -51,6 +52,10 @@ router.post('/math-segment',
 router.post('/math-fix',
   validateBody({ text: TEXT_RULE }),
   fixMathText
+);
+router.post('/math-solve',
+  validateBody({ latex: { type: 'string', required: true, maxLength: 5000 } }),
+  mathSolve
 );
 router.post('/table-to-chart',
   validateBody({ tableMarkdown: { type: 'string', required: true, maxLength: 50000 } }),

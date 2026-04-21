@@ -38,27 +38,32 @@ const ocrFromImage = async (req, res) => {
               },
               {
                 type: 'text',
-                text: `Analitza aquesta imatge (pissarra, paper, captura de pantalla o apunt) i extreu TOT el contingut visible.
+                text: `Analiza esta imagen (pizarra, papel, captura de pantalla o apunte) y extrae TODO el contenido visible.
 
-Retorna ÚNICAMENT un objecte JSON vàlid amb aquesta estructura exacta, sense cap text addicional ni blocs de codi markdown:
+Si detectas ecuaciones, fórmulas o operaciones matemáticas, RESUÉLVELAS paso a paso y muestra el resultado final.
+
+Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta, sin texto adicional ni bloques de código markdown:
 {
-  "title": "títol principal si n'hi ha, o null si no n'hi ha",
-  "content_markdown": "tot el contingut en format markdown",
+  "title": "título principal si hay, o null si no hay",
+  "content_markdown": "todo el contenido en formato markdown incluyendo resolución de operaciones",
   "has_formulas": true,
-  "has_tables": true,
-  "language": "ca"
+  "has_tables": false,
+  "language": "es"
 }
 
-REGLES per al camp content_markdown:
-- Fórmules matemàtiques inline: $E = mc^2$
-- Fórmules matemàtiques en bloc: $$\\int_0^\\infty f(x)\\,dx$$
-- Taules: format markdown estàndard | Col1 | Col2 |\\n|---|---|
-- Jerarquia: # per títols principals, ## per subtítols, ### per apartats
-- Llistes: - per punts, 1. 2. 3. per numerades
-- Negreta per conceptes clau: **concepte**
-- Si no pots llegir alguna part: [il·legible]
-- Preserva l'estructura i ordre originals
-- NO afegeixis comentaris ni explicacions fora del JSON`,
+REGLAS para el campo content_markdown:
+- Fórmulas matemáticas inline: $E = mc^2$
+- Fórmulas matemáticas en bloque: $$\\int_0^\\infty f(x)\\,dx$$
+- Si hay una ecuación o operación matemática:
+  1. Muestra primero la expresión detectada: **Expresión:** $...$
+  2. Luego resuélvela paso a paso bajo el título **## Resolución**
+  3. Indica el resultado final: **Resultado:** $...$
+- Tablas: formato markdown estándar | Col1 | Col2 |\\n|---|---|
+- Jerarquía: # para títulos principales, ## para subtítulos
+- Listas: - para puntos, 1. 2. 3. para numeradas
+- Negrita para conceptos clave: **concepto**
+- Si no puedes leer alguna parte: [ilegible]
+- NO añadas comentarios ni explicaciones fuera del JSON`,
               },
             ],
           },

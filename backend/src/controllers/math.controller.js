@@ -861,14 +861,83 @@ REGLES:
   }
 };
 
-module.exports = { 
-  mathOCR, 
-  segmentMathOCR, 
-  fixMathText, 
-  analyzeTable, 
-  extractChartData, 
-  vectorizeShape, 
-  interpretDiagram, 
-  calibrateHandwriting, 
-  createTableAssist 
+const mathSolve = async (req, res) => {
+  try {
+    const { latex } = req.body;
+    if (!latex) return res.status(400).json({ error: "Cal enviar 'latex'." });
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: 1500,
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: `Eres un calculador matemático experto. Resuelve o simplifica la expresión LaTeX que te dan.
+
+FORMAT DE SORTIDA (JSON OBLIGATORI):
+{
+  "result": "expressió LaTeX simplificada o solució final",
+  "steps": ["pas 1 com a string LaTeX o text curt", "pas 2 ...", ...],
+  "explanation": "breu explicació en la mateixa llengua de l'expressió"
+}
+
+REGLES:
+1. "result" ha de ser LaTeX vàlid per a KaTeX (no uses entorns no suportats).
+2. "steps" és un array de strings; cada element pot ser LaTeX inline ($...$) o text pla.
+3. Si hi ha = (equació), resol per a la/les incògnites.
+4. Si no hi ha = (expressió), simplifica o calcula el valor numèric.
+5. Si no es pot resoldre analíticament, indica-ho al "explanation" i proporciona la forma simplificada com a "result".
+6. Detecta la llengua i respon en la mateixa (castellà per defecte si és ambigua).`,
+          },
+          {
+            role: 'user',
+            content: `Resol o simplifica: ${latex}`,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error?.message || `Error OpenAI: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const result = JSON.parse(data.choices[0].message.content);
+
+    pool.query(
+      `INSERT INTO ai_usage_logs (user_id, note_id, action, tokens_used) VALUES ($1, $2, $3, $4)`,
+      [req.user.id, null, 'math-solve', data.usage?.total_tokens || 0]
+    ).catch(e => console.warn('Log error:', e.message));
+    pool.query(
+      'UPDATE users SET ai_uses_this_month = ai_uses_this_month + 1 WHERE id = $1',
+      [req.user.id]
+    ).catch(e => console.warn('AI counter error:', e.message));
+
+    res.json(result);
+  } catch (err) {
+    console.error('math-solve error:', err);
+    res.status(500).json({ error: 'Error intern' });
+  }
+};
+
+module.exports = {
+  mathOCR,
+  segmentMathOCR,
+  fixMathText,
+  mathSolve,
+  analyzeTable,
+  extractChartData,
+  vectorizeShape,
+  interpretDiagram,
+  calibrateHandwriting,
+  createTableAssist
 };

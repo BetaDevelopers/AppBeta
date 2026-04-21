@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { mathOCR, mathFix } from "../../../api/mathApi";
+import { mathOCR, mathSolve } from "../../../api/mathApi";
 
 const CANVAS_W = 720;
 const CANVAS_H = 320;
@@ -22,75 +22,125 @@ function renderKatex(latex) {
 
 // --- Shape Detection ---
 const getBoundingBox = (pts) => {
-    const xs = pts.map(p => p.x);
-    const ys = pts.map(p => p.y);
+    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
     const minX = Math.min(...xs), maxX = Math.max(...xs);
     const minY = Math.min(...ys), maxY = Math.max(...ys);
     return { minX, maxX, minY, maxY, w: maxX - minX, h: maxY - minY, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };
 };
 
-const isClosed = (pts, threshold = 40) => {
-    if (pts.length < 6) return false;
+const isClosed = (pts, threshold) => {
+    if (pts.length < 8) return false;
+    const t = threshold || 40;
     const dx = pts[0].x - pts[pts.length - 1].x;
     const dy = pts[0].y - pts[pts.length - 1].y;
-    return Math.sqrt(dx * dx + dy * dy) < threshold;
+    return Math.sqrt(dx * dx + dy * dy) < t;
 };
 
-const countCorners = (pts, angleThreshold = 45) => {
-    if (pts.length < 5) return 0;
-    const step = Math.max(1, Math.floor(pts.length / 15));
-    let corners = 0;
-    for (let i = step; i < pts.length - step; i += step) {
-        const prev = pts[i - step], curr = pts[i], next = pts[i + step];
-        const a1 = Math.atan2(curr.y - prev.y, curr.x - prev.x);
-        const a2 = Math.atan2(next.y - curr.y, next.x - curr.x);
-        let diff = Math.abs((a2 - a1) * 180 / Math.PI);
-        if (diff > 180) diff = 360 - diff;
-        if (diff > angleThreshold) corners++;
+const simplifyRDP = (pts, eps = 13) => {
+    if (pts.length <= 2) return pts;
+    const [p1, p2] = [pts[0], pts[pts.length - 1]];
+    const denom = Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2) || 1;
+    let maxDist = 0, maxIdx = 0;
+    for (let i = 1; i < pts.length - 1; i++) {
+        const d = Math.abs((p2.y - p1.y) * pts[i].x - (p2.x - p1.x) * pts[i].y + p2.x * p1.y - p2.y * p1.x) / denom;
+        if (d > maxDist) { maxDist = d; maxIdx = i; }
     }
-    return corners;
+    if (maxDist > eps) {
+        return [...simplifyRDP(pts.slice(0, maxIdx + 1), eps).slice(0, -1), ...simplifyRDP(pts.slice(maxIdx), eps)];
+    }
+    return [p1, p2];
 };
 
 const detectShape = (pts) => {
-    if (pts.length < 10) return null;
+    if (pts.length < 8) return null;
     const bb = getBoundingBox(pts);
-    const closed = isClosed(pts);
-    const aspect = bb.w / bb.h;
-    const corners = countCorners(pts);
+    const diagSize = Math.sqrt(bb.w ** 2 + bb.h ** 2);
+    const closed = isClosed(pts, Math.max(28, diagSize * 0.18));
+    const aspect = bb.w / (bb.h || 1);
 
     if (!closed) {
-        const dx = pts[pts.length - 1].x - pts[0].x, dy = pts[pts.length - 1].y - pts[0].y;
+        const first = pts[0], last = pts[pts.length - 1];
+        const dx = last.x - first.x, dy = last.y - first.y;
         const len = Math.sqrt(dx * dx + dy * dy);
-        if (len < 30) return null;
+        if (len < 20) return null;
         const maxDev = pts.reduce((max, p) => {
-            const dev = Math.abs(dy * p.x - dx * p.y + pts[pts.length - 1].x * pts[0].y - pts[pts.length - 1].y * pts[0].x) / len;
-            return Math.max(max, dev);
+            const d = Math.abs(dy * p.x - dx * p.y + last.x * first.y - last.y * first.x) / len;
+            return Math.max(max, d);
         }, 0);
-        if (maxDev < len * 0.15) return { type: 'Línea', bb };
+        if (maxDev < len * 0.13) {
+            const angle = Math.atan2(Math.abs(dy), Math.abs(dx)) * 180 / Math.PI;
+            const orientation = angle < 22 ? 'horizontal' : angle > 68 ? 'vertical' : 'diagonal';
+            return { type: 'Línea', orientation, start: first, end: last, bb };
+        }
         return null;
     }
 
-    if (corners <= 2 && aspect >= 0.7 && aspect <= 1.4) return { type: 'Círculo', bb };
-    if (corners >= 3 && corners <= 5) {
-        if (corners === 3) return { type: 'Triángulo', bb };
-        return { type: 'Cuadrilátero', bb };
-    }
-    return null;
+    const simplified = simplifyRDP(pts, 14);
+    const n = simplified.length;
+
+    // Curvature ratio: how much the real stroke deviates from the polygon
+    const strokePerim = pts.reduce((s, p, i) => {
+        const q = pts[(i + 1) % pts.length];
+        return s + Math.sqrt((q.x - p.x) ** 2 + (q.y - p.y) ** 2);
+    }, 0);
+    const polyPerim = simplified.reduce((s, p, i) => {
+        if (i === 0) return 0;
+        return s + Math.sqrt((p.x - simplified[i - 1].x) ** 2 + (p.y - simplified[i - 1].y) ** 2);
+    }, 0) + Math.sqrt((simplified[0].x - simplified[n - 1].x) ** 2 + (simplified[0].y - simplified[n - 1].y) ** 2);
+    const curvature = strokePerim / (polyPerim || 1);
+
+    // Circle/Ellipse: smooth and roundish
+    if (n <= 4 && curvature > 1.12) return { type: 'Círculo', bb };
+    if (n >= 7) return { type: 'Círculo', bb };
+
+    // Triangle: 3 corners → n ≈ 3-4, straight sides → curvature ≈ 1
+    if (n <= 4) return { type: 'Triángulo', bb };
+
+    // Pentagon: 5 corners → n ≈ 5-7
+    if (n >= 6 && n <= 8) return { type: 'Pentágono', bb };
+
+    // Quadrilateral: 4 corners → n ≈ 4-6
+    if (aspect >= 0.80 && aspect <= 1.25) return { type: 'Cuadrado', bb };
+    return { type: 'Rectángulo', bb };
 };
 
 const drawPerfectShape = (ctx, shape, color = "#818cf8") => {
     ctx.beginPath();
     ctx.strokeStyle = color;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 3.5;
     const { bb } = shape;
+
     if (shape.type === 'Círculo') {
-        ctx.arc(bb.cx, bb.cy, Math.min(bb.w, bb.h) / 2, 0, Math.PI * 2);
-    } else if (shape.type === 'Cuadrilátero') {
-        ctx.roundRect(bb.minX, bb.minY, bb.w, bb.h, 4);
+        ctx.ellipse(bb.cx, bb.cy, bb.w / 2, bb.h / 2, 0, 0, Math.PI * 2);
+    } else if (shape.type === 'Cuadrado') {
+        const side = (bb.w + bb.h) / 2;
+        ctx.roundRect(bb.cx - side / 2, bb.cy - side / 2, side, side, 2);
+    } else if (shape.type === 'Rectángulo') {
+        ctx.roundRect(bb.minX, bb.minY, bb.w, bb.h, 3);
     } else if (shape.type === 'Triángulo') {
-        ctx.moveTo(bb.cx, bb.minY); ctx.lineTo(bb.maxX, bb.maxY); ctx.lineTo(bb.minX, bb.maxY); ctx.closePath();
+        ctx.moveTo(bb.cx, bb.minY);
+        ctx.lineTo(bb.maxX, bb.maxY);
+        ctx.lineTo(bb.minX, bb.maxY);
+        ctx.closePath();
+    } else if (shape.type === 'Pentágono') {
+        const r = Math.min(bb.w, bb.h) / 2;
+        for (let i = 0; i < 5; i++) {
+            const a = (i * 2 * Math.PI / 5) - Math.PI / 2;
+            const x = bb.cx + r * Math.cos(a), y = bb.cy + r * Math.sin(a);
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.closePath();
     } else if (shape.type === 'Línea') {
-        ctx.moveTo(bb.minX, bb.cy); ctx.lineTo(bb.maxX, bb.cy);
+        if (shape.orientation === 'vertical') {
+            ctx.moveTo(bb.cx, bb.minY);
+            ctx.lineTo(bb.cx, bb.maxY);
+        } else if (shape.orientation === 'diagonal') {
+            ctx.moveTo(shape.start.x, shape.start.y);
+            ctx.lineTo(shape.end.x, shape.end.y);
+        } else {
+            ctx.moveTo(bb.minX, bb.cy);
+            ctx.lineTo(bb.maxX, bb.cy);
+        }
     }
     ctx.stroke();
 };
@@ -104,6 +154,8 @@ export default function MathOCR({ onResult } = {}) {
     const [loading, setLoading] = useState(false);
     const [calcLoading, setCalcLoading] = useState(false);
     const [calcResult, setCalcResult] = useState(null);
+    const [calcSteps, setCalcSteps] = useState([]);
+    const [calcExplanation, setCalcExplanation] = useState('');
     const [error, setError] = useState(null);
     const [autoMode, setAutoMode] = useState(true);
     const [snapActive, setSnapActive] = useState(null);
@@ -172,10 +224,18 @@ export default function MathOCR({ onResult } = {}) {
     async function handleCalculate() {
         if (!result?.latex) return;
         setCalcLoading(true);
+        setCalcResult(null);
+        setCalcSteps([]);
+        setCalcExplanation('');
         try {
-            const data = await mathFix(result.latex);
-            setCalcResult(data.fixedText || data.content_markdown || data.latex || "");
-        } catch { setCalcResult("Error al calcular"); } finally { setCalcLoading(false); }
+            const data = await mathSolve(result.latex);
+            setCalcResult(data.result || "");
+            setCalcSteps(data.steps || []);
+            setCalcExplanation(data.explanation || "");
+        } catch (e) {
+            setCalcResult("\\text{Error al resolver}");
+            setCalcExplanation(e.message || "");
+        } finally { setCalcLoading(false); }
     }
 
     return (
@@ -229,7 +289,7 @@ export default function MathOCR({ onResult } = {}) {
                     ↩ Deshacer
                 </button>
                 <button
-                    onClick={() => { setAllStrokes([]); setResult(null); setCalcResult(null); }}
+                    onClick={() => { setAllStrokes([]); setResult(null); setCalcResult(null); setCalcSteps([]); setCalcExplanation(''); }}
                     disabled={allStrokes.length === 0}
                     className="h-14 px-8 rounded-2xl bg-white/5 border border-white/10 text-slate-500 text-xs font-black uppercase tracking-widest hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/20 transition-all disabled:opacity-20"
                 >
@@ -277,15 +337,30 @@ export default function MathOCR({ onResult } = {}) {
                             )}
 
                             {calcResult && (
-                                <div className="w-full pt-8 border-t border-indigo-500/10">
-                                    <div className="flex items-center gap-4 mb-6">
-                                        <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs font-black">✓</span>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60">Solución Propuesta</span>
+                                <div className="w-full pt-8 border-t border-indigo-500/10 space-y-6">
+                                    {calcSteps.length > 0 && (
+                                        <div>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 block">Pasos</span>
+                                            <div className="space-y-3">
+                                                {calcSteps.map((step, i) => (
+                                                    <div key={i} className="flex items-start gap-3">
+                                                        <span className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-[10px] font-black flex-shrink-0 mt-0.5">{i + 1}</span>
+                                                        <div className="text-sm text-slate-300" dangerouslySetInnerHTML={{ __html: renderKatex(step) }} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <div className="flex items-center gap-4 mb-4">
+                                            <span className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xs font-black">✓</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60">Resultado</span>
+                                        </div>
+                                        <div className="text-2xl md:text-4xl text-center text-slate-300" dangerouslySetInnerHTML={{ __html: renderKatex(calcResult) }} />
+                                        {calcExplanation && (
+                                            <p className="mt-4 text-xs text-slate-500 text-center leading-relaxed">{calcExplanation}</p>
+                                        )}
                                     </div>
-                                    <div
-                                        className="text-2xl md:text-4xl text-center text-slate-300"
-                                        dangerouslySetInnerHTML={{ __html: renderKatex(calcResult) }}
-                                    />
                                 </div>
                             )}
                         </div>

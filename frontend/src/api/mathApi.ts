@@ -59,6 +59,13 @@ export function mathOCRImage(imageBase64: string) {
     }>('/ai/ocr', { image: imageBase64, mime_type: 'image/jpeg' });
 }
 
+export function mathSolve(latex: string) {
+    return apiClient.post<{ result: string; steps: string[]; explanation: string }>(
+        '/ai/math-solve',
+        { latex }
+    );
+}
+
 export function mathFix(text: string) {
     return apiClient.post<{ fixedText?: string; latex?: string; content_markdown?: string }>(
         '/ai/math-fix',

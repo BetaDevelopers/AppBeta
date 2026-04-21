@@ -6,7 +6,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import katex from "katex";
-import { mathFix } from "../../../api/mathApi";
+import { mathFix, mathSolve } from "../../../api/mathApi";
 
 const SAMPLE_TEXT = `Calcularem el triangle rectangle:
 El teorema de Pitàgores és a2 + b2 = c2.
@@ -44,8 +44,22 @@ export default function MathEditor({ onResult } = {}) {
         setLoading(true);
         setError(null);
         try {
-            const data = await mathFix(text);
-            const result = data.fixedText || data.content_markdown || data.latex || "";
+            // Primero convertir texto informal a LaTeX limpio
+            const fixed = await mathFix(text);
+            const latex = fixed.improved || fixed.fixedText || fixed.content_markdown || text;
+
+            // Luego resolver/simplificar con el LaTeX obtenido
+            const solved = await mathSolve(latex);
+
+            let result = "";
+            if (solved.steps?.length) {
+                result += "**Pasos:**\n";
+                solved.steps.forEach((s, i) => { result += `${i + 1}. ${s}\n`; });
+                result += "\n";
+            }
+            result += `**Resultado:** $${solved.result}$`;
+            if (solved.explanation) result += `\n\n_${solved.explanation}_`;
+
             setOutputText(result);
             setLastSync(new Date());
             if (result && onResult) onResult(result);
@@ -65,9 +79,9 @@ export default function MathEditor({ onResult } = {}) {
             <div style={S.header}>
                 <span style={S.headerIcon}>✍️</span>
                 <div>
-                    <h2 style={S.title}>Math-Aware Note Editor</h2>
+                    <h2 style={S.title}>Editor de notas con reconocimiento matemático</h2>
                     <p style={S.subtitle}>
-                        Type informal math symbols and see them glow into professional KaTeX.
+                        Escribe símbolos matemáticos informales y observa cómo se transforman en código KaTeX profesional.
                     </p>
                 </div>
                 {loading && <div style={S.spinner} />}
@@ -76,25 +90,25 @@ export default function MathEditor({ onResult } = {}) {
             <div style={S.grid}>
                 <div style={S.col}>
                     <div style={S.colHeader}>
-                        <span style={S.tag}>INPUT</span>
-                        <span style={S.label}>Markdown or Plain Text</span>
+                        <span style={S.tag}>APORTE</span>
+                        <span style={S.label}>Markdown o texto plano</span>
                     </div>
                     <textarea
                         style={S.textarea}
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
-                        placeholder="Type equations like x^2, sqrt(y), E=mc2..."
+                        placeholder="Escribe ecuaciones como x^2, sqrt(y), E=mc2..."
                         id="math-editor-input"
                     />
                     <button style={S.btn} onClick={() => handleTransform(inputText)} disabled={loading}>
-                        {loading ? "Transforming..." : "⚡ Upgrade Math"}
+                        {loading ? "Resolviendo..." : "⚡ Resolver y Simplificar"}
                     </button>
                 </div>
 
                 <div style={S.col}>
                     <div style={S.colHeader}>
-                        <span style={{ ...S.tag, background: "#7c3aed" }}>OUTPUT</span>
-                        <span style={S.label}>Live Mathematical Preview</span>
+                        <span style={{ ...S.tag, background: "#7c3aed" }}>PRODUCCIÓN</span>
+                        <span style={S.label}>Vista previa matemática en vivo</span>
                     </div>
                     <div style={S.previewBox} id="math-editor-preview">
                         {error ? (
@@ -105,14 +119,14 @@ export default function MathEditor({ onResult } = {}) {
                             </article>
                         )}
                         {!outputText && !loading && (
-                            <div style={S.empty}>No output generated yet.</div>
+                            <div style={S.empty}>Aún no se ha generado ninguna salida.</div>
                         )}
                     </div>
 
                     <div style={S.metaRow}>
                         {lastSync && (
                             <span style={S.lastSync}>
-                                Last synchronized: {lastSync.toLocaleTimeString()}
+                                Última sincronización: {lastSync.toLocaleTimeString()}
                             </span>
                         )}
                         <button
@@ -120,14 +134,14 @@ export default function MathEditor({ onResult } = {}) {
                             onClick={() => navigator.clipboard.writeText(outputText)}
                             disabled={!outputText}
                         >
-                            ⎘ Copy Raw Result
+                            ⎘ Copiar resultado sin procesar
                         </button>
                     </div>
                 </div>
             </div>
 
             <div style={S.guide}>
-                <div style={S.guideTitle}>💡 Recognition guide:</div>
+                <div style={S.guideTitle}>💡 Guía de reconocimiento:</div>
                 <div style={S.guideGrid}>
                     {[
                         { raw: "x^2", out: "x^{2}" },
@@ -161,13 +175,13 @@ const S = {
     colHeader: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" },
     tag: { background: "#111827", color: "#fff", fontSize: "9px", fontWeight: 900, padding: "2px 6px", borderRadius: "4px", letterSpacing: "1px" },
     label: { fontSize: "12px", fontWeight: 700, color: "#4b5563", flex: 1 },
-    textarea: { height: "280px", border: "1.5px solid #e5e7eb", borderRadius: "14px", padding: "16px", fontSize: "14px", lineHeight: "1.6", fontFamily: "'Fira Code', monospace", resize: "none", background: "#f9fafb", outline: "none" },
+    textarea: { height: "280px", border: "1.5px solid #e5e7eb", borderRadius: "14px", padding: "16px", fontSize: "14px", lineHeight: "1.6", fontFamily: "'Fira Code', monospace", resize: "none", background: "#f9fafb", outline: "none", color: "#111827" },
     previewBox: { height: "280px", border: "1.5px solid #e5e7eb", borderRadius: "14px", padding: "20px", overflowY: "auto", background: "#fff", fontSize: "15px", lineHeight: "1.7", color: "#374151" },
     btn: { background: "#111827", color: "#fff", border: "none", borderRadius: "10px", padding: "12px", fontSize: "13px", fontWeight: 700, cursor: "pointer" },
     copyBtn: { background: "none", border: "1px solid #e5e7eb", borderRadius: "6px", padding: "4px 10px", fontSize: "11px", color: "#6b7280", cursor: "pointer", fontWeight: 600 },
     metaRow: { display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "4px" },
     lastSync: { fontSize: "11px", color: "#9ca3af" },
-    content: { whiteSpace: "pre-wrap" },
+    content: { whiteSpace: "pre-wrap", color: "#111827" },
     empty: { color: "#9ca3af", fontSize: "13px", textAlign: "center", paddingTop: "100px" },
     error: { color: "#ef4444", fontSize: "13px" },
     guide: { background: "#f3f4f6", borderRadius: "12px", padding: "16px" },

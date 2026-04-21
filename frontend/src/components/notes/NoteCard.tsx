@@ -27,9 +27,12 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
     };
 
     return (
-        <button
+        <div
+            role="button"
+            tabIndex={0}
             onClick={() => setCurrentNote(note)}
-            className={`group relative w-full text-left p-5 rounded-[var(--border-radius-xl)] transition-all duration-200 overflow-hidden border ${isActive
+            onKeyDown={(e) => e.key === 'Enter' && setCurrentNote(note)}
+            className={`group relative w-full text-left p-5 rounded-[var(--border-radius-xl)] transition-all duration-200 overflow-hidden border cursor-pointer ${isActive
                 ? 'bg-[rgba(56,139,253,0.08)] border-[rgba(56,139,253,0.4)] shadow-[0_0_24px_rgba(56,139,253,0.1)]'
                 : 'bg-[#161B22] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)] hover:bg-[#1c2230]'
                 }`}
@@ -134,6 +137,6 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                     )}
                 </div>
             </div>
-        </button>
+        </div>
     );
 };
