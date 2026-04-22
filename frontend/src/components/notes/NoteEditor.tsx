@@ -49,6 +49,7 @@ export const NoteEditor: React.FC = () => {
     const [syncStatus, setSyncStatus] = useState<'local' | 'syncing' | 'synced'>('synced');
     const [showMathVision, setShowMathVision] = useState(false);
     const [showDataVision, setShowDataVision] = useState(false);
+    const [summaryPanel, setSummaryPanel] = useState<{ original: string; summary: string } | null>(null);
     const [editor, setEditor] = useState<any>(null);
     const { openTool, setEditor: storeSetEditor } = useMathToolsStore();
     const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -305,41 +306,36 @@ export const NoteEditor: React.FC = () => {
     };
 
     const handleSummarize = async () => {
-        if (isGuest) {
-            openAuthModal('selection');
-            return;
-        }
-        const plainText = content.replace(/<[^>]*>/g, '');
+        if (isGuest) { openAuthModal('selection'); return; }
+        const plainText = content.replace(/<[^>]*>/g, '').trim();
         if (plainText.length < 20) return;
         setAiLoading(true);
         setAiMode('summarize');
         try {
             const result = await summarizeWithAI(plainText);
-            if (!editor) return;
-
-            const summaryHtml = `<div style="background:rgba(59,130,246,0.05);padding:24px;border-radius:24px;margin:24px 0;border:1px solid rgba(59,130,246,0.15);">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-                    <span style="font-size:20px;">📝</span>
-                    <strong style="text-transform:uppercase;letter-spacing:0.1em;font-size:12px;color:#3b82f6;">Resumen Automático</strong>
-                </div>
-                ${markdownToHtml(result)}
-            </div>`;
-
-            editor.chain()
-                .focus('end')
-                .insertContent('<hr />')
-                .insertContent(summaryHtml)
-                .run();
-
-            setToast('Resumen generado e insertado');
-            setTimeout(() => setToast(null), 3000);
+            setSummaryPanel({ original: plainText, summary: result });
         } catch (err: any) {
-            setError(err.message || 'Error al generar resum.');
+            setError(err.message || 'Error al generar resumen.');
             setTimeout(() => setError(null), 4000);
         } finally {
             setAiLoading(false);
             setAiMode(null);
         }
+    };
+
+    const handleInsertSummary = () => {
+        if (!summaryPanel || !editor) return;
+        const summaryHtml = `<div style="background:rgba(59,130,246,0.05);padding:24px;border-radius:24px;margin:24px 0;border:1px solid rgba(59,130,246,0.15);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                <span style="font-size:20px;">📝</span>
+                <strong style="text-transform:uppercase;letter-spacing:0.1em;font-size:12px;color:#3b82f6;">Resumen Automático</strong>
+            </div>
+            ${markdownToHtml(summaryPanel.summary)}
+        </div>`;
+        editor.chain().focus('end').insertContent('<hr />').insertContent(summaryHtml).run();
+        setSummaryPanel(null);
+        setToast('Resumen insertado en la nota');
+        setTimeout(() => setToast(null), 3000);
     };
 
     const handleSuggestSubject = async () => {
@@ -575,6 +571,70 @@ export const NoteEditor: React.FC = () => {
                     onClose={() => setShowDataVision(false)}
                     onResult={handleInsertMarkdown}
                 />
+            )}
+
+            {/* ── Summary comparison panel ── */}
+            {summaryPanel && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 9999,
+                    background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '24px',
+                }}>
+                    <div style={{
+                        background: '#0a0f1e', border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: '2rem', width: '100%', maxWidth: '900px',
+                        maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+                        boxShadow: '0 40px 80px rgba(0,0,0,0.6)',
+                    }}>
+                        {/* Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                <span style={{ fontSize: 24 }}>📝</span>
+                                <div>
+                                    <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#f1f5f9' }}>Resumen de la nota</p>
+                                    <p style={{ margin: 0, fontSize: 11, color: '#475569', marginTop: 2 }}>Compara el texto original con el resumen generado por IA</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setSummaryPanel(null)} style={{ background: 'none', border: 'none', color: '#475569', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
+                        </div>
+
+                        {/* Columns */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, flex: 1, overflow: 'hidden', minHeight: 0 }}>
+                            {/* Original */}
+                            <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(255,255,255,0.06)', padding: '20px 24px', overflow: 'hidden' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                                    <span style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 6, padding: '3px 10px', fontSize: 10, fontWeight: 800, color: '#64748b', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Original</span>
+                                    <span style={{ fontSize: 10, color: '#334155' }}>{summaryPanel.original.length} caracteres</span>
+                                </div>
+                                <div style={{ flex: 1, overflowY: 'auto', fontSize: 13, lineHeight: 1.7, color: '#94a3b8', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                    {summaryPanel.original}
+                                </div>
+                            </div>
+
+                            {/* Summary */}
+                            <div style={{ display: 'flex', flexDirection: 'column', padding: '20px 24px', overflow: 'hidden' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                                    <span style={{ background: 'rgba(59,130,246,0.15)', borderRadius: 6, padding: '3px 10px', fontSize: 10, fontWeight: 800, color: '#60a5fa', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Resumen IA</span>
+                                    <span style={{ fontSize: 10, color: '#334155' }}>{summaryPanel.summary.length} caracteres</span>
+                                </div>
+                                <div style={{ flex: 1, overflowY: 'auto', fontSize: 13, lineHeight: 1.7, color: '#cbd5e1', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                                    {summaryPanel.summary}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, padding: '16px 28px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                            <button onClick={() => setSummaryPanel(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '10px 20px', color: '#64748b', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                                Cerrar
+                            </button>
+                            <button onClick={handleInsertSummary} style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)', border: 'none', borderRadius: 12, padding: '10px 24px', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.05em' }}>
+                                + Insertar resumen en la nota
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
