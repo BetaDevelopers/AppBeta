@@ -8,8 +8,8 @@ interface SubjectsStore {
     subjects: Subject[];
     isLoading: boolean;
     fetchSubjects: () => Promise<void>;
-    createSubject: (name: string, color: string) => Promise<void>;
-    updateSubject: (id: number, name: string, color: string) => Promise<void>;
+    createSubject: (name: string, color: string, icon?: string | null) => Promise<void>;
+    updateSubject: (id: number, name: string, color: string, icon?: string | null) => Promise<void>;
     deleteSubject: (id: number) => Promise<void>;
     cleanup: () => void;
 }
@@ -32,14 +32,14 @@ export const useSubjectsStore = create<SubjectsStore>((set) => ({
         }
     },
 
-    createSubject: async (name, color) => {
-        const subject = await apiClient.post<Subject>('/subjects', { name, color });
+    createSubject: async (name, color, icon = null) => {
+        const subject = await apiClient.post<Subject>('/subjects', { name, color, icon });
         await db.subjects.put(subject);
         set((s) => ({ subjects: [...s.subjects, subject] }));
     },
 
-    updateSubject: async (id, name, color) => {
-        const updated = await apiClient.put<Subject>(`/subjects/${id}`, { name, color });
+    updateSubject: async (id, name, color, icon = null) => {
+        const updated = await apiClient.put<Subject>(`/subjects/${id}`, { name, color, icon });
         await db.subjects.put(updated);
         set((s) => ({ subjects: s.subjects.map((sub) => (sub.id === id ? updated : sub)) }));
     },
