@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMathToolsStore } from '../../store/mathToolsStore';
 import { markdownToHtml } from '../../utils/editorUtils';
 import MathToolModal from '../notes/MathToolModal';
@@ -14,7 +14,19 @@ import SmartCamera from '../camera/SmartCamera';
 import FileUploadOCR from '../files/FileUploadOCR';
 
 export default function MathToolsModals() {
-    const { activeTool, pendingResult, editor, closeTool, setPendingResult } = useMathToolsStore();
+    const { activeTool, pendingResult, editor, closeTool, setPendingResult, openTool } = useMathToolsStore();
+    const [editingChartConfig, setEditingChartConfig] = useState<{ chartType: string; tableData: string } | null>(null);
+
+    // Listen for click-to-edit events from the note editor
+    useEffect(() => {
+        const handleEditChart = (e: Event) => {
+            const config = (e as CustomEvent).detail as { chartType: string; tableData: string };
+            setEditingChartConfig(config);
+            openTool('tableToChart');
+        };
+        window.addEventListener('edit-chart', handleEditChart);
+        return () => window.removeEventListener('edit-chart', handleEditChart);
+    }, [openTool]);
 
     const insertHtml = (html: string) => {
         if (!editor || !html) return;
@@ -106,18 +118,31 @@ export default function MathToolsModals() {
             {/* ── Gràfic → TableToChart ── */}
             <MathToolModal
                 isOpen={activeTool === 'tableToChart'}
-                onClose={closeTool}
+                onClose={() => { setEditingChartConfig(null); closeTool(); }}
                 title="Visualizador de Datos"
                 canInsert={canInsert}
                 onInsert={() => {
-                    const block = `<div style="background:rgba(56,139,253,0.05);padding:20px;border-radius:16px;border:1px solid rgba(56,139,253,0.2);margin:16px 0;">
-                        <strong>📊 Gráfico Generado:</strong><br/>
-                        ${pendingResult}
-                    </div>`;
-                    insertAndClose('html', block);
+                    try {
+                        const parsed = JSON.parse(pendingResult!);
+                        const { imageBase64, chartType, tableData } = parsed;
+                        if (!imageBase64 || !editor) throw new Error('no image');
+                        const configEncoded = btoa(unescape(encodeURIComponent(JSON.stringify({ chartType, tableData }))));
+                        editor.chain().focus().insertContent({
+                            type: 'chartBlock',
+                            attrs: {
+                                src: imageBase64,
+                                alt: `CHART:${configEncoded}`,
+                                width: 600,
+                            },
+                        }).run();
+                        setEditingChartConfig(null);
+                        closeTool();
+                    } catch {
+                        closeTool();
+                    }
                 }}
             >
-                <TableToChart onResult={setPendingResult} />
+                <TableToChart onResult={setPendingResult} initialConfig={editingChartConfig ?? undefined} />
             </MathToolModal>
 
             {/* ── Pujar gràfic → ChartToTable ── */}

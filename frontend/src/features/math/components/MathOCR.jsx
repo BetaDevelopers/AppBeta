@@ -145,6 +145,8 @@ const drawPerfectShape = (ctx, shape, color = "#818cf8") => {
     ctx.stroke();
 };
 
+const AUTO_RECOGNIZE_MS = 900; // ms after last stroke to auto-recognize
+
 export default function MathOCR({ onResult } = {}) {
     const canvasRef = useRef(null);
     const [allStrokes, setAllStrokes] = useState([]);
@@ -159,6 +161,9 @@ export default function MathOCR({ onResult } = {}) {
     const [error, setError] = useState(null);
     const [autoMode, setAutoMode] = useState(true);
     const [snapActive, setSnapActive] = useState(null);
+    const [autoRecognizing, setAutoRecognizing] = useState(false); // pending auto-call
+    const autoRecognizeRef = useRef(null);
+    const allStrokesRef = useRef([]);   // mirror for use inside timeout closure
 
     const getPos = (e) => {
         const rect = canvasRef.current.getBoundingClientRect();
@@ -205,12 +210,59 @@ export default function MathOCR({ onResult } = {}) {
                 setSnapActive(detected.type);
                 setTimeout(() => setSnapActive(null), 1500);
             }
-            setAllStrokes(p => [...p, { points: pts, shape: detected }]);
+            setAllStrokes(p => {
+                const next = [...p, { points: pts, shape: detected }];
+                allStrokesRef.current = next;
+                return next;
+            });
+
+            // Schedule auto-recognition after inactivity
+            clearTimeout(autoRecognizeRef.current);
+            setAutoRecognizing(true);
+            autoRecognizeRef.current = setTimeout(async () => {
+                const strokes = allStrokesRef.current;
+                if (strokes.length === 0) { setAutoRecognizing(false); return; }
+                setAutoRecognizing(false);
+                setLoading(true);
+                setError(null);
+                try {
+                    const raw = strokes.map(s => s.points);
+                    const data = await mathOCR(raw, canvasToBase64(canvasRef.current));
+                    setResult(data);
+                    if (data?.latex && onResult) onResult(data.latex);
+                } catch (e) { setError(e.message); }
+                finally { setLoading(false); }
+            }, AUTO_RECOGNIZE_MS);
         }
         setCurrentStroke(null);
     };
 
+    // Cancel pending auto-recognize when strokes are cleared
+    const clearAll = useCallback(() => {
+        clearTimeout(autoRecognizeRef.current);
+        setAutoRecognizing(false);
+        allStrokesRef.current = [];
+        setAllStrokes([]);
+        setResult(null);
+        setCalcResult(null);
+        setCalcSteps([]);
+        setCalcExplanation('');
+        setError(null);
+    }, []);
+
+    const undoLast = useCallback(() => {
+        clearTimeout(autoRecognizeRef.current);
+        setAutoRecognizing(false);
+        setAllStrokes(p => {
+            const next = p.slice(0, -1);
+            allStrokesRef.current = next;
+            return next;
+        });
+    }, []);
+
     async function handleRecognize() {
+        clearTimeout(autoRecognizeRef.current);
+        setAutoRecognizing(false);
         if (allStrokes.length === 0) return;
         setLoading(true); setError(null);
         try {
@@ -278,18 +330,28 @@ export default function MathOCR({ onResult } = {}) {
                         Perfeccionando {snapActive}...
                     </div>
                 )}
+
+                {/* Auto-recognize pending indicator */}
+                {(autoRecognizing || loading) && !snapActive && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 bg-black/70 backdrop-blur rounded-full border border-indigo-500/30">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping" />
+                        <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">
+                            {loading ? "Reconociendo..." : "Analizando escritura..."}
+                        </span>
+                    </div>
+                )}
             </div>
 
             <div className="flex gap-4 mt-6">
                 <button
-                    onClick={() => { setAllStrokes(p => { const n = p.slice(0, -1); return n; }); }}
+                    onClick={undoLast}
                     disabled={allStrokes.length === 0}
                     className="h-14 px-8 rounded-2xl bg-white/5 border border-white/10 text-slate-500 text-xs font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all disabled:opacity-20"
                 >
                     ↩ Deshacer
                 </button>
                 <button
-                    onClick={() => { setAllStrokes([]); setResult(null); setCalcResult(null); setCalcSteps([]); setCalcExplanation(''); }}
+                    onClick={clearAll}
                     disabled={allStrokes.length === 0}
                     className="h-14 px-8 rounded-2xl bg-white/5 border border-white/10 text-slate-500 text-xs font-black uppercase tracking-widest hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/20 transition-all disabled:opacity-20"
                 >
@@ -300,7 +362,7 @@ export default function MathOCR({ onResult } = {}) {
                     disabled={allStrokes.length === 0 || loading}
                     className="flex-1 h-14 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 text-white font-black text-sm uppercase tracking-widest shadow-2xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transition-all disabled:opacity-20 active:scale-[0.98]"
                 >
-                    {loading ? "Reconociendo Escritura..." : "⚡ Digitalizar Expresión"}
+                    {loading ? "Reconociendo..." : "⚡ Digitalizar ahora"}
                 </button>
             </div>
 

@@ -16,6 +16,7 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import 'katex/dist/katex.min.css';
 import { common, createLowlight } from 'lowlight';
 import { SlashCommandExtension } from './SlashCommands';
+import { ChartBlock } from '../../extensions/ChartBlock';
 
 const lowlight = createLowlight(common);
 
@@ -63,6 +64,7 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
             BubbleMenuExtension,
             Mathematics,
             SlashCommandExtension,
+            ChartBlock,
         ],
         content,
         onUpdate: ({ editor }) => {
@@ -80,6 +82,7 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
             onEditorReady(editor);
         }
     }, [editor, onEditorReady]);
+
 
     useEffect(() => {
         if (editor && content !== editor.getHTML()) {
