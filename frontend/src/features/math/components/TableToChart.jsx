@@ -5,18 +5,20 @@ import {
     LineElement, ArcElement, Title, Tooltip, Legend, Filler,
 } from "chart.js";
 import { Bar, Line, Pie, Doughnut, Scatter } from "react-chartjs-2";
+import { tableToChart } from "../../../api/mathApi";
 
 ChartJS.register(
     CategoryScale, LinearScale, BarElement, PointElement,
     LineElement, ArcElement, Title, Tooltip, Legend, Filler
 );
 
-const SAMPLE_MD = `| Producto | Ventas | Coste |
-|----------|--------|-------|
-| Laptop   | 1200   | 800   |
-| Mouse    | 450    | 150   |
-| Teclado  | 780    | 340   |
-| Monitor  | 950    | 500   |`;
+const SAMPLE_MD = `| Mes | Ventas (€) | Coste (€) |
+|-----|------------|-----------|
+| Ene | 4500       | 2800      |
+| Feb | 5200       | 3100      |
+| Mar | 4800       | 2900      |
+| Abr | 6100       | 3500      |
+| May | 7200       | 4000      |`;
 
 const CHART_TYPES = [
     { id: "bar",      label: "Barras",  icon: "▊" },
@@ -28,183 +30,220 @@ const CHART_TYPES = [
 ];
 
 const PALETTE = [
-    { bg: "rgba(99,102,241,0.75)",  border: "rgb(99,102,241)" },
-    { bg: "rgba(16,185,129,0.75)",  border: "rgb(16,185,129)" },
-    { bg: "rgba(245,158,11,0.75)",  border: "rgb(245,158,11)" },
-    { bg: "rgba(239,68,68,0.75)",   border: "rgb(239,68,68)" },
-    { bg: "rgba(59,130,246,0.75)",  border: "rgb(59,130,246)" },
-    { bg: "rgba(168,85,247,0.75)",  border: "rgb(168,85,247)" },
-    { bg: "rgba(236,72,153,0.75)",  border: "rgb(236,72,153)" },
-    { bg: "rgba(20,184,166,0.75)",  border: "rgb(20,184,166)" },
+    { bg: "rgba(99,102,241,0.8)",  border: "rgb(99,102,241)" },
+    { bg: "rgba(16,185,129,0.8)",  border: "rgb(16,185,129)" },
+    { bg: "rgba(245,158,11,0.8)",  border: "rgb(245,158,11)" },
+    { bg: "rgba(239,68,68,0.8)",   border: "rgb(239,68,68)" },
+    { bg: "rgba(59,130,246,0.8)",  border: "rgb(59,130,246)" },
+    { bg: "rgba(168,85,247,0.8)",  border: "rgb(168,85,247)" },
+    { bg: "rgba(236,72,153,0.8)",  border: "rgb(236,72,153)" },
+    { bg: "rgba(20,184,166,0.8)",  border: "rgb(20,184,166)" },
 ];
 
+// ── Local fallback parser (used when API unavailable) ──────────────────────
 function parseTable(text) {
     const rawLines = text.trim().split("\n").map(l => l.trim()).filter(Boolean);
     if (rawLines.length < 2) return null;
-
     if (!text.includes("|")) {
         const rows = rawLines.map(l => l.split(",").map(c => c.trim()));
-        if (rows.length < 2) return null;
-        return { headers: rows[0], rows: rows.slice(1) };
+        return rows.length < 2 ? null : { headers: rows[0], rows: rows.slice(1) };
     }
-
     const tableLines = rawLines.filter(l => l.includes("|") && !/^\|[\s\-|]+\|$/.test(l));
     if (tableLines.length < 2) return null;
-
-    const parseRow = line =>
-        line.split("|").map(c => c.trim()).filter((_, i, a) => i > 0 && i < a.length - 1);
-
+    const parseRow = line => line.split("|").map(c => c.trim()).filter((_, i, a) => i > 0 && i < a.length - 1);
     return { headers: parseRow(tableLines[0]), rows: tableLines.slice(1).map(parseRow) };
 }
 
-function buildChartData(parsed, chartType) {
+function buildLocalChartData(parsed, chartType) {
     const { headers, rows } = parsed;
     const labels = rows.map(r => r[0] ?? "");
-
-    const numericColIndices = headers
-        .map((_, i) => i).slice(1)
+    const numCols = headers.map((_, i) => i).slice(1)
         .filter(i => rows.some(r => r[i] !== undefined && !isNaN(parseFloat(r[i]))));
-
-    if (numericColIndices.length === 0) return null;
-
+    if (numCols.length === 0) return null;
     const isPolar = chartType === "pie" || chartType === "doughnut";
-
     if (isPolar) {
-        const i = numericColIndices[0];
-        return {
-            labels,
-            datasets: [{
-                label: headers[i] ?? "Valor",
-                data: rows.map(r => parseFloat(r[i]) || 0),
-                backgroundColor: PALETTE.map(c => c.bg),
-                borderColor: PALETTE.map(c => c.border),
-                borderWidth: 2,
-            }],
-        };
+        const i = numCols[0];
+        return { labels, datasets: [{ label: headers[i] ?? "Valor", data: rows.map(r => parseFloat(r[i]) || 0), backgroundColor: PALETTE.map(c => c.bg), borderColor: PALETTE.map(c => c.border), borderWidth: 2 }] };
     }
-
     if (chartType === "scatter") {
-        if (numericColIndices.length < 2) return null;
-        const xi = numericColIndices[0];
-        const yi = numericColIndices[1];
-        return {
-            datasets: [{
-                label: `${headers[xi]} vs ${headers[yi]}`,
-                data: rows.map(r => ({ x: parseFloat(r[xi]) || 0, y: parseFloat(r[yi]) || 0 })),
-                backgroundColor: PALETTE[0].bg,
-                borderColor: PALETTE[0].border,
-                pointRadius: 6,
-            }],
-        };
+        if (numCols.length < 2) return null;
+        const [xi, yi] = numCols;
+        return { datasets: [{ label: `${headers[xi]} vs ${headers[yi]}`, data: rows.map(r => ({ x: parseFloat(r[xi]) || 0, y: parseFloat(r[yi]) || 0 })), backgroundColor: PALETTE[0].bg, borderColor: PALETTE[0].border, pointRadius: 6 }] };
     }
-
     const isArea = chartType === "area";
     return {
         labels,
-        datasets: numericColIndices.map((ci, idx) => {
-            const color = PALETTE[idx % PALETTE.length];
-            return {
-                label: headers[ci] ?? `Serie ${idx + 1}`,
-                data: rows.map(r => parseFloat(r[ci]) || 0),
-                backgroundColor: isArea ? color.bg.replace("0.75", "0.2") : color.bg,
-                borderColor: color.border,
-                borderWidth: 2,
-                fill: isArea,
-                tension: 0.4,
-                pointBackgroundColor: color.border,
-                pointRadius: isArea ? 4 : 3,
-            };
+        datasets: numCols.map((ci, idx) => {
+            const c = PALETTE[idx % PALETTE.length];
+            return { label: headers[ci] ?? `Serie ${idx + 1}`, data: rows.map(r => parseFloat(r[ci]) || 0), backgroundColor: isArea ? c.bg.replace("0.8", "0.15") : c.bg, borderColor: c.border, borderWidth: 2, fill: isArea, tension: 0.4, pointBackgroundColor: c.border, pointRadius: isArea ? 4 : 3 };
         }),
     };
 }
 
+const EMPTY_AXIS = { title: "", xAxisLabel: "", yAxisLabel: "", yUnit: "", yUnitPrefix: "", reasoning: "" };
+
 export default function TableToChart({ onResult, initialConfig } = {}) {
-    const [inputText, setInputText] = useState(initialConfig?.tableData || SAMPLE_MD);
-    const [chartType, setChartType] = useState(initialConfig?.chartType || "bar");
-    const [chartData, setChartData]   = useState(null);
-    const [error, setError]           = useState(null);
-    const [ready, setReady]           = useState(false); // true once canvas is captured
-    const chartRef   = useRef(null);
-    // Callback fired by Chart.js onComplete — uses ref so useMemo doesn't stale
+    const [inputText,  setInputText]  = useState(initialConfig?.tableData || SAMPLE_MD);
+    const [chartType,  setChartType]  = useState(initialConfig?.chartType || "bar");
+    const [chartData,  setChartData]  = useState(null);
+    const [axisInfo,   setAxisInfo]   = useState(EMPTY_AXIS);
+    const [error,      setError]      = useState(null);
+    const [analyzing,  setAnalyzing]  = useState(false);
+    const [ready,      setReady]      = useState(false);
+    const chartRef      = useRef(null);
     const onCompleteRef = useRef(null);
 
-    // When editing an existing chart, re-fill from config
     useEffect(() => {
         if (initialConfig) {
             setInputText(initialConfig.tableData || SAMPLE_MD);
             setChartType(initialConfig.chartType || "bar");
             setChartData(null);
+            setAxisInfo(EMPTY_AXIS);
             setReady(false);
             setError(null);
         }
     }, [initialConfig]);
 
-    const handleGenerate = useCallback(() => {
-        setError(null);
-        setReady(false);
-
-        const parsed = parseTable(inputText);
-        if (!parsed) {
-            setError("No se ha podido leer la tabla. Usa formato Markdown (|col|) o CSV.");
-            return;
-        }
-        const data = buildChartData(parsed, chartType);
-        if (!data) {
-            setError("Necesitas al menos una columna numérica para graficar.");
-            return;
-        }
-
-        // Set capture callback — fires when Chart.js finishes animation
+    const scheduleCapture = useCallback((type, text) => {
         onCompleteRef.current = () => {
             const imageBase64 = chartRef.current?.toBase64Image?.("image/png", 1) ?? null;
             if (imageBase64 && onResult) {
-                onResult(JSON.stringify({ imageBase64, chartType, tableData: inputText }));
+                onResult(JSON.stringify({ imageBase64, chartType: type, tableData: text }));
                 setReady(true);
             }
             onCompleteRef.current = null;
         };
+    }, [onResult]);
 
-        setChartData(data);
-    }, [inputText, chartType, onResult]);
+    const handleGenerate = useCallback(async () => {
+        setError(null);
+        setReady(false);
+        setAnalyzing(true);
+        setChartData(null);
+        setAxisInfo(EMPTY_AXIS);
 
-    const chartOptions = useMemo(() => ({
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: {
-            duration: 400,
-            onComplete: () => { onCompleteRef.current?.(); },
-        },
-        plugins: {
-            legend: {
-                position: "bottom",
-                labels: { color: "#94a3b8", font: { family: "Inter", weight: "600", size: 11 } },
+        try {
+            const result = await tableToChart(inputText);
+            const aiType = result.chartType || "bar";
+            setChartType(aiType);
+            setAxisInfo({
+                title:       result.title       || "",
+                xAxisLabel:  result.xAxisLabel  || "",
+                yAxisLabel:  result.yAxisLabel  || "",
+                yUnit:       result.yUnit       || "",
+                yUnitPrefix: result.yUnitPrefix || "",
+                reasoning:   result.reasoning   || "",
+            });
+            scheduleCapture(aiType, inputText);
+            setChartData(result.chartData);
+        } catch {
+            // Local fallback when API is unavailable
+            const parsed = parseTable(inputText);
+            if (!parsed) { setError("No se pudo leer la tabla. Usa formato Markdown (|col|) o CSV."); setAnalyzing(false); return; }
+            const data = buildLocalChartData(parsed, chartType);
+            if (!data) { setError("Necesitas al menos una columna numérica para graficar."); setAnalyzing(false); return; }
+            scheduleCapture(chartType, inputText);
+            setChartData(data);
+        } finally {
+            setAnalyzing(false);
+        }
+    }, [inputText, chartType, scheduleCapture]);
+
+    const isPolar = chartType === "pie" || chartType === "doughnut";
+
+    const chartOptions = useMemo(() => {
+        const hasTitle  = Boolean(axisInfo.title);
+        const hasXLabel = Boolean(axisInfo.xAxisLabel);
+        const hasYLabel = Boolean(axisInfo.yAxisLabel);
+        const hasUnit   = Boolean(axisInfo.yUnit || axisInfo.yUnitPrefix);
+        const fmt = v => `${axisInfo.yUnitPrefix || ""}${v}${axisInfo.yUnit || ""}`;
+
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 600,
+                easing: "easeOutQuart",
+                onComplete: () => { onCompleteRef.current?.(); },
             },
-            tooltip: {
-                backgroundColor: "rgba(15,23,42,0.95)",
-                titleColor: "#6366f1",
-                bodyColor: "#f8fafc",
-                borderColor: "rgba(255,255,255,0.1)",
-                borderWidth: 1,
-                padding: 12,
-                cornerRadius: 8,
+            plugins: {
+                title: {
+                    display: hasTitle,
+                    text: axisInfo.title,
+                    color: "#e2e8f0",
+                    font: { family: "Inter", size: 14, weight: "700" },
+                    padding: { top: 0, bottom: 18 },
+                },
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        color: "#94a3b8",
+                        font: { family: "Inter", weight: "600", size: 11 },
+                        padding: 16,
+                        boxWidth: 12,
+                        borderRadius: 3,
+                    },
+                },
+                tooltip: {
+                    backgroundColor: "rgba(10,15,30,0.97)",
+                    titleColor: "#818cf8",
+                    bodyColor: "#f1f5f9",
+                    borderColor: "rgba(99,102,241,0.3)",
+                    borderWidth: 1,
+                    padding: 14,
+                    cornerRadius: 10,
+                    displayColors: true,
+                    callbacks: hasUnit ? {
+                        label: ctx => {
+                            const val = ctx.parsed?.y ?? ctx.parsed;
+                            return ` ${ctx.dataset.label}: ${fmt(val)}`;
+                        },
+                    } : undefined,
+                },
             },
-        },
-        scales: chartType === "pie" || chartType === "doughnut" ? {} : {
-            x: { grid: { color: "rgba(255,255,255,0.03)" }, ticks: { color: "#475569", font: { size: 11 } } },
-            y: { grid: { color: "rgba(255,255,255,0.04)" }, ticks: { color: "#475569", font: { size: 11 } } },
-        },
-    }), [chartType]);
+            scales: isPolar ? {} : {
+                x: {
+                    title: {
+                        display: hasXLabel,
+                        text: axisInfo.xAxisLabel,
+                        color: "#64748b",
+                        font: { family: "Inter", size: 11, weight: "600" },
+                        padding: { top: 8 },
+                    },
+                    grid: { color: "rgba(255,255,255,0.04)" },
+                    border: { color: "rgba(255,255,255,0.06)" },
+                    ticks: { color: "#475569", font: { size: 11 }, padding: 6 },
+                },
+                y: {
+                    title: {
+                        display: hasYLabel,
+                        text: axisInfo.yAxisLabel + (axisInfo.yUnit ? ` (${axisInfo.yUnit})` : ""),
+                        color: "#64748b",
+                        font: { family: "Inter", size: 11, weight: "600" },
+                        padding: { right: 8 },
+                    },
+                    grid: { color: "rgba(255,255,255,0.06)" },
+                    border: { color: "rgba(255,255,255,0.06)", dash: [4, 4] },
+                    ticks: {
+                        color: "#475569",
+                        font: { size: 11 },
+                        padding: 8,
+                        ...(hasUnit ? { callback: v => fmt(v) } : {}),
+                    },
+                },
+            },
+        };
+    }, [chartType, axisInfo, isPolar]);
 
     const renderChart = () => {
         if (!chartData) return null;
         const props = { ref: chartRef, data: chartData, options: chartOptions };
         switch (chartType) {
-            case "line":     return <Line {...props} />;
-            case "area":     return <Line {...props} />;
-            case "pie":      return <Pie {...props} />;
-            case "doughnut": return <Doughnut {...props} />;
-            case "scatter":  return <Scatter {...props} />;
-            default:         return <Bar {...props} />;
+            case "line": case "area": return <Line {...props} />;
+            case "pie":              return <Pie {...props} />;
+            case "doughnut":         return <Doughnut {...props} />;
+            case "scatter":          return <Scatter {...props} />;
+            default:                 return <Bar {...props} />;
         }
     };
 
@@ -212,40 +251,52 @@ export default function TableToChart({ onResult, initialConfig } = {}) {
         <div className="bg-[#030712]/60 p-8 rounded-[2.5rem] border border-white/5 backdrop-blur-3xl shadow-2xl max-w-6xl mx-auto font-sans">
             {/* Header */}
             <div className="flex items-center gap-6 mb-8">
-                <div className="w-16 h-16 rounded-[1.5rem] bg-emerald-500/10 flex items-center justify-center text-3xl border border-emerald-500/20">
+                <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-500/10 flex items-center justify-center text-3xl border border-indigo-500/20 flex-shrink-0">
                     📊
                 </div>
                 <div>
-                    <h2 className="text-2xl font-black text-white tracking-tight">Motor de análisis de datos</h2>
-                    <p className="text-sm text-slate-500 font-medium">Conversión inteligente de tablas sin procesar a visualizaciones analíticas.</p>
+                    <h2 className="text-2xl font-black text-white tracking-tight">Visualizador de datos profesional</h2>
+                    <p className="text-sm text-slate-500 font-medium mt-1">
+                        La IA detecta ejes, unidades y separación automáticamente · gráfico listo para insertar.
+                    </p>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Editor Column */}
+                {/* ── Left: input + controls ── */}
                 <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between px-2">
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Conjunto de datos de origen</span>
-                        <span className="text-[10px] font-bold text-slate-600">Compatible con Markdown/CSV</span>
+                    <div className="flex items-center justify-between px-1">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Datos de origen</span>
+                        <span className="text-[10px] font-bold text-slate-700">Markdown · CSV</span>
                     </div>
+
                     <textarea
-                        className="h-[220px] w-full bg-black/40 border border-white/5 rounded-[2rem] p-6 text-sm text-indigo-200 font-mono resize-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500/30 outline-none transition-all placeholder:text-slate-800"
+                        className="h-[200px] w-full bg-black/40 border border-white/5 rounded-[1.5rem] p-5 text-sm text-indigo-200 font-mono resize-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/30 outline-none transition-all placeholder:text-slate-800"
                         value={inputText}
-                        onChange={e => { setInputText(e.target.value); setChartData(null); setReady(false); setError(null); }}
-                        placeholder="| Mes | Valor | ..."
+                        onChange={e => {
+                            setInputText(e.target.value);
+                            setChartData(null);
+                            setReady(false);
+                            setError(null);
+                            setAxisInfo(EMPTY_AXIS);
+                        }}
+                        placeholder="| Mes | Ventas (€) | Coste (€) |&#10;|-----|------------|-----------|&#10;| Ene | 4500       | 2800      |"
                     />
 
-                    {/* Chart type selector */}
-                    <div className="flex flex-col gap-3">
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Tipo de gráfico</span>
+                    {/* Chart type override */}
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2 px-1">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Tipo de gráfico</span>
+                            <span className="text-[9px] text-slate-700 font-bold">— IA elige automáticamente</span>
+                        </div>
                         <div className="grid grid-cols-3 gap-2">
                             {CHART_TYPES.map(ct => (
                                 <button
                                     key={ct.id}
                                     onClick={() => { setChartType(ct.id); setChartData(null); setReady(false); }}
-                                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all ${
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all ${
                                         chartType === ct.id
-                                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+                                            ? "bg-indigo-500/15 border-indigo-500/40 text-indigo-300"
                                             : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
                                     }`}
                                 >
@@ -258,29 +309,35 @@ export default function TableToChart({ onResult, initialConfig } = {}) {
 
                     <button
                         onClick={handleGenerate}
-                        className="h-14 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-600/20 hover:shadow-emerald-600/40 transition-all active:scale-[0.98]"
+                        disabled={analyzing}
+                        className="h-14 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-black text-sm uppercase tracking-widest shadow-xl shadow-indigo-600/20 hover:shadow-indigo-600/40 transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                     >
-                        ⚡ Generar gráfico
+                        {analyzing ? (
+                            <>
+                                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                Analizando con IA…
+                            </>
+                        ) : "⚡ Generar gráfico profesional"}
                     </button>
                 </div>
 
-                {/* Preview Column */}
+                {/* ── Right: preview ── */}
                 <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between px-2">
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Visualización en vivo</span>
+                    <div className="flex items-center justify-between px-1">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Visualización</span>
                         {ready && (
-                            <span className="bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest border border-emerald-500/20 px-3 py-1 rounded-full animate-in fade-in">
+                            <span className="bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest border border-emerald-500/20 px-3 py-1 rounded-full">
                                 ✓ Listo para insertar
                             </span>
                         )}
-                        {chartData && !ready && (
-                            <span className="bg-white/5 text-slate-500 text-[9px] font-black uppercase tracking-widest border border-white/10 px-3 py-1 rounded-full">
-                                Preparando…
+                        {analyzing && (
+                            <span className="bg-indigo-500/10 text-indigo-400 text-[9px] font-black uppercase tracking-widest border border-indigo-500/20 px-3 py-1 rounded-full animate-pulse">
+                                🤖 Analizando…
                             </span>
                         )}
                     </div>
 
-                    <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-6 min-h-[260px] flex items-center justify-center relative overflow-hidden">
+                    <div className="bg-[#050a14] border border-white/5 rounded-[1.5rem] p-5 min-h-[260px] flex items-center justify-center relative overflow-hidden">
                         {error ? (
                             <div className="text-red-400 font-bold text-xs flex items-center gap-2 text-center px-4">
                                 <span>⚠</span> {error}
@@ -290,32 +347,69 @@ export default function TableToChart({ onResult, initialConfig } = {}) {
                                 {renderChart()}
                             </div>
                         ) : (
-                            <div className="text-center opacity-20">
+                            <div className="text-center opacity-20 select-none">
                                 <span className="text-5xl mb-3 block">🧪</span>
-                                <p className="text-xs font-black uppercase tracking-widest">Esperando datos</p>
+                                <p className="text-xs font-black uppercase tracking-widest">
+                                    {analyzing ? "Procesando…" : "Esperando datos"}
+                                </p>
                             </div>
                         )}
                     </div>
 
+                    {/* AI analysis panel */}
+                    {axisInfo.reasoning && (
+                        <div className="bg-indigo-500/5 border border-indigo-500/15 rounded-2xl p-4 flex gap-3">
+                            <span className="text-lg flex-shrink-0 mt-0.5">🤖</span>
+                            <div className="min-w-0">
+                                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1.5">Análisis IA</p>
+                                <p className="text-xs text-slate-400 leading-relaxed">{axisInfo.reasoning}</p>
+                                {(axisInfo.xAxisLabel || axisInfo.yAxisLabel) && (
+                                    <div className="flex gap-2 mt-3 flex-wrap">
+                                        {axisInfo.xAxisLabel && (
+                                            <span className="text-[10px] bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-slate-500 font-bold">
+                                                X: {axisInfo.xAxisLabel}
+                                            </span>
+                                        )}
+                                        {axisInfo.yAxisLabel && (
+                                            <span className="text-[10px] bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-slate-500 font-bold">
+                                                Y: {axisInfo.yAxisLabel}{axisInfo.yUnit ? ` (${axisInfo.yUnit})` : ""}{axisInfo.yUnitPrefix ? ` [${axisInfo.yUnitPrefix}]` : ""}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     {ready && (
-                        <p className="text-[10px] text-slate-500 text-center">
-                            Inserta y luego <strong className="text-indigo-400">arrastra las esquinas</strong> para cambiar el tamaño · <strong className="text-indigo-400">haz clic</strong> para editar datos
+                        <p className="text-[10px] text-slate-600 text-center">
+                            Inserta y <strong className="text-indigo-400">arrastra esquinas</strong> para redimensionar · <strong className="text-indigo-400">clic</strong> para reeditar
                         </p>
                     )}
                 </div>
             </div>
 
             {/* Examples */}
-            <div className="mt-8 pt-8 border-t border-white/5 flex gap-4 overflow-x-auto pb-2">
-                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center pr-4 shrink-0">Ejemplos:</span>
+            <div className="mt-8 pt-6 border-t border-white/5 flex gap-3 overflow-x-auto pb-1">
+                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest flex items-center pr-4 shrink-0">
+                    Ejemplos:
+                </span>
                 {[
-                    { name: "Ingresos mensuales",              text: "| Mes | Ingresos |\n|-----|----------|\n| Ene | 4500     |\n| Feb | 5200     |\n| Mar | 4800     |\n| Abr | 6100     |" },
-                    { name: "Participación presupuesto",       text: "Categoría,Presupuesto,Gasto\nMarketing,4000,3800\nDesarrollo,12000,11500\nRRHH,2000,2100" },
-                    { name: "Métrica de rendimiento",          text: "| Semana | Progreso | Objetivo |\n|--------|----------|----------|\n| 1      | 10       | 15       |\n| 2      | 25       | 30       |\n| 3      | 45       | 45       |\n| 4      | 70       | 60       |" },
+                    { name: "Ventas mensuales",    text: "| Mes | Ventas (€) | Coste (€) |\n|-----|------------|----------|\n| Ene | 4500 | 2800 |\n| Feb | 5200 | 3100 |\n| Mar | 4800 | 2900 |\n| Abr | 6100 | 3500 |" },
+                    { name: "Reparto presupuesto", text: "Área,Presupuesto (€)\nMarketing,4000\nDesarrollo,12000\nRRHH,2000\nOperaciones,3500" },
+                    { name: "Progreso semanal",    text: "| Semana | Progreso (%) | Objetivo (%) |\n|--------|-------------|-------------|\n| 1 | 10 | 15 |\n| 2 | 25 | 30 |\n| 3 | 45 | 45 |\n| 4 | 70 | 60 |" },
+                    { name: "Velocidad vs dist.",  text: "Velocidad (km/h),Distancia (km)\n30,5\n60,20\n90,50\n120,90\n150,140" },
+                    { name: "Temperatura anual",   text: "| Mes | Temp. máx. (°C) | Temp. mín. (°C) |\n|-----|------------|----------|\n| Ene | 12 | 3 |\n| Abr | 20 | 9 |\n| Jul | 34 | 22 |\n| Oct | 22 | 12 |" },
                 ].map(ex => (
                     <button
                         key={ex.name}
-                        onClick={() => { setInputText(ex.text); setChartData(null); setReady(false); setError(null); }}
+                        onClick={() => {
+                            setInputText(ex.text);
+                            setChartData(null);
+                            setReady(false);
+                            setError(null);
+                            setAxisInfo(EMPTY_AXIS);
+                        }}
                         className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold text-slate-500 whitespace-nowrap hover:bg-white/10 hover:text-white transition-all shrink-0"
                     >
                         {ex.name}

@@ -410,30 +410,69 @@ const analyzeTable = async (req, res) => {
         messages: [
           {
             role: 'system',
-            content: `Ets un expert analista de dades visor de gràfics.
-La teva tasca és rebre una taula (Markdown o CSV) i retornar l'estructura JSON necessària per a visualitzar-la amb Chart.js.
+            content: `You are a professional data visualization expert specializing in Chart.js. Analyze the provided table (Markdown or CSV) and return a complete, production-ready chart configuration.
 
-FORMAT DE SORTIDA (JSON OBLIGATORI):
+RESPONSE FORMAT (strict JSON, no extra text):
 {
-  "chartType": "bar" | "line" | "pie" | "scatter",
+  "chartType": "bar" | "line" | "area" | "pie" | "doughnut" | "scatter",
+  "title": "Descriptive chart title inferred from the data context",
+  "xAxisLabel": "Human-readable label for the X axis (the category dimension)",
+  "yAxisLabel": "Human-readable label for the Y axis (what the values measure)",
+  "yUnit": "unit suffix appended after values (e.g. '%', 'km', 'kg', 'm/s') — empty string if none",
+  "yUnitPrefix": "unit prefix before values (e.g. '€', '$', '£') — empty string if none",
   "chartData": {
     "labels": ["string", ...],
     "datasets": [
       {
-        "label": "Títol de la Sèrie",
-        "data": [número, ...],
-        "backgroundColor": ["rgba(59, 130, 246, 0.5)", ...]
+        "label": "Series name",
+        "data": [number, ...],
+        "backgroundColor": ["rgba(...)"] ,
+        "borderColor": ["rgb(...)"],
+        "borderWidth": 2,
+        "fill": false,
+        "tension": 0.4,
+        "pointRadius": 4
       }
     ]
   },
-  "reasoning": "Explicació breu de per què aquest tipus de gràfic és el millor per a aquestes dades."
+  "reasoning": "One clear sentence explaining the chart type choice and the key insight from this data."
 }
 
-REGLES:
-1. Identifica labels (eix X) i valors (eix Y).
-2. Tria "bar" per a comparacions, "line" per a tendències temporals, "pie" per a proporcions i "scatter" per a correlacions.
-3. Genera colors harmònics i estètics (blue-500, indigo-600, etc en format RGBA).
-4. El JSON ha de ser estrictament vàlid.`,
+RULES:
+1. CHART TYPE SELECTION — pick the best fit:
+   - "bar": comparisons across discrete categories
+   - "line": time series or ordered sequences (dates, weeks, steps)
+   - "area": cumulative or filled trends (use fill:true, low-opacity bg)
+   - "pie": part-to-whole with ≤8 categories where proportions matter most
+   - "doughnut": modern alternative to pie
+   - "scatter": correlation between two numeric variables
+
+2. UNIT DETECTION — scan column headers carefully:
+   - "(€)" or "€" or "EUR" → yUnitPrefix="€", yUnit=""
+   - "($)" or "$" or "USD" → yUnitPrefix="$", yUnit=""
+   - "(km)" or "km" → yUnit="km", yUnitPrefix=""
+   - "(%)" or "%" → yUnit="%", yUnitPrefix=""
+   - "(kg)", "(m)", "(s)", "(m/s)", etc. → extract accordingly
+   - Strip the unit from the axis label text
+
+3. AXIS LABELS — derive from column headers, clean and human-readable:
+   - xAxisLabel: the category column name (first column), e.g. "Month", "Product", "City"
+   - yAxisLabel: the value dimension, e.g. "Revenue", "Distance", "Temperature"
+
+4. COLOR PALETTE (use in order, vary opacity for area charts):
+   Dataset 1: bg=rgba(99,102,241,0.8)  border=rgb(99,102,241)   (indigo)
+   Dataset 2: bg=rgba(16,185,129,0.8)  border=rgb(16,185,129)   (emerald)
+   Dataset 3: bg=rgba(245,158,11,0.8)  border=rgb(245,158,11)   (amber)
+   Dataset 4: bg=rgba(239,68,68,0.8)   border=rgb(239,68,68)    (red)
+   Dataset 5: bg=rgba(59,130,246,0.8)  border=rgb(59,130,246)   (blue)
+   Dataset 6: bg=rgba(168,85,247,0.8)  border=rgb(168,85,247)   (purple)
+   Dataset 7: bg=rgba(236,72,153,0.8)  border=rgb(236,72,153)   (pink)
+   Dataset 8: bg=rgba(20,184,166,0.8)  border=rgb(20,184,166)   (teal)
+   For pie/doughnut: backgroundColor is an ARRAY with one color per slice.
+   For area: use 0.15 opacity for backgroundColor to show fill subtly.
+
+5. For scatter: backgroundColor and borderColor are single strings (not arrays).
+6. The JSON must be strictly valid — no trailing commas, no comments.`,
           },
           {
             role: 'user',
@@ -646,11 +685,25 @@ REGLES:
  */
 const interpretDiagram = async (req, res) => {
   try {
-    const { strokes, context, canvasWidth, canvasHeight } = req.body;
+    const { strokes, imageBase64, canvasWidth, canvasHeight } = req.body;
 
     if (!strokes || strokes.length === 0) {
       return res.status(400).json({ error: "Cal enviar almenys un traç." });
     }
+
+    // Build user message: use vision if image provided, else fall back to strokes text
+    const userContent = imageBase64
+      ? [
+          {
+            type: 'image_url',
+            image_url: { url: `data:image/png;base64,${imageBase64}`, detail: 'high' },
+          },
+          {
+            type: 'text',
+            text: `Analyze this hand-drawn graph (canvas ${canvasWidth}x${canvasHeight}px). Extract the exact axis tick values, unit labels, and data points as described.`,
+          },
+        ]
+      : `Interpret this drawing on a ${canvasWidth}x${canvasHeight} canvas.\n\nStrokes: ${JSON.stringify(strokes)}`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -660,30 +713,116 @@ const interpretDiagram = async (req, res) => {
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_tokens: 1500,
+        max_tokens: 1800,
         temperature: 0,
         response_format: { type: "json_object" },
         messages: [
           {
             role: 'system',
-            content: `Ets un intèrpret expert en diagrames dibuixats a mà.
-Identifica si el dibuix és un diagrama de dades (barres, línies), un circuit o un diagrama de vectors.
+            content: `You are an expert at reading hand-drawn coordinate systems and scientific graphs.
 
-FORMAT DE SORTIDA (JSON OBLIGATORI):
+════════════════════════════════════════
+STEP 1 — IDENTIFY THE COORDINATE FRAME
+════════════════════════════════════════
+Look for the graph's structural skeleton:
+• VERTICAL LINE on the left side → this is the Y AXIS
+• HORIZONTAL LINE at the bottom → this is the X AXIS
+These two lines together form an "L" shape (or "+" shape). They are the FRAME of the graph.
+They are NOT data. Do not record them as data.
+
+Also identify:
+• SHORT perpendicular strokes along the axes → TICK MARKS (not data)
+• Numbers written next to tick marks → AXIS SCALE VALUES (not data)
+• A letter or word at the far end of an axis (right end of X, top of Y) → UNIT LABEL (not data)
+
+════════════════════════════════════════
+STEP 2 — DECOMPOSE THEN CHECK FOR DATA
+════════════════════════════════════════
+Apply this DECOMPOSITION TEST:
+1. Mentally assign each stroke to one of these categories:
+   A) Vertical axis line (long, mostly vertical, left side)
+   B) Horizontal axis line (long, mostly horizontal, bottom)
+   C) Tick mark (short stroke perpendicular to an axis)
+   D) Written number or letter (digit clusters near ticks or axis ends)
+   E) DATA (anything that does NOT fit A-D)
+
+2. If ALL strokes are explained by categories A-D → datasets: []
+3. Only if at least one stroke clearly belongs to category E → add that as a dataset
+
+COMMON MISTAKE TO AVOID:
+The two axis lines (A + B) together form an "L". This L-shape is NOT a data line.
+A diagonal line connecting the top of the Y-axis to the right end of the X-axis would look like descending data — but if it IS the axis frame, it is NOT data.
+Ask: "Is this stroke running along or forming the boundary of the graph, or is it clearly floating INSIDE the enclosed area?"
+
+════════════════════════════════════════
+RESPONSE FORMAT (strict JSON, no extra text):
+════════════════════════════════════════
 {
-  "diagramType": "bar" | "line" | "circuit" | "vector" | "unknown",
-  "chartConfig": { "type": "...", "data": { "labels": [...], "datasets": [...] } },
-  "description": "descripció del circuit o el diagrama si no és de dades"
+  "diagramType": "line" | "bar" | "scatter" | "circuit" | "other",
+  "description": "One sentence. If no data found: 'Empty coordinate system with X and Y axes defined.'",
+  "xAxis": {
+    "label": "label for X axis inferred from context or unit",
+    "unit": "unit at X axis end (e.g. 'm', 's', 'kg', 'km/h') — empty string if none",
+    "values": [ONLY the numbers actually written next to X axis ticks, left to right, as numbers],
+    "min": the ACTUAL smallest number written on X axis (do NOT default to 0 — use what is written),
+    "max": the ACTUAL largest number written on X axis,
+    "step": values[1] - values[0]  (arithmetic difference — do NOT use pixel distances)
+  },
+  "yAxis": {
+    "label": "label for Y axis inferred from context or unit",
+    "unit": "unit at Y axis top (e.g. 's', 'm', 'N', 'm/s') — empty string if none",
+    "values": [ONLY the numbers actually written next to Y axis ticks, bottom to top, as numbers],
+    "min": the ACTUAL smallest number written on Y axis (do NOT default to 0 — use what is written),
+    "max": the ACTUAL largest number written on Y axis,
+    "step": values[1] - values[0]  (arithmetic difference — do NOT use pixel distances)
+  },
+  "chartConfig": {
+    "data": {
+      "labels": ["each xAxis.values entry as a string, in order"],
+      "datasets": []
+    }
+  }
 }
 
-REGLES:
-1. Si detectes un gràfic de dades, retorna el chartConfig compatible amb Chart.js estimant els valors dels traços.
-2. Si detectes un circuit, descriu els components i les seves connexions al camp description.
-3. Si detectes vectors, indica origen, mòdul i sentit aproximats.`,
+════════════════════════════════════════
+STEP CALCULATION RULE (CRITICAL):
+════════════════════════════════════════
+The "step" for each axis is the ARITHMETIC DIFFERENCE between consecutive written numbers.
+Examples:
+  Written: 2, 4, 6     → step = 2   (NOT based on pixel distance between ticks)
+  Written: 0, 20, 40   → step = 20
+  Written: 0, 5, 10    → step = 5
+  Written: 1, 2, 3, 4  → step = 1
+
+DO NOT measure pixel distances. ONLY subtract: second_value - first_value.
+
+If data IS found inside the frame, replace datasets with:
+[{
+  "label": "Data",
+  "data": [y value at each x tick position, reading from the drawn curve — expressed in the WRITTEN AXIS UNITS not pixels],
+  "borderColor": "rgb(99,102,241)",
+  "backgroundColor": "rgba(99,102,241,0.15)",
+  "borderWidth": 2.5,
+  "tension": 0.3,
+  "pointBackgroundColor": "rgb(99,102,241)",
+  "pointRadius": 5,
+  "fill": false
+}]
+
+When estimating data y-values: map pixel height within the graph area to the written Y axis range (min→max). E.g. if the point is 75% up the graph area and Y axis goes 0→100, the value is 75.
+
+ABSOLUTE RULES:
+1. labels must exactly equal xAxis.values converted to strings — same length, same order.
+2. datasets[].data length must equal labels length.
+3. NEVER include the axis frame lines as data.
+4. NEVER include tick marks as data points.
+5. If only axes + ticks + numbers + unit letters → datasets: []
+6. Only add datasets if there is clearly a separate floating line/curve/points INSIDE the graph area.
+7. JSON must be strictly valid.`,
           },
           {
             role: 'user',
-            content: `Interpreta aquest dibuix en un canvas de ${canvasWidth}x${canvasHeight}. Context opcional: ${context || 'cap'}\n\nStrokes: ${JSON.stringify(strokes)}`,
+            content: userContent,
           },
         ],
       }),

@@ -74,7 +74,16 @@ export function mathFix(text: string) {
 }
 
 export function tableToChart(tableMarkdown: string) {
-    return apiClient.post<{ chartType: string; chartData: object; reasoning: string }>(
+    return apiClient.post<{
+        chartType: string;
+        title: string;
+        xAxisLabel: string;
+        yAxisLabel: string;
+        yUnit: string;
+        yUnitPrefix: string;
+        chartData: { labels: string[]; datasets: Record<string, unknown>[] };
+        reasoning: string;
+    }>(
         '/ai/table-to-chart',
         { tableMarkdown }
     );
@@ -97,10 +106,16 @@ export function vectorizeShape(points: { x: number; y: number }[]) {
     );
 }
 
-export function interpretDiagram(strokes: object[]) {
-    return apiClient.post<{ diagramType: string; description: string; chartConfig?: object }>(
+export function interpretDiagram(strokes: object[], imageBase64?: string) {
+    return apiClient.post<{
+        diagramType: string;
+        description: string;
+        chartConfig?: { data: { labels: string[]; datasets: Record<string, unknown>[] } };
+        xAxis?: { label: string; unit: string; values: number[]; min: number; max: number; step: number };
+        yAxis?: { label: string; unit: string; values: number[]; min: number; max: number; step: number };
+    }>(
         '/ai/interpret-diagram',
-        { strokes, canvasWidth: 600, canvasHeight: 350 }
+        { strokes, imageBase64, canvasWidth: 600, canvasHeight: 380 }
     );
 }
 

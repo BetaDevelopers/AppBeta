@@ -23,7 +23,7 @@ function ToolBtn({ onClick, disabled, title, accent, children }: {
             onClick={onClick}
             disabled={disabled}
             title={title}
-            className={`flex-shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-medium transition-all active:scale-95 disabled:opacity-25 min-w-[48px] border
+            className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all active:scale-95 disabled:opacity-25 w-full border
                 ${accent
                     ? 'bg-blue-600/20 border-blue-500/20 text-blue-300 hover:bg-blue-600/30'
                     : 'bg-white/[0.04] border-white/5 text-slate-400 hover:bg-white/[0.08] hover:text-slate-200'
@@ -435,27 +435,8 @@ export const NoteEditor: React.FC = () => {
                 </div>
             </div>
 
-            {/* Àrea d'edició principal */}
-            <div className="flex-1 overflow-y-auto px-6 sm:px-20 py-16 scrollbar-hide">
-                <div className="max-w-4xl mx-auto">
-                    <input
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className="w-full text-6xl font-black border-none outline-none bg-transparent placeholder:text-slate-800 text-white tracking-tighter leading-none mb-10 font-display focus:ring-0"
-                        placeholder="Sin título..."
-                    />
-
-                    <RichEditor
-                        content={content}
-                        onChange={setContent}
-                        isTypingAI={isTypingAI}
-                        onEditorReady={setEditor}
-                    />
-                </div>
-            </div>
-
             {/* Error & Toast Notifications */}
-            <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 pointer-events-none">
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 pointer-events-none">
                 {error && (
                     <div className="bg-red-500 text-white rounded-2xl px-6 py-3 text-sm font-bold shadow-2xl animate-fade-in-up border border-white/20 backdrop-blur-xl">
                         ⚠️ {error}
@@ -468,75 +449,88 @@ export const NoteEditor: React.FC = () => {
                 )}
             </div>
 
-            {/* ── Floating Luxury Toolbar ── */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[100] w-full max-w-fit px-4">
-                <div className="glass-card px-6 py-3 flex items-center gap-2 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] border-white/10 ring-1 ring-white/5">
+            {/* Main: Left Vertical Toolbar + Editor */}
+            <div className="flex flex-1 overflow-hidden">
+                {/* ── Left Vertical Toolbar ── */}
+                <div className="flex flex-col items-center gap-1 py-4 px-2 glass border-r border-white/5 w-[72px] flex-shrink-0 overflow-y-auto scrollbar-hide">
+                    {/* Primary Tools */}
+                    <ToolBtn onClick={() => handleOpenTool('mathOCR')} title="Escritura inteligente" accent>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                        <span className="text-[9px] uppercase tracking-tighter font-black">Lápiz</span>
+                    </ToolBtn>
 
-                    {/* Primary Tools Group */}
-                    <div className="flex items-center gap-1.5 mr-2">
-                        <ToolBtn onClick={() => handleOpenTool('mathOCR')} title="Escritura inteligente" accent>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                            </svg>
-                            <span className="text-[9px] uppercase tracking-tighter font-black">Lápiz</span>
-                        </ToolBtn>
+                    <ToolBtn onClick={() => handleOpenTool('smartCamera')} title="Escaneo Rápido">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        </svg>
+                        <span className="text-[9px] uppercase tracking-tighter font-black">Cámara</span>
+                    </ToolBtn>
 
-                        <ToolBtn onClick={() => handleOpenTool('smartCamera')} title="Escaneo Rápido">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                            </svg>
-                            <span className="text-[9px] uppercase tracking-tighter font-black">Cámara</span>
-                        </ToolBtn>
+                    <div className="h-px w-10 bg-white/10 my-1" />
+
+                    {/* AI Tools */}
+                    <ToolBtn
+                        onClick={handleOptimize}
+                        disabled={aiLoading || content.replace(/<[^>]*>/g, '').length < 20}
+                        title="Optimizar texto"
+                    >
+                        {aiLoading && aiMode === 'improve' ? <Spinner size="sm" /> : <span className="text-lg">✨</span>}
+                        <span className="text-[9px] uppercase tracking-tighter font-black text-blue-400">Elegante</span>
+                    </ToolBtn>
+
+                    <ToolBtn
+                        onClick={handleSummarize}
+                        disabled={aiLoading || content.replace(/<[^>]*>/g, '').length < 20}
+                        title="Resumen Automático"
+                    >
+                        {aiLoading && aiMode === 'summarize' ? <Spinner size="sm" /> : <span className="text-lg">📝</span>}
+                        <span className="text-[9px] uppercase tracking-tighter font-black">Resumir</span>
+                    </ToolBtn>
+
+                    <div className="h-px w-10 bg-white/10 my-1" />
+
+                    {/* Math/Data Tools */}
+                    <ToolBtn onClick={() => handleOpenTool('mathEditor')} title="Modo ecuaciones">
+                        <span className="text-xl font-display leading-none mt-0.5">∑</span>
+                        <span className="text-[9px] uppercase tracking-tighter font-black">Matemát.</span>
+                    </ToolBtn>
+
+                    <div className="grid grid-cols-2 gap-1 mt-1">
+                        {[
+                            { t: 'tableToChart', i: '📊' },
+                            { t: 'diagram', i: '🗂️' },
+                            { t: 'geometry', i: '📐' },
+                            { t: 'calibrate', i: '🎯' },
+                        ].map(({ t, i }) => (
+                            <button
+                                key={t}
+                                onClick={() => handleOpenTool(t as any)}
+                                className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 text-sm transition-all active:scale-90"
+                            >
+                                {i}
+                            </button>
+                        ))}
                     </div>
+                </div>
 
-                    <div className="w-px h-8 bg-white/10 mx-1" />
+                {/* Àrea d'edició principal */}
+                <div className="flex-1 overflow-y-auto px-6 sm:px-16 py-16 scrollbar-hide">
+                    <div className="max-w-4xl mx-auto">
+                        <input
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            className="w-full text-6xl font-black border-none outline-none bg-transparent placeholder:text-slate-800 text-white tracking-tighter leading-none mb-10 font-display focus:ring-0"
+                            placeholder="Sin título..."
+                        />
 
-                    {/* AI Tools Group */}
-                    <div className="flex items-center gap-1.5 mx-2">
-                        <ToolBtn
-                            onClick={handleOptimize}
-                            disabled={aiLoading || content.replace(/<[^>]*>/g, '').length < 20}
-                            title="Optimizar texto"
-                        >
-                            {aiLoading && aiMode === 'improve' ? <Spinner size="sm" /> : <span className="text-lg">✨</span>}
-                            <span className="text-[9px] uppercase tracking-tighter font-black text-blue-400">Smart</span>
-                        </ToolBtn>
-
-                        <ToolBtn
-                            onClick={handleSummarize}
-                            disabled={aiLoading || content.replace(/<[^>]*>/g, '').length < 20}
-                            title="Resumen Automático"
-                        >
-                            {aiLoading && aiMode === 'summarize' ? <Spinner size="sm" /> : <span className="text-lg">📝</span>}
-                            <span className="text-[9px] uppercase tracking-tighter font-black">Resumir</span>
-                        </ToolBtn>
-                    </div>
-
-                    <div className="w-px h-8 bg-white/10 mx-1" />
-
-                    {/* Data Tools Group */}
-                    <div className="flex items-center gap-1.5 ml-2">
-                        <ToolBtn onClick={() => handleOpenTool('mathEditor')} title="Modo ecuaciones">
-                            <span className="text-xl font-display leading-none mt-0.5">∑</span>
-                            <span className="text-[9px] uppercase tracking-tighter font-black">Math</span>
-                        </ToolBtn>
-
-                        <div className="grid grid-cols-2 gap-1 ml-1">
-                            {[
-                                { t: 'tableToChart', i: '📊' },
-                                { t: 'diagram', i: '🗂️' },
-                                { t: 'geometry', i: '📐' },
-                                { t: 'calibrate', i: '🎯' },
-                            ].map(({ t, i }) => (
-                                <button
-                                    key={t}
-                                    onClick={() => handleOpenTool(t as any)}
-                                    className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 text-sm transition-all active:scale-90"
-                                >
-                                    {i}
-                                </button>
-                            ))}
-                        </div>
+                        <RichEditor
+                            content={content}
+                            onChange={setContent}
+                            isTypingAI={isTypingAI}
+                            onEditorReady={setEditor}
+                        />
                     </div>
                 </div>
             </div>

@@ -179,7 +179,27 @@ export default function MathToolsModals() {
                 onClose={closeTool}
                 title="Generador de Diagramas"
                 canInsert={canInsert}
-                onInsert={() => insertAndClose('md', pendingResult!)}
+                onInsert={() => {
+                    try {
+                        const parsed = JSON.parse(pendingResult!);
+                        const { imageBase64, chartType } = parsed;
+                        if (!imageBase64 || !editor) throw new Error('no image');
+                        const configEncoded = btoa(unescape(encodeURIComponent(
+                            JSON.stringify({ chartType, tableData: '' })
+                        )));
+                        editor.chain().focus().insertContent({
+                            type: 'chartBlock',
+                            attrs: {
+                                src: imageBase64,
+                                alt: `CHART:${configEncoded}`,
+                                width: 600,
+                            },
+                        }).run();
+                        closeTool();
+                    } catch {
+                        closeTool();
+                    }
+                }}
             >
                 <DiagramCanvas onResult={setPendingResult} />
             </MathToolModal>
