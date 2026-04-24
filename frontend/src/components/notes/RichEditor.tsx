@@ -17,6 +17,7 @@ import 'katex/dist/katex.min.css';
 import { common, createLowlight } from 'lowlight';
 import { SlashCommandExtension } from './SlashCommands';
 import { ChartBlock } from '../../extensions/ChartBlock';
+import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, AlignLeft, AlignCenter } from 'lucide-react';
 
 const lowlight = createLowlight(common);
 
@@ -32,9 +33,9 @@ function BubbleBtn({ onClick, active, children, title }: any) {
         <button
             onClick={onClick}
             title={title}
-            className={`px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest transition-all duration-300 flex items-center justify-center min-w-[36px] font-display
+            className={`px-3 py-1.5 rounded-xl transition-all duration-150 flex items-center justify-center min-w-[36px] active:scale-[0.92]
         ${active
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 glow-primary scale-105'
+                    ? 'bg-blue-600 text-white shadow-[0_0_10px_rgba(59,130,246,0.4)] scale-105'
                     : 'text-slate-500 hover:text-white hover:bg-white/5'
                 }`}
         >
@@ -98,47 +99,47 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
             <div className="flex items-center gap-1.5 glass border border-white/5 px-3 py-2.5 mb-10 sticky top-[80px] z-[90] backdrop-blur-3xl rounded-2xl shadow-xl">
                 <div className="flex items-center gap-1 px-1">
                     <BubbleBtn onClick={() => editor.chain().focus().toggleBold().run()}
-                        active={editor.isActive('bold')} title="Negrita"><strong>B</strong></BubbleBtn>
+                        active={editor.isActive('bold')} title="Negrita"><Bold size={14} /></BubbleBtn>
                     <BubbleBtn onClick={() => editor.chain().focus().toggleItalic().run()}
-                        active={editor.isActive('italic')} title="Cursiva"><i>I</i></BubbleBtn>
+                        active={editor.isActive('italic')} title="Cursiva"><Italic size={14} /></BubbleBtn>
                     <BubbleBtn onClick={() => editor.chain().focus().toggleUnderline().run()}
-                        active={editor.isActive('underline')} title="Subrayado"><u>U</u></BubbleBtn>
+                        active={editor.isActive('underline')} title="Subrayado"><UnderlineIcon size={14} /></BubbleBtn>
                 </div>
 
-                <div className="w-px h-6 bg-white/10 mx-2" />
+                <div className="w-px h-5 bg-white/[0.12] mx-1.5" />
 
                 <div className="flex items-center gap-1">
                     <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                        active={editor.isActive('heading', { level: 1 })}>H1</BubbleBtn>
+                        active={editor.isActive('heading', { level: 1 })} title="Título 1"><Heading1 size={14} /></BubbleBtn>
                     <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                        active={editor.isActive('heading', { level: 2 })}>H2</BubbleBtn>
+                        active={editor.isActive('heading', { level: 2 })} title="Título 2"><Heading2 size={14} /></BubbleBtn>
                     <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-                        active={editor.isActive('heading', { level: 3 })}>H3</BubbleBtn>
+                        active={editor.isActive('heading', { level: 3 })} title="Título 3"><Heading3 size={14} /></BubbleBtn>
                 </div>
 
-                <div className="w-px h-6 bg-white/10 mx-2" />
+                <div className="w-px h-5 bg-white/[0.12] mx-1.5" />
 
                 <div className="flex items-center gap-1">
                     <BubbleBtn onClick={() => editor.chain().focus().toggleBulletList().run()}
-                        active={editor.isActive('bulletList')}>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                        active={editor.isActive('bulletList')} title="Lista">
+                        <List size={16} />
                     </BubbleBtn>
                     <BubbleBtn onClick={() => editor.chain().focus().toggleOrderedList().run()}
-                        active={editor.isActive('orderedList')}>
-                        <span className="text-[9px]">1..</span>
+                        active={editor.isActive('orderedList')} title="Lista numerada">
+                        <ListOrdered size={16} />
                     </BubbleBtn>
                 </div>
 
-                <div className="w-px h-6 bg-white/10 mx-2" />
+                <div className="w-px h-5 bg-white/[0.12] mx-1.5" />
 
                 <div className="flex items-center gap-1">
                     <BubbleBtn onClick={() => editor.chain().focus().setTextAlign('left').run()}
-                        active={editor.isActive({ textAlign: 'left' })}>
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h16" /></svg>
+                        active={editor.isActive({ textAlign: 'left' })} title="Alinear izquierda">
+                        <AlignLeft size={14} />
                     </BubbleBtn>
                     <BubbleBtn onClick={() => editor.chain().focus().setTextAlign('center').run()}
-                        active={editor.isActive({ textAlign: 'center' })}>
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M4 18h16" /></svg>
+                        active={editor.isActive({ textAlign: 'center' })} title="Centrar">
+                        <AlignCenter size={14} />
                     </BubbleBtn>
                 </div>
             </div>
@@ -154,7 +155,7 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
                 <div className="flex items-center gap-1 glass-card border border-white/10 rounded-2xl px-2 py-2 shadow-[0_32px_64px_rgba(0,0,0,0.8)] backdrop-blur-3xl ring-1 ring-white/10">
                     <BubbleBtn onClick={() => editor.chain().focus().toggleBold().run()}
                         active={editor.isActive('bold')} title="Negrita">
-                        <strong>B</strong>
+                        <Bold size={14} />
                     </BubbleBtn>
                     <BubbleBtn onClick={() => editor.chain().focus().toggleHighlight({ color: '#2563eb' }).run()}
                         active={editor.isActive('highlight')} title="Resaltar">

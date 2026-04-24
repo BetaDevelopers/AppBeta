@@ -25,6 +25,19 @@
   /* Spacing & Radii */
   --radius-xl: 1.25rem;
   --radius-2xl: 1.5rem;
+
+  /* Touch targets */
+  --touch-sm: 44px;
+  --touch-md: 52px;
+  --touch-lg: 60px;
+
+  /* Layout dimensions */
+  --sidebar-left: 240px;
+  --sidebar-left-collapsed: 72px;
+  --sidebar-right: 300px;
+  --sidebar-right-collapsed: 0px;
+  --toolbar-height: 64px;
+  --topbar-height: 60px;
 }
 
 /* ─── Reset & Base ───────────────────────────────────────────── */
@@ -44,6 +57,42 @@ html, body, #root {
 h1, h2, h3, h4, .font-display {
   font-family: 'Outfit', sans-serif;
 }
+
+/* ─── Tablet-first: Touch & Stylus Rules ─────────────────────── */
+* {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+input, textarea, [contenteditable] {
+  font-size: 16px; /* evita zoom automático en Android */
+}
+
+button, [role="button"], a {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Pointer precision: stylus/mouse → elementos más ajustados */
+@media (pointer: fine) {
+  .toolbar-btn { min-height: 36px; }
+}
+
+/* Pointer coarse: dedo o stylus grueso → touch targets grandes */
+@media (pointer: coarse) {
+  .toolbar-btn { min-height: 52px; }
+}
+
+/* Prevenir selección accidental con stylus en UI */
+.sidebar, .toolbar { user-select: none; }
+.editor-content { user-select: text; }
+
+/* Scroll momentum en listas */
+.notes-list { -webkit-overflow-scrolling: touch; }
+
+/* Safe area para tablets con notch o bordes redondeados */
+.safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-area-left { padding-left: env(safe-area-inset-left); }
 
 /* ─── Custom Scrollbar (Sleek) ────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -266,3 +315,18 @@ h1, h2, h3, h4, .font-display {
 }
 .animate-fade-in-up   { animation: fade-in-up   200ms ease forwards; }
 .animate-fade-in-down { animation: fade-in-down 200ms ease forwards; }
+
+/* ─── Notes list fade mask ───────────────────────────────── */
+.notes-fade-mask {
+  mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
+}
+
+/* ─── Respect user motion preferences ───────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

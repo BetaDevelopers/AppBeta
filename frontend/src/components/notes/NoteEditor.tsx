@@ -13,6 +13,7 @@ import { useUIStore } from '../../store/uiStore';
 import { useMathOCR, MathRegion } from '@/features/ai/hooks/useMathOCR';
 import { markdownToHtml } from '../../utils/editorUtils';
 import { useSubjectsStore } from '../../store/subjectsStore';
+import { Pencil, Camera, Sparkles, FileText, Sigma, BarChart2, GitBranch, Triangle, Target, Check } from 'lucide-react';
 
 // ── Definit FORA de NoteEditor per evitar desmuntatge en cada re-render ──
 function ToolBtn({ onClick, disabled, title, accent, children }: {
@@ -23,9 +24,9 @@ function ToolBtn({ onClick, disabled, title, accent, children }: {
             onClick={onClick}
             disabled={disabled}
             title={title}
-            className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-lg text-[10px] font-medium transition-all active:scale-95 disabled:opacity-25 w-full border
+            className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-[10px] text-[10px] font-medium transition-all duration-150 active:scale-95 disabled:opacity-25 w-full border
                 ${accent
-                    ? 'bg-blue-600/20 border-blue-500/20 text-blue-300 hover:bg-blue-600/30'
+                    ? 'bg-blue-600/20 border-blue-500/20 text-blue-300 hover:bg-blue-600/30 shadow-[0_0_8px_rgba(59,130,246,0.2)]'
                     : 'bg-white/[0.04] border-white/5 text-slate-400 hover:bg-white/[0.08] hover:text-slate-200'
                 }`}
         >
@@ -419,10 +420,11 @@ export const NoteEditor: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 ${syncStatus === 'synced' ? 'text-emerald-500' :
+                    <span className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 ${syncStatus === 'synced' ? 'text-emerald-500' :
                         syncStatus === 'syncing' ? 'text-blue-400 animate-pulse' : 'text-slate-600'
                         }`}>
-                        {syncStatus === 'synced' ? '• Sincronitzat' : syncStatus === 'syncing' ? '• Guardant...' : '• Local'}
+                        {syncStatus === 'synced' ? <Check size={10} strokeWidth={3} /> : '•'}
+                        {syncStatus === 'synced' ? 'Sincronitzat' : syncStatus === 'syncing' ? 'Guardant...' : 'Local'}
                     </span>
                     <button
                         className="p-2 rounded-xl text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-95 border border-transparent hover:border-red-500/20"
@@ -455,17 +457,13 @@ export const NoteEditor: React.FC = () => {
                 <div className="flex flex-col items-center gap-1 py-4 px-2 glass border-r border-white/5 w-[72px] flex-shrink-0 overflow-y-auto scrollbar-hide">
                     {/* Primary Tools */}
                     <ToolBtn onClick={() => handleOpenTool('mathOCR')} title="Escritura inteligente" accent>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        <span className="text-[9px] uppercase tracking-tighter font-black">Lápiz</span>
+                        <Pencil size={22} />
+                        <span className="text-[10px] uppercase tracking-tighter font-black">Lápiz</span>
                     </ToolBtn>
 
                     <ToolBtn onClick={() => handleOpenTool('smartCamera')} title="Escaneo Rápido">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        </svg>
-                        <span className="text-[9px] uppercase tracking-tighter font-black">Cámara</span>
+                        <Camera size={22} />
+                        <span className="text-[10px] uppercase tracking-tighter font-black">Cámara</span>
                     </ToolBtn>
 
                     <div className="h-px w-10 bg-white/10 my-1" />
@@ -476,8 +474,8 @@ export const NoteEditor: React.FC = () => {
                         disabled={aiLoading || content.replace(/<[^>]*>/g, '').length < 20}
                         title="Optimizar texto"
                     >
-                        {aiLoading && aiMode === 'improve' ? <Spinner size="sm" /> : <span className="text-lg">✨</span>}
-                        <span className="text-[9px] uppercase tracking-tighter font-black text-blue-400">Elegante</span>
+                        {aiLoading && aiMode === 'improve' ? <Spinner size="sm" /> : <Sparkles size={20} />}
+                        <span className="text-[10px] uppercase tracking-tighter font-black text-blue-400">Elegante</span>
                     </ToolBtn>
 
                     <ToolBtn
@@ -485,31 +483,31 @@ export const NoteEditor: React.FC = () => {
                         disabled={aiLoading || content.replace(/<[^>]*>/g, '').length < 20}
                         title="Resumen Automático"
                     >
-                        {aiLoading && aiMode === 'summarize' ? <Spinner size="sm" /> : <span className="text-lg">📝</span>}
-                        <span className="text-[9px] uppercase tracking-tighter font-black">Resumir</span>
+                        {aiLoading && aiMode === 'summarize' ? <Spinner size="sm" /> : <FileText size={20} />}
+                        <span className="text-[10px] uppercase tracking-tighter font-black">Resumir</span>
                     </ToolBtn>
 
                     <div className="h-px w-10 bg-white/10 my-1" />
 
                     {/* Math/Data Tools */}
                     <ToolBtn onClick={() => handleOpenTool('mathEditor')} title="Modo ecuaciones">
-                        <span className="text-xl font-display leading-none mt-0.5">∑</span>
-                        <span className="text-[9px] uppercase tracking-tighter font-black">Matemát.</span>
+                        <Sigma size={22} />
+                        <span className="text-[10px] uppercase tracking-tighter font-black">Matemát.</span>
                     </ToolBtn>
 
                     <div className="grid grid-cols-2 gap-1 mt-1">
                         {[
-                            { t: 'tableToChart', i: '📊' },
-                            { t: 'diagram', i: '🗂️' },
-                            { t: 'geometry', i: '📐' },
-                            { t: 'calibrate', i: '🎯' },
-                        ].map(({ t, i }) => (
+                            { t: 'tableToChart', icon: <BarChart2 size={15} /> },
+                            { t: 'diagram',      icon: <GitBranch size={15} /> },
+                            { t: 'geometry',     icon: <Triangle size={15} /> },
+                            { t: 'calibrate',    icon: <Target size={15} /> },
+                        ].map(({ t, icon }) => (
                             <button
                                 key={t}
                                 onClick={() => handleOpenTool(t as any)}
-                                className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 text-sm transition-all active:scale-90"
+                                className="w-7 h-7 flex items-center justify-center rounded-[8px] bg-white/5 border border-white/5 text-slate-400 hover:bg-white/[0.09] hover:text-slate-200 transition-all duration-150 active:scale-90"
                             >
-                                {i}
+                                {icon}
                             </button>
                         ))}
                     </div>

@@ -21,7 +21,8 @@
       "Bash(node:*)",
       "Bash(npx vite:*)",
       "mcp__plugin_supabase_supabase__get_project",
-      "Bash(npx skills *)"
+      "Bash(npx skills *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

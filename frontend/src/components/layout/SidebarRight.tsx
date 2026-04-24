@@ -4,12 +4,18 @@ import html2canvas from 'html2canvas';
 import { useMathToolsStore } from '../../store/mathToolsStore';
 import { useNotesStore } from '../../store/notesStore';
 import FileUploadOCR from '../files/FileUploadOCR';
+import { ScanLine, ImagePlus, FileDown, FileCode, FileText, FolderOpen, Download, ChevronDown } from 'lucide-react';
 
-function SectionHeader({ icon, title, subtitle }: { icon: string; title: string; subtitle?: string }) {
+interface SidebarRightProps {
+    isOverlay?: boolean;
+    onClose?: () => void;
+}
+
+function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle?: string }) {
     return (
         <div className="px-5 pt-4 pb-3">
             <div className="flex items-center gap-2">
-                <span className="text-base">{icon}</span>
+                <span className="flex items-center text-[#484F58]">{icon}</span>
                 <span className="text-[11px] font-semibold text-[#484F58] uppercase tracking-widest">{title}</span>
             </div>
             {subtitle && (
@@ -31,7 +37,7 @@ function ActionButton({
     variant = 'default',
 }: {
     onClick: () => void;
-    icon: string;
+    icon: React.ReactNode;
     label: string;
     disabled?: boolean;
     variant?: 'default' | 'primary' | 'danger';
@@ -47,16 +53,16 @@ function ActionButton({
         <button
             onClick={onClick}
             disabled={disabled}
-            className={`w-full flex items-center gap-3 px-4 rounded-[var(--border-radius-md)] text-[13px] font-medium border transition-colors disabled:opacity-30 disabled:pointer-events-none ${variantClass}`}
-            style={{ height: '44px' }}
+            className={`w-full flex items-center gap-3 px-4 rounded-xl border transition-all duration-150 active:scale-[0.97] disabled:opacity-30 disabled:pointer-events-none ${variantClass}`}
+            style={{ height: 'var(--touch-md)', fontSize: '15px', fontWeight: 500 }}
         >
-            <span className="text-base flex-shrink-0">{icon}</span>
+            <span className="flex-shrink-0 leading-none">{icon}</span>
             <span>{label}</span>
         </button>
     );
 }
 
-export default function SidebarRight() {
+export default function SidebarRight({ isOverlay = false, onClose }: SidebarRightProps) {
     const { editor } = useMathToolsStore();
     const { currentNote } = useNotesStore();
     const imageInputRef = useRef<HTMLInputElement>(null);
@@ -136,33 +142,54 @@ export default function SidebarRight() {
     const noEditor = !editor;
 
     return (
-        <aside className="flex-shrink-0 w-72 bg-[#161B22] border-l border-[rgba(255,255,255,0.08)] flex flex-col overflow-hidden shadow-xl z-[50]">
+        <aside
+            className={`
+                sidebar flex-shrink-0 bg-[#161B22] border-l border-[rgba(255,255,255,0.08)] flex flex-col overflow-hidden shadow-xl z-[50]
+                ${isOverlay ? 'absolute right-0 top-0 h-full' : 'relative'}
+            `}
+            style={{ width: 'var(--sidebar-right)' }}
+        >
+            {/* Close button — shown when overlay */}
+            {isOverlay && onClose && (
+                <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                    <span className="text-[11px] font-semibold text-[#484F58] uppercase tracking-widest">Panel</span>
+                    <button
+                        onClick={onClose}
+                        className="flex items-center justify-center rounded-xl text-[#484F58] hover:text-[#E6EDF3] hover:bg-[#21262D] transition-colors"
+                        style={{ width: '44px', height: '44px' }}
+                        aria-label="Cerrar panel"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            )}
+
             <div className="flex-1 overflow-y-auto scrollbar-hide py-2">
 
                 {/* ── Recursos ─── */}
-                <SectionHeader icon="📂" title="Recursos" subtitle="Archivos adjuntos" />
+                <SectionHeader icon={<FolderOpen size={14} />} title="Recursos" subtitle="Archivos adjuntos" />
                 <div className="px-4 pb-4 flex flex-col gap-2">
                     <button
                         onClick={() => setShowUpload(v => !v)}
-                        className={`w-full flex items-center gap-3 px-4 rounded-[var(--border-radius-md)] text-[13px] font-medium border transition-colors ${
+                        className={`w-full flex items-center gap-3 px-4 rounded-xl border transition-all duration-150 active:scale-[0.97] ${
                             showUpload
                                 ? 'bg-[rgba(56,139,253,0.1)] border-[rgba(56,139,253,0.3)] text-[#388BFD]'
                                 : 'bg-[#21262D] border-[rgba(255,255,255,0.08)] text-[#8B949E] hover:bg-[#2D333B] hover:text-[#E6EDF3]'
                         }`}
-                        style={{ height: '44px' }}
+                        style={{ height: 'var(--touch-md)', fontSize: '15px', fontWeight: 500 }}
                     >
-                        <span className="text-base">📎</span>
+                        <ScanLine size={20} className="flex-shrink-0" />
                         <span>OCR Express</span>
-                        <svg
-                            className={`w-3.5 h-3.5 ml-auto text-[#484F58] transition-transform duration-200 ${showUpload ? 'rotate-180' : ''}`}
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                        </svg>
+                        <ChevronDown
+                            size={14}
+                            className={`ml-auto text-[#484F58] transition-transform duration-200 ${showUpload ? 'rotate-180' : ''}`}
+                        />
                     </button>
 
                     {showUpload && (
-                        <div className="rounded-[var(--border-radius-lg)] bg-[#21262D] border border-[rgba(255,255,255,0.08)] p-3 animate-fade-in-down">
+                        <div className="rounded-xl bg-[#21262D] border border-[rgba(255,255,255,0.08)] p-3 animate-fade-in-down">
                             <FileUploadOCR
                                 onResult={noEditor ? undefined : insertText}
                                 onInsertImage={noEditor ? undefined : insertImage}
@@ -172,7 +199,7 @@ export default function SidebarRight() {
 
                     <ActionButton
                         onClick={() => imageInputRef.current?.click()}
-                        icon="🖼"
+                        icon={<ImagePlus size={20} />}
                         label="Insertar imagen"
                         disabled={noEditor}
                     />
@@ -194,7 +221,7 @@ export default function SidebarRight() {
                                 {noteImages.map((src, i) => (
                                     <div
                                         key={i}
-                                        className="group/img relative aspect-square rounded-[var(--border-radius-md)] overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[#21262D] cursor-zoom-in"
+                                        className="group/img relative aspect-square rounded-xl overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[#21262D] cursor-zoom-in"
                                     >
                                         <img
                                             src={src}
@@ -212,27 +239,27 @@ export default function SidebarRight() {
 
                 {/* ── Exportar ─── */}
                 <SectionHeader
-                    icon="💾"
+                    icon={<Download size={14} />}
                     title="Exportar"
                     subtitle={currentNote ? (currentNote.title || 'Sin nombre') : undefined}
                 />
                 <div className="px-4 pb-6 flex flex-col gap-2">
                     {!currentNote ? (
-                        <div className="px-4 py-5 rounded-[var(--border-radius-lg)] border border-dashed border-[rgba(255,255,255,0.08)] text-center">
+                        <div className="px-4 py-5 rounded-xl border border-dashed border-[rgba(255,255,255,0.08)] text-center">
                             <p className="text-[13px] text-[#484F58]">Abre una nota para exportar</p>
                         </div>
                     ) : (
                         <>
-                            <ActionButton onClick={downloadPDF} icon="📄" label="Exportar PDF"    variant="default" />
-                            <ActionButton onClick={downloadMD}  icon="📝" label="Exportar Markdown" variant="default" />
-                            <ActionButton onClick={downloadTXT} icon="📃" label="Exportar texto"  variant="default" />
+                            <ActionButton onClick={downloadPDF} icon={<FileDown size={20} />}  label="Exportar PDF"      variant="default" />
+                            <ActionButton onClick={downloadMD}  icon={<FileCode size={20} />}  label="Exportar Markdown" variant="default" />
+                            <ActionButton onClick={downloadTXT} icon={<FileText size={20} />}  label="Exportar texto"    variant="default" />
                         </>
                     )}
                 </div>
             </div>
 
             {/* Status footer */}
-            <div className="p-4 border-t border-[rgba(255,255,255,0.08)]">
+            <div className="p-4 border-t border-[rgba(255,255,255,0.08)] safe-area-bottom">
                 <div className="flex items-center justify-between">
                     <span className="text-[11px] text-[#484F58]">Estado IA</span>
                     <div className="flex items-center gap-1.5">
