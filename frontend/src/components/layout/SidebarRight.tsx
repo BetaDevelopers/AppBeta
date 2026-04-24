@@ -3,7 +3,6 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { useMathToolsStore } from '../../store/mathToolsStore';
 import { useNotesStore } from '../../store/notesStore';
-import SmartCamera from '../camera/SmartCamera';
 import FileUploadOCR from '../files/FileUploadOCR';
 
 function SectionHeader({ icon, title, subtitle }: { icon: string; title: string; subtitle?: string }) {
@@ -139,19 +138,6 @@ export default function SidebarRight() {
     return (
         <aside className="flex-shrink-0 w-72 bg-[#161B22] border-l border-[rgba(255,255,255,0.08)] flex flex-col overflow-hidden shadow-xl z-[50]">
             <div className="flex-1 overflow-y-auto scrollbar-hide py-2">
-
-                {/* ── Laboratori ─── */}
-                <SectionHeader icon="📷" title="Laboratorio" subtitle="Escaneo con visión IA" />
-                <div className="px-4 pb-4">
-                    {noEditor && (
-                        <p className="text-[13px] text-[#484F58] mb-3 px-1">Abre una nota para activar el editor</p>
-                    )}
-                    <div className="rounded-[var(--border-radius-lg)] overflow-hidden bg-[#21262D] border border-[rgba(255,255,255,0.08)]">
-                        <SmartCamera onResult={noEditor ? undefined : insertText} />
-                    </div>
-                </div>
-
-                <Divider />
 
                 {/* ── Recursos ─── */}
                 <SectionHeader icon="📂" title="Recursos" subtitle="Archivos adjuntos" />
