@@ -44,7 +44,7 @@ export const NoteList: React.FC = () => {
                 {/* CTA */}
                 <button
                     onClick={handleCreateNote}
-                    className="relative overflow-hidden rounded-[var(--border-radius-xl)] shadow-xl shadow-blue-500/20 flex items-center gap-3 px-8 text-white font-semibold"
+                    className="relative overflow-hidden rounded-[var(--border-radius-xl)] shadow-xl shadow-blue-500/20 flex items-center gap-3 px-8 text-white font-semibold transition-all duration-150 active:scale-95 hover:shadow-blue-500/40"
                     style={{
                         height: 'var(--touch-target-lg)',
                         fontSize: 'var(--font-size-md)',
@@ -93,7 +93,7 @@ export const NoteList: React.FC = () => {
                     </div>
                     <button
                         onClick={handleCreateNote}
-                        className="flex items-center gap-2 px-4 rounded-[var(--border-radius-lg)] bg-[#388BFD] text-white font-semibold hover:bg-[#2f7be8] transition-colors shadow-lg shadow-blue-500/20"
+                        className="flex items-center gap-2 px-4 rounded-[var(--border-radius-lg)] bg-[#388BFD] text-white font-semibold hover:bg-[#2f7be8] transition-all duration-150 active:scale-95 shadow-lg shadow-blue-500/20"
                         style={{ height: 'var(--touch-target)', fontSize: 'var(--font-size-sm)' }}
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,8 +105,14 @@ export const NoteList: React.FC = () => {
 
                 {/* Notes grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {notes.map((n) => (
-                        <NoteCard key={n.id} note={n} />
+                    {notes.map((n, i) => (
+                        <div
+                            key={n.id}
+                            className="animate-fade-in-up"
+                            style={{ animationDelay: `${Math.min(i * 40, 200)}ms`, animationFillMode: 'both' }}
+                        >
+                            <NoteCard note={n} />
+                        </div>
                     ))}
                 </div>
             </div>
