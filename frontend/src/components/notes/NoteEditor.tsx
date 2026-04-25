@@ -13,7 +13,7 @@ import { useUIStore } from '../../store/uiStore';
 import { useMathOCR, MathRegion } from '@/features/ai/hooks/useMathOCR';
 import { markdownToHtml } from '../../utils/editorUtils';
 import { useSubjectsStore } from '../../store/subjectsStore';
-import { Pencil, Camera, Sparkles, FileText, Sigma, BarChart2, GitBranch, Triangle, Target, Check } from 'lucide-react';
+import { Pencil, Camera, Sparkles, FileText, Sigma, BarChart2, GitBranch, Triangle, Target } from 'lucide-react';
 
 // ── Definit FORA de NoteEditor per evitar desmuntatge en cada re-render ──
 function ToolBtn({ onClick, disabled, title, accent, children }: {
@@ -425,11 +425,28 @@ export const NoteEditor: React.FC = () => {
                     </div>
                 </div>
                 <div className="flex items-center gap-4">
-                    <span className={`flex items-center gap-1 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500 ${syncStatus === 'synced' ? 'text-emerald-500' :
-                        syncStatus === 'syncing' ? 'text-blue-400 animate-pulse' : 'text-slate-600'
-                        }`}>
-                        {syncStatus === 'synced' ? <Check size={10} strokeWidth={3} /> : '•'}
-                        {syncStatus === 'synced' ? 'Sincronitzat' : syncStatus === 'syncing' ? 'Guardant...' : 'Local'}
+                    <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500">
+                        {syncStatus === 'syncing' && (
+                            <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping inline-block" />
+                                <span className="text-blue-400">Guardant...</span>
+                            </>
+                        )}
+                        {syncStatus === 'synced' && (
+                            <>
+                                <span className="relative flex h-1.5 w-1.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                                </span>
+                                <span className="text-emerald-500">Sincronitzat</span>
+                            </>
+                        )}
+                        {syncStatus === 'local' && (
+                            <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-600 inline-block" />
+                                <span className="text-slate-600">Local</span>
+                            </>
+                        )}
                     </span>
                     <button
                         className="p-2 rounded-xl text-red-500/50 hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-95 border border-transparent hover:border-red-500/20"
