@@ -316,22 +316,23 @@ button, [role="button"], a {
 .animate-fade-in-up   { animation: fade-in-up   200ms ease forwards; }
 .animate-fade-in-down { animation: fade-in-down 200ms ease forwards; }
 
-@keyframes slideDown {
+/* ─── Slide and panel entrance animations ────────────────── */
+@keyframes slide-down {
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes panelEnter {
+@keyframes panel-enter {
   from { opacity: 0; transform: scale(0.95); }
   to   { opacity: 1; transform: scale(1); }
 }
 
 .animate-slide-down {
-  animation: slideDown 200ms ease-out both;
+  animation: slide-down 200ms ease-out both;
 }
 
 .animate-panel-enter {
-  animation: panelEnter 200ms ease-out both;
+  animation: panel-enter 200ms ease-out both;
 }
 
 /* ─── Notes list fade mask ───────────────────────────────── */
