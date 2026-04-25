@@ -313,7 +313,7 @@ button, [role="button"], a {
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-fade-in-up   { animation: fade-in-up   200ms ease forwards; }
+.animate-fade-in-up   { animation: fade-in-up   200ms ease both; }
 .animate-fade-in-down { animation: fade-in-down 200ms ease forwards; }
 
 /* ─── Slide and panel entrance animations ────────────────── */

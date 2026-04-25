@@ -109,7 +109,7 @@ export const NoteList: React.FC = () => {
                         <div
                             key={n.id}
                             className="animate-fade-in-up"
-                            style={{ animationDelay: `${Math.min(i * 40, 200)}ms`, animationFillMode: 'both' }}
+                            style={{ animationDelay: `${Math.min(i * 40, 200)}ms` }}
                         >
                             <NoteCard note={n} />
                         </div>
