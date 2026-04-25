@@ -145,7 +145,7 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
             {/* Bubble Menu — Contextual floating magic */}
             <BubbleMenu
                 editor={editor}
-                tippyOptions={{ appendTo: () => document.body }}
+                appendTo={() => document.body}
                 shouldShow={({ state }: { state: any }) => {
                     const { from, to } = state.selection;
                     return from !== to;
