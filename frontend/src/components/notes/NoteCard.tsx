@@ -32,9 +32,9 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
             tabIndex={0}
             onClick={() => setCurrentNote(note)}
             onKeyDown={(e) => e.key === 'Enter' && setCurrentNote(note)}
-            className={`group relative w-full text-left p-5 rounded-[var(--border-radius-xl)] transition-all duration-200 overflow-hidden border cursor-pointer ${isActive
+            className={`group relative w-full text-left p-5 rounded-[var(--border-radius-xl)] transition-all duration-150 overflow-hidden border cursor-pointer active:scale-[0.98] ${isActive
                 ? 'bg-[rgba(56,139,253,0.08)] border-[rgba(56,139,253,0.4)] shadow-[0_0_24px_rgba(56,139,253,0.1)]'
-                : 'bg-[#161B22] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)] hover:bg-[#1c2230]'
+                : 'bg-[#161B22] border-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.15)] hover:bg-[#1c2230] hover:translate-x-1'
                 }`}
             style={{ minHeight: '140px' }}
         >
