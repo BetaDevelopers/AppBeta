@@ -313,12 +313,12 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                                     </svg>
                                 </button>
                                 {einesOpen && (
-                                    <div className="flex flex-col gap-0.5 mt-1">
+                                    <div className="flex flex-col gap-0.5 mt-1 animate-fade-in-down">
                                         {EINES.map(({ tool, icon, label }) => (
                                             <button
                                                 key={tool}
                                                 onClick={() => handleOpenTool(tool)}
-                                                className="w-full flex items-center gap-3 px-4 rounded-xl text-[13px] font-medium text-[#8B949E] hover:bg-[rgba(56,139,253,0.08)] hover:text-[#388BFD] transition-colors"
+                                                className="w-full flex items-center gap-3 px-4 rounded-xl text-[13px] font-medium text-[#8B949E] hover:bg-[rgba(56,139,253,0.08)] hover:text-[#388BFD] transition-all duration-150 active:scale-[0.97]"
                                                 style={{ height: 'var(--touch-sm)' }}
                                             >
                                                 <span className="w-5 flex items-center justify-center flex-shrink-0 text-[#8B949E]">{icon}</span>
@@ -335,7 +335,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                                     <button
                                         key={tool}
                                         onClick={() => handleOpenTool(tool)}
-                                        className="group/tool relative flex items-center justify-center rounded-xl text-[#8B949E] hover:bg-[rgba(56,139,253,0.1)] hover:text-[#388BFD] transition-colors"
+                                        className="group/tool relative flex items-center justify-center rounded-xl text-[#8B949E] hover:bg-[rgba(56,139,253,0.1)] hover:text-[#388BFD] transition-all duration-150 active:scale-90"
                                         style={{ width: 'var(--touch-md)', height: 'var(--touch-md)' }}
                                         title={label}
                                     >
