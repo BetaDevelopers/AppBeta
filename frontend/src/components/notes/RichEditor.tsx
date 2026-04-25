@@ -10,7 +10,6 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
-import { BubbleMenu as BubbleMenuExtension } from '@tiptap/extension-bubble-menu';
 import Mathematics from '@tiptap/extension-mathematics';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import 'katex/dist/katex.min.css';
@@ -62,7 +61,6 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
             TableHeader,
             TableCell,
             CodeBlockLowlight.configure({ lowlight }),
-            BubbleMenuExtension,
             Mathematics,
             SlashCommandExtension,
             ChartBlock,
@@ -147,6 +145,7 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
             {/* Bubble Menu — Contextual floating magic */}
             <BubbleMenu
                 editor={editor}
+                tippyOptions={{ appendTo: () => document.body }}
                 shouldShow={({ state }: { state: any }) => {
                     const { from, to } = state.selection;
                     return from !== to;
