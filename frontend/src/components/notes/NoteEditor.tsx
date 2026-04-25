@@ -52,6 +52,11 @@ export const NoteEditor: React.FC = () => {
     const [showDataVision, setShowDataVision] = useState(false);
     const [summaryPanel, setSummaryPanel] = useState<{ original: string; summary: string } | null>(null);
     const [editor, setEditor] = useState<any>(null);
+
+    const isEmpty =
+        title.trim() === '' &&
+        content.replace(/<[^>]*>/g, '').trim() === '';
+
     const { openTool, setEditor: storeSetEditor } = useMathToolsStore();
     const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const editorRef = useRef<any>(null);
@@ -514,7 +519,19 @@ export const NoteEditor: React.FC = () => {
                 </div>
 
                 {/* Àrea d'edició principal */}
-                <div className="flex-1 overflow-y-auto px-6 sm:px-16 py-16 scrollbar-hide">
+                <div className="flex-1 overflow-y-auto px-6 sm:px-16 py-16 scrollbar-hide relative">
+                    {/* Empty-state overlay */}
+                    {isEmpty && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none animate-fade-in-up">
+                            <div className="flex flex-col items-center gap-4 opacity-30">
+                                <FileText size={56} strokeWidth={1} className="text-slate-500" />
+                                <div className="text-center">
+                                    <p className="text-slate-400 text-base font-medium">Empieza a escribir o dibuja con el lápiz</p>
+                                    <p className="text-slate-600 text-sm mt-1">Escribe <kbd className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[11px] font-mono">/</kbd> para ver comandos</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <div className="max-w-4xl mx-auto">
                         <input
                             value={title}
