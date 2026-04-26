@@ -308,8 +308,9 @@ REGLES CRÍTIQUES:
 
 /**
  * POST /api/ai/math-fix
- * Body: { text: string }
- * Returns: { improved: string, equationsFound: number }
+ * Body: { text: string, mode?: 'beautify' }
+ * Returns (default): { improved: string, equationsFound: number }
+ * Returns (beautify): { latex: string }
  */
 const fixMathText = async (req, res) => {
   try {
@@ -343,10 +344,15 @@ const fixMathText = async (req, res) => {
       if (!response.ok) throw new Error(`OpenAI error: ${response.status}`);
       const data = await response.json();
       const latex = data.choices[0].message.content.trim();
+      const tokensUsed = data.usage?.total_tokens || 0;
+      pool.query(
+        `INSERT INTO ai_usage_logs (user_id, note_id, action, tokens_used) VALUES ($1, $2, $3, $4)`,
+        [req.user.id, req.body.note_id || null, 'math-beautify', tokensUsed]
+      ).catch(e => console.warn('Log error:', e.message));
       pool.query(
         'UPDATE users SET ai_uses_this_month = ai_uses_this_month + 1 WHERE id = $1',
         [req.user.id]
-      ).catch(() => {});
+      ).catch(e => console.warn('AI counter error:', e.message));
       return res.json({ latex });
     }
 
