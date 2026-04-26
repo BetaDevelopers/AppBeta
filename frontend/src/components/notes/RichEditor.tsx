@@ -16,6 +16,8 @@ import 'katex/dist/katex.min.css';
 import { common, createLowlight } from 'lowlight';
 import { SlashCommandExtension } from './SlashCommands';
 import { ChartBlock } from '../../extensions/ChartBlock';
+import { Color } from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
 import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, AlignLeft, AlignCenter } from 'lucide-react';
 
 const lowlight = createLowlight(common);
@@ -51,6 +53,8 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
                 heading: { levels: [1, 2, 3] }
             }),
             Underline,
+            TextStyle,
+            Color,
             Placeholder.configure({
                 placeholder: 'Escribe tus pensamientos aquí... (escribe / para comandos mágicos)',
             }),
