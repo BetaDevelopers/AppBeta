@@ -66,10 +66,16 @@ export function mathSolve(latex: string) {
     );
 }
 
-export function mathFix(text: string) {
-    return apiClient.post<{ fixedText?: string; latex?: string; content_markdown?: string }>(
+export function mathFix(text: string, mode?: 'beautify') {
+    return apiClient.post<{
+        fixedText?: string;
+        latex?: string;
+        improved?: string;
+        equationsFound?: number;
+        content_markdown?: string;
+    }>(
         '/ai/math-fix',
-        { text }
+        { text, ...(mode ? { mode } : {}) }
     );
 }
 
