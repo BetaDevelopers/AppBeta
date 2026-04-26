@@ -313,10 +313,41 @@ REGLES CRÍTIQUES:
  */
 const fixMathText = async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, mode } = req.body;
 
     if (!text) {
       return res.status(400).json({ error: "Cal enviar 'text' per processar." });
+    }
+
+    // ── Beautify mode: output pure LaTeX for KaTeX rendering ──────────────
+    if (mode === 'beautify') {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          max_tokens: 500,
+          temperature: 0,
+          messages: [
+            {
+              role: 'system',
+              content: 'Convierte este texto matemático informal a LaTeX bien formateado. Devuelve SOLO el LaTeX, sin explicaciones, sin backticks y sin delimitadores $ o $$.',
+            },
+            { role: 'user', content: text },
+          ],
+        }),
+      });
+      if (!response.ok) throw new Error(`OpenAI error: ${response.status}`);
+      const data = await response.json();
+      const latex = data.choices[0].message.content.trim();
+      pool.query(
+        'UPDATE users SET ai_uses_this_month = ai_uses_this_month + 1 WHERE id = $1',
+        [req.user.id]
+      ).catch(() => {});
+      return res.json({ latex });
     }
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

@@ -50,7 +50,10 @@ router.post('/math-segment',
   segmentMathOCR
 );
 router.post('/math-fix',
-  validateBody({ text: TEXT_RULE }),
+  validateBody({
+    text: TEXT_RULE,
+    mode: { type: 'string', required: false, maxLength: 50 },
+  }),
   fixMathText
 );
 router.post('/math-solve',
