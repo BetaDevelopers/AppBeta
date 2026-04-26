@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import {
     Scissors,
@@ -28,6 +28,7 @@ interface ActionBtnProps {
     danger?: boolean;
     loading?: boolean;
     active?: boolean;
+    disabled?: boolean;
 }
 
 interface ColorDotProps {
@@ -73,7 +74,8 @@ function ActionBtn({ icon: Icon, label, onClick, danger = false, loading = false
         <button
             onClick={onClick}
             title={label}
-            className={`flex flex-col items-center justify-center gap-0.5 w-[52px] min-h-[52px] rounded-xl transition-all duration-150 active:scale-[0.92] select-none
+            disabled={loading}
+            className={`flex flex-col items-center justify-center gap-0.5 w-[52px] min-h-[52px] rounded-xl transition-all duration-150 active:scale-[0.92] select-none disabled:opacity-40 disabled:pointer-events-none
                 ${danger
                     ? 'hover:bg-red-500/15 text-red-400'
                     : active
@@ -136,11 +138,39 @@ function Divider() {
     );
 }
 
+// ─── TranslateDropdown ────────────────────────────────────────────────────────
+
+interface TranslateDropdownProps {
+    onSelect: (code: string) => void;
+    style: React.CSSProperties;
+}
+
+function TranslateDropdown({ onSelect, style }: TranslateDropdownProps) {
+    return (
+        <div className="absolute top-full left-0 mt-2 z-[300] rounded-xl overflow-hidden py-1" style={style}>
+            {LANGUAGES.map(lang => (
+                <button key={lang.code} onClick={() => onSelect(lang.code)}
+                    className="w-full text-left px-3 py-2.5 text-[13px] text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors flex items-center gap-2">
+                    <span>{lang.flag}</span>
+                    <span>{lang.label}</span>
+                </button>
+            ))}
+        </div>
+    );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMenuProps) {
     const [showTranslate, setShowTranslate] = useState(false);
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!editor) return;
+        const reset = () => setShowTranslate(false);
+        editor.on('blur', reset);
+        return () => { editor.off('blur', reset); };
+    }, [editor]);
 
     if (!editor) return null;
 
@@ -155,20 +185,18 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
 
     const handleCut = () => {
         const text = getSelectedText();
-        navigator.clipboard.writeText(text).then(() => {
-            editor.chain().focus().deleteSelection().run();
-        });
+        navigator.clipboard.writeText(text).then(() => editor.chain().focus().deleteSelection().run()).catch(console.error);
     };
 
     const handleCopy = () => {
         const text = getSelectedText();
-        navigator.clipboard.writeText(text);
+        navigator.clipboard.writeText(text).catch(console.error);
     };
 
     const handlePaste = () => {
         navigator.clipboard.readText().then((t) => {
             editor.chain().focus().insertContent(t).run();
-        });
+        }).catch(console.error);
     };
 
     const handleDuplicate = () => {
@@ -262,36 +290,13 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
         minWidth: '260px',
     };
 
-    const dropdownStyle: React.CSSProperties = {
+    const dropdownContainerStyle: React.CSSProperties = {
         background: 'rgba(15, 15, 30, 0.96)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
         border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '12px',
         boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.4)',
-        minWidth: '160px',
-        overflow: 'hidden',
     };
-
-    // ── Translate dropdown ────────────────────────────────────────────────────
-
-    const TranslateDropdown = () => (
-        <div
-            className="absolute top-full left-0 mt-2 z-[300]"
-            style={dropdownStyle}
-        >
-            {LANGUAGES.map((lang) => (
-                <button
-                    key={lang.code}
-                    onClick={() => handleTranslate(lang.code)}
-                    className="flex items-center gap-2 w-full py-2.5 px-3 text-[13px] text-slate-300 hover:bg-white/6 hover:text-white transition-colors rounded-lg"
-                >
-                    <span>{lang.flag}</span>
-                    <span>{lang.label}</span>
-                </button>
-            ))}
-        </div>
-    );
 
     // ── Render ────────────────────────────────────────────────────────────────
 
@@ -304,16 +309,6 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
                 return from !== to;
             }}
         >
-            <style>{`
-                @keyframes selection-menu-spring {
-                    from { opacity: 0; transform: scale(0.85); }
-                    to   { opacity: 1; transform: scale(1); }
-                }
-                .selection-menu-enter {
-                    animation: selection-menu-spring 180ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
-                }
-            `}</style>
-
             <div className="selection-menu-enter" style={containerStyle}>
 
                 {/* ROW 1: Basic actions */}
@@ -348,7 +343,7 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
                             loading={loadingAction === 'translate'}
                             active={showTranslate}
                         />
-                        {showTranslate && <TranslateDropdown />}
+                        {showTranslate && <TranslateDropdown onSelect={handleTranslate} style={dropdownContainerStyle} />}
                     </div>
                     <ActionBtn
                         icon={Wand2}

@@ -335,6 +335,15 @@ button, [role="button"], a {
   animation: panel-enter 200ms ease-out both;
 }
 
+@keyframes selection-menu-spring {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.selection-menu-enter {
+  animation: selection-menu-spring 180ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
 /* ─── Notes list fade mask ───────────────────────────────── */
 .notes-fade-mask {
   mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
