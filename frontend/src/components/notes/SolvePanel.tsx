@@ -23,24 +23,30 @@ const TUTOR_SYSTEM =
 // KaTeX helpers
 // ---------------------------------------------------------------------------
 
+function escapeHtml(s: string): string {
+    return s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
 function renderMath(text: string): string {
-    // Block math first: $$...$$
-    let result = text.replace(/\$\$([^$]+)\$\$/g, (_, expr) => {
-        try {
-            return katex.renderToString(expr.trim(), { displayMode: true, throwOnError: false });
-        } catch {
-            return expr;
+    // Split on $$...$$ and $...$ to preserve math, escape everything else
+    const parts = text.split(/(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)/g);
+    return parts.map(part => {
+        if (part.startsWith('$$') && part.endsWith('$$')) {
+            try {
+                return katex.renderToString(part.slice(2, -2).trim(), { displayMode: true, throwOnError: false });
+            } catch { return escapeHtml(part); }
         }
-    });
-    // Inline math: $...$
-    result = result.replace(/\$([^$\n]+)\$/g, (_, expr) => {
-        try {
-            return katex.renderToString(expr.trim(), { displayMode: false, throwOnError: false });
-        } catch {
-            return expr;
+        if (part.startsWith('$') && part.endsWith('$')) {
+            try {
+                return katex.renderToString(part.slice(1, -1).trim(), { displayMode: false, throwOnError: false });
+            } catch { return escapeHtml(part); }
         }
-    });
-    return result;
+        return escapeHtml(part);
+    }).join('');
 }
 
 // ---------------------------------------------------------------------------
@@ -162,8 +168,10 @@ export function SolvePanel({ selectedText, onClose, onInsert }: SolvePanelProps)
 
         apiClient
             .post<{ reply: string }>('/ai/chat', {
-                messages: [{ role: 'user', content: `Resuelve paso a paso: ${selectedText}` }],
-                context: TUTOR_SYSTEM,
+                messages: [
+                    { role: 'system', content: TUTOR_SYSTEM },
+                    { role: 'user', content: `Resuelve paso a paso: ${selectedText}` },
+                ],
             })
             .then(res => {
                 if (!cancelled) setSolution(res.reply);
@@ -181,6 +189,7 @@ export function SolvePanel({ selectedText, onClose, onInsert }: SolvePanelProps)
     }, [selectedText]);
 
     const handleInsert = () => {
+        if (!solution.trim()) return;
         onInsert(solution);
         onClose();
     };
