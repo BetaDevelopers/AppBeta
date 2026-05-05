@@ -41,7 +41,6 @@ export const AuthForm: React.FC<AuthFormProps> = ({ isRegisterInitial = false, o
         try {
             if (isRegister) {
                 await register(email, password);
-                // Si el backend nos dio token (bypass), entramos directo
                 if (useAuthStore.getState().isAuthenticated) {
                     onSuccess();
                 } else {
@@ -182,7 +181,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ isRegisterInitial = false, o
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="nombre@ejemplo.com"
+                        placeholder="nombre@correo.com"
                         className="h-14 bg-white/5 border-white/10 focus:bg-white/10 text-white placeholder:text-slate-600 rounded-2xl"
                     />
                     <Input

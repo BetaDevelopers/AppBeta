@@ -23,7 +23,11 @@
       "mcp__plugin_supabase_supabase__get_project",
       "Bash(npx skills *)",
       "Bash(npx tsc *)",
-      "Bash(claude install:*)"
+      "Bash(claude install:*)",
+      "Bash(git fetch *)",
+      "Bash(git restore *)",
+      "Bash(git pull *)",
+      "Bash(npm run *)"
     ]
   }
 }

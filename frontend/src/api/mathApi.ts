@@ -3,10 +3,6 @@ import { useAuthStore } from '../store/authStore';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-/**
- * OCR general per a SmartCamera.
- * Envia { image, mime_type } amb un AbortSignal per al timeout de 30s.
- */
 export async function ocrImage(
     imageBase64: string,
     signal?: AbortSignal

@@ -16,8 +16,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
     if (res.status === 401) {
         useAuthStore.getState().logout();
-        // No redirigimos automáticamente a /login para permitir el Modo Invitado.
-        // Las rutas protegidas (PrivateRoute) se encargarán de pedir login si es necesario.
         throw new Error('Sessió expirada');
     }
 
