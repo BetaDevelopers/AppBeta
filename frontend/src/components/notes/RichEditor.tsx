@@ -50,7 +50,10 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
         extensions: [
             StarterKit.configure({
                 codeBlock: false,
-                heading: { levels: [1, 2, 3] }
+                heading: { levels: [1, 2, 3] },
+                // StarterKit v3 bundles underline — disable to avoid duplicate
+                // @ts-ignore
+                underline: false,
             }),
             Underline,
             TextStyle,
