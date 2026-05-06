@@ -1,6 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
-import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -27,6 +26,11 @@ interface RichEditorProps {
     onChange: (html: string) => void;
     isTypingAI?: boolean;
     onEditorReady?: (editor: any) => void;
+    onEqualsDetected?: (
+        show: boolean,
+        pos: { top: number; left: number } | null,
+        resolve: () => void
+    ) => void;
 }
 
 function BubbleBtn({ onClick, active, children, title }: any) {
@@ -45,7 +49,10 @@ function BubbleBtn({ onClick, active, children, title }: any) {
     );
 }
 
-export default function RichEditor({ content, onChange, isTypingAI, onEditorReady }: RichEditorProps) {
+export default function RichEditor({ content, onChange, isTypingAI, onEditorReady, onEqualsDetected }: RichEditorProps) {
+    const onEqualsDetectedRef = useRef(onEqualsDetected);
+    useEffect(() => { onEqualsDetectedRef.current = onEqualsDetected; }, [onEqualsDetected]);
+
     const editor = useEditor({
         extensions: [
             StarterKit.configure({
@@ -95,6 +102,54 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
             editor.commands.setContent(content, { emitUpdate: false });
         }
     }, [content, editor]);
+
+    // "=" detection — Apple Math Notes style
+    useEffect(() => {
+        if (!editor) return;
+        let equalsTimer: ReturnType<typeof setTimeout> | null = null;
+
+        const handleUpdate = () => {
+            const cb = onEqualsDetectedRef.current;
+            if (!cb) return;
+
+            const { state } = editor;
+            const { from } = state.selection;
+            const resolved = state.doc.resolve(from);
+            const lineText = resolved.parent.textContent;
+
+            const hasEquals = /^.+[^=\s]\s*=\s*$/.test(lineText.trimEnd());
+            if (hasEquals) {
+                const coords = editor.view.coordsAtPos(Math.min(from, state.doc.content.size - 1));
+                const expr = lineText.replace(/=\s*$/, '').trim();
+
+                cb(true, { top: coords.top, left: coords.right }, async () => {
+                    const { mathSolve } = await import('../../api/mathApi');
+                    try {
+                        const res = await mathSolve(expr);
+                        const result = res.result ?? '';
+                        if (result) {
+                            editor.chain().focus().insertContent(` ${result}`).run();
+                        }
+                    } catch { /* silent */ }
+                    onEqualsDetectedRef.current?.(false, null, () => {});
+                });
+
+                if (equalsTimer) clearTimeout(equalsTimer);
+                equalsTimer = setTimeout(() => {
+                    onEqualsDetectedRef.current?.(false, null, () => {});
+                }, 6000);
+            } else {
+                if (equalsTimer) clearTimeout(equalsTimer);
+                cb(false, null, () => {});
+            }
+        };
+
+        editor.on('update', handleUpdate);
+        return () => {
+            editor.off('update', handleUpdate);
+            if (equalsTimer) clearTimeout(equalsTimer);
+        };
+    }, [editor]);
 
     if (!editor) return null;
 
@@ -148,34 +203,6 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
                     </BubbleBtn>
                 </div>
             </div>
-
-            {/* Bubble Menu — Contextual floating magic */}
-            <BubbleMenu
-                editor={editor}
-                appendTo={() => document.body}
-                shouldShow={({ state }: { state: any }) => {
-                    const { from, to } = state.selection;
-                    return from !== to;
-                }}
-            >
-                <div className="flex items-center gap-1 glass-card border border-white/10 rounded-2xl px-2 py-2 shadow-[0_32px_64px_rgba(0,0,0,0.8)] backdrop-blur-3xl ring-1 ring-white/10">
-                    <BubbleBtn onClick={() => editor.chain().focus().toggleBold().run()}
-                        active={editor.isActive('bold')} title="Negrita">
-                        <Bold size={14} />
-                    </BubbleBtn>
-                    <BubbleBtn onClick={() => editor.chain().focus().toggleHighlight({ color: '#2563eb' }).run()}
-                        active={editor.isActive('highlight')} title="Resaltar">
-                        <div className="w-3 h-3 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
-                    </BubbleBtn>
-
-                    <div className="w-px h-5 bg-white/10 mx-1" />
-
-                    <BubbleBtn onClick={() => editor.chain().focus().toggleCode().run()}
-                        active={editor.isActive('code')} title="Código">
-                        <span className="text-[10px]">&lt;/&gt;</span>
-                    </BubbleBtn>
-                </div>
-            </BubbleMenu>
 
             <EditorContent editor={editor} className="w-full prose prose-invert max-w-none" />
         </div>

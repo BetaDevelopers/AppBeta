@@ -7,6 +7,13 @@ import RichEditor from './RichEditor';
 import DrawingCanvas from './DrawingCanvas';
 import MathVisionOCR from './MathVisionOCR';
 import DataVisionOCR from './DataVisionOCR';
+import SelectionMenu from './SelectionMenu';
+import { SolvePanel } from './SolvePanel';
+import InlineCanvas from './InlineCanvas';
+import DrawingToolbar, { DrawTool } from './DrawingToolbar';
+import MathPill from './MathPill';
+import { usePointerMode } from '../../hooks/usePointerMode';
+import type { RecognitionResult } from '../../hooks/useStrokeRecognition';
 import { useMathToolsStore } from '../../store/mathToolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
@@ -52,6 +59,16 @@ export const NoteEditor: React.FC = () => {
     const [showDataVision, setShowDataVision] = useState(false);
     const [summaryPanel, setSummaryPanel] = useState<{ original: string; summary: string } | null>(null);
     const [editor, setEditor] = useState<any>(null);
+    const [solveText, setSolveText] = useState<string | null>(null);
+    const [drawTool, setDrawTool] = useState<DrawTool>('pen');
+    const [mathPill, setMathPill] = useState<{
+        visible: boolean;
+        pos: { top: number; left: number } | null;
+        resolve: () => void;
+    }>({ visible: false, pos: null, resolve: () => {} });
+
+    const editorAreaRef = useRef<HTMLDivElement>(null);
+    const { mode, setMode } = usePointerMode(editorAreaRef);
 
     const isEmpty =
         title.trim() === '' &&
@@ -344,6 +361,26 @@ export const NoteEditor: React.FC = () => {
         setTimeout(() => setToast(null), 3000);
     };
 
+    const handleSolvePanelInsert = (content: string) => {
+        if (!editor) return;
+        editor.chain().focus('end').insertContent('<hr />').insertContent(content).run();
+        setSolveText(null);
+    };
+
+    const handleRecognized = (result: RecognitionResult) => {
+        if (!editor) return;
+        if (result.type === 'latex') {
+            editor.chain().focus().insertContent(`$${result.content}$`).run();
+        } else if (result.type === 'text') {
+            editor.chain().focus().insertContent(result.content).run();
+        } else {
+            editor.chain().focus().insertContent(
+                `<img src="${result.dataUrl}" alt="Dibuix" style="max-width:100%;border-radius:8px;margin:8px 0;" />`
+            ).run();
+        }
+        setMode('text');
+    };
+
     const handleSuggestSubject = async () => {
         if (isGuest) {
             openAuthModal('selection');
@@ -536,7 +573,7 @@ export const NoteEditor: React.FC = () => {
                 </div>
 
                 {/* Àrea d'edició principal */}
-                <div className="flex-1 overflow-y-auto px-6 sm:px-16 py-16 scrollbar-hide relative">
+                <div ref={editorAreaRef} className="flex-1 overflow-y-auto px-6 sm:px-16 py-16 scrollbar-hide relative">
                     {/* Empty-state overlay */}
                     {isEmpty && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none animate-fade-in-up">
@@ -562,6 +599,9 @@ export const NoteEditor: React.FC = () => {
                             onChange={setContent}
                             isTypingAI={isTypingAI}
                             onEditorReady={setEditor}
+                            onEqualsDetected={(show, pos, resolve) =>
+                                setMathPill({ visible: show, pos, resolve: resolve ?? (() => {}) })
+                            }
                         />
                     </div>
                 </div>
@@ -661,6 +701,39 @@ export const NoteEditor: React.FC = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            <InlineCanvas
+                mode={mode}
+                editorRef={editorAreaRef}
+                onRecognized={handleRecognized}
+                brushType={drawTool === 'shapes' ? 'pen' : drawTool}
+            />
+            <DrawingToolbar
+                mode={mode}
+                activeTool={drawTool}
+                onToolChange={setDrawTool}
+                onUndo={() => window.dispatchEvent(new CustomEvent('canvas-undo'))}
+                onClear={() => window.dispatchEvent(new CustomEvent('canvas-clear'))}
+            />
+            <MathPill
+                visible={mathPill.visible}
+                position={mathPill.pos}
+                onResolve={mathPill.resolve}
+            />
+
+            {editor && (
+                <SelectionMenu
+                    editor={editor}
+                    onOpenSolvePanel={(text) => setSolveText(text)}
+                />
+            )}
+            {solveText && (
+                <SolvePanel
+                    selectedText={solveText}
+                    onClose={() => setSolveText(null)}
+                    onInsert={handleSolvePanelInsert}
+                />
             )}
         </div>
     );
