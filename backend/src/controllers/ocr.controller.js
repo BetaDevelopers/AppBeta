@@ -2,7 +2,7 @@ const pool = require('../config/db');
 
 const ocrFromImage = async (req, res) => {
   try {
-    const { image, mime_type = 'image/jpeg' } = req.body;
+    const { image, mime_type = 'image/png', mode = 'default' } = req.body;
 
     if (!image) {
       return res.status(400).json({ error: 'Cal enviar una imatge en base64' });
@@ -15,30 +15,17 @@ const ocrFromImage = async (req, res) => {
       });
     }
 
-    // Crida a GPT-4o (no gpt-4o-mini — necessitem alta precisió per fórmules)
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        max_tokens: 2000,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${mime_type};base64,${image}`,
-                  detail: 'high',
-                },
-              },
-              {
-                type: 'text',
-                text: `Analiza esta imagen (pizarra, papel, captura de pantalla o apunte) y extrae TODO el contenido visible.
+    const isHandwriting = mode === 'handwriting';
+
+    const promptText = isHandwriting
+      ? `Eres un sistema de reconocimiento de escritura manuscrita.
+El usuario ha dibujado texto con un lápiz digital sobre fondo negro.
+Los trazos aparecen en color blanco.
+Reconoce exactamente qué texto o letra ha escrito.
+Si es una sola letra, devuelve solo esa letra.
+Si son varias letras o palabras, devuélvelas tal cual.
+Responde SOLO con el texto reconocido, sin explicaciones, sin puntuación extra, sin comillas.`
+      : `Analiza esta imagen (pizarra, papel, captura de pantalla o apunte) y extrae TODO el contenido visible.
 
 Si detectas ecuaciones, fórmulas o operaciones matemáticas, RESUÉLVELAS paso a paso y muestra el resultado final.
 
@@ -63,8 +50,30 @@ REGLAS para el campo content_markdown:
 - Listas: - para puntos, 1. 2. 3. para numeradas
 - Negrita para conceptos clave: **concepto**
 - Si no puedes leer alguna parte: [ilegible]
-- NO añadas comentarios ni explicaciones fuera del JSON`,
+- NO añadas comentarios ni explicaciones fuera del JSON`;
+
+    // Crida a GPT-4o (no gpt-4o-mini — necessitem alta precisió per fórmules)
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: isHandwriting ? 100 : 2000,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mime_type};base64,${image}`,
+                  detail: 'high',
+                },
               },
+              { type: 'text', text: promptText },
             ],
           },
         ],
@@ -81,24 +90,29 @@ REGLAS para el campo content_markdown:
     const data = await response.json();
     const rawContent = data.choices[0].message.content.trim();
 
-    // Parse JSON — elimina possibles blocs ```json ... ``` que GPT pot afegir
+    // Handwriting mode: return simple { type, content } directly
     let parsed;
-    try {
-      const clean = rawContent
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/i, '')
-        .replace(/\s*```$/, '')
-        .trim();
-      parsed = JSON.parse(clean);
-    } catch {
-      // Si no és JSON vàlid, retorna el text com a content_markdown
-      parsed = {
-        title: null,
-        content_markdown: rawContent,
-        has_formulas: false,
-        has_tables: false,
-        language: 'ca',
-      };
+    if (isHandwriting) {
+      parsed = { type: 'text', content: rawContent };
+    } else {
+      // Parse JSON — elimina possibles blocs ```json ... ``` que GPT pot afegir
+      try {
+        const clean = rawContent
+          .replace(/^```json\s*/i, '')
+          .replace(/^```\s*/i, '')
+          .replace(/\s*```$/, '')
+          .trim();
+        parsed = JSON.parse(clean);
+      } catch {
+        // Si no és JSON vàlid, retorna el text com a content_markdown
+        parsed = {
+          title: null,
+          content_markdown: rawContent,
+          has_formulas: false,
+          has_tables: false,
+          language: 'ca',
+        };
+      }
     }
 
     // Guarda el log d'ús a ai_usage_logs

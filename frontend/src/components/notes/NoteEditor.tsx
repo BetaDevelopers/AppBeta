@@ -21,6 +21,12 @@ import { useMathOCR, MathRegion } from '@/features/ai/hooks/useMathOCR';
 import { markdownToHtml } from '../../utils/editorUtils';
 import { useSubjectsStore } from '../../store/subjectsStore';
 import { Pencil, Camera, Sparkles, FileText, Sigma, BarChart2, GitBranch, Triangle, Target } from 'lucide-react';
+import InkCanvas, { Stroke } from './InkCanvas';
+import type { InkCanvasRef } from './InkCanvas';
+import InkToolbar from './InkToolbar';
+import { postCanvasForOcr } from '../../services/ocrApi';
+import { useAutoBeautify } from '../../hooks/useAutoBeautify';
+
 
 // ── Definit FORA de NoteEditor per evitar desmuntatge en cada re-render ──
 function ToolBtn({ onClick, disabled, title, accent, children }: {
@@ -66,10 +72,17 @@ export const NoteEditor: React.FC = () => {
         pos: { top: number; left: number } | null;
         resolve: () => void;
     }>({ visible: false, pos: null, resolve: () => {} });
-
+    // ink mode state
+    const [inkMode, setInkMode] = useState(false);
+    const toggleInk = () => setInkMode(prev => !prev);
+    const inkCanvasRef = useRef<InkCanvasRef>(null);
+    const { status: autoStatus, onStrokeFinish } = useAutoBeautify(editor, inkCanvasRef, inkMode);
+    const [processing, setProcessing] = useState(false);
+    // duplicate declarations removed
     const editorAreaRef = useRef<HTMLDivElement>(null);
     const { mode, setMode } = usePointerMode(editorAreaRef);
-
+    const [strokeWidth, setStrokeWidth] = useState(2);
+    const [isFlashActive, setIsFlashActive] = useState(false);
     const isEmpty =
         title.trim() === '' &&
         content.replace(/<[^>]*>/g, '').trim() === '';
@@ -196,9 +209,9 @@ export const NoteEditor: React.FC = () => {
             setTitle(ocrTitle);
         }
 
-        // Insereix el contingut escanejat al final de la nota
+        // Insereix el contingut escanejat
         editor.chain()
-            .focus('end')
+            .focus()
             .insertContent('<hr />')
             .insertContent(
                 `<p><strong>📷 Contingut escanejat:</strong></p>`
@@ -218,7 +231,7 @@ export const NoteEditor: React.FC = () => {
     const handleInsertMarkdown = (markdown: string) => {
         if (!editor || !markdown) return;
         editor.chain()
-            .focus('end')
+            .focus()
             .insertContent('<hr />')
             .insertContent(markdown)
             .run();
@@ -229,7 +242,7 @@ export const NoteEditor: React.FC = () => {
     const handleInsertDrawingAsImage = (dataUrl: string) => {
         if (!editor) return;
         editor.chain()
-            .focus('end')
+            .focus()
             .insertContent(
                 `<img
                 src="${dataUrl}"
@@ -244,7 +257,7 @@ export const NoteEditor: React.FC = () => {
     const handleDrawingToText = (markdown: string) => {
         if (!editor || !markdown) return;
         editor.chain()
-            .focus('end')
+            .focus()
             .insertContent('<hr />')
             .insertContent('<p><strong>✏ Convertit des del dibuix:</strong></p>')
             .insertContent(markdownToHtml(markdown))
@@ -256,7 +269,7 @@ export const NoteEditor: React.FC = () => {
     const handleInsertAsLatex = (latex: string) => {
         if (!editor || !latex) return;
         editor.chain()
-            .focus('end')
+            .focus()
             .insertContent(`$${latex}$`)
             .run();
     };
@@ -264,7 +277,7 @@ export const NoteEditor: React.FC = () => {
     const handleInsertMathVisionRegions = (regions: MathRegion[]) => {
         if (!editor || !regions.length) return;
 
-        const chain = editor.chain().focus('end').insertContent('<hr />');
+        const chain = editor.chain().focus().insertContent('<hr />');
 
         regions.forEach(region => {
             if (region.type === 'equation') {
@@ -355,7 +368,7 @@ export const NoteEditor: React.FC = () => {
             </div>
             ${markdownToHtml(summaryPanel.summary)}
         </div>`;
-        editor.chain().focus('end').insertContent('<hr />').insertContent(summaryHtml).run();
+        editor.chain().focus().insertContent('<hr />').insertContent(summaryHtml).run();
         setSummaryPanel(null);
         setToast('Resumen insertado en la nota');
         setTimeout(() => setToast(null), 3000);
@@ -363,7 +376,7 @@ export const NoteEditor: React.FC = () => {
 
     const handleSolvePanelInsert = (content: string) => {
         if (!editor) return;
-        editor.chain().focus('end').insertContent('<hr />').insertContent(content).run();
+        editor.chain().focus().insertContent('<hr />').insertContent(content).run();
         setSolveText(null);
     };
 
@@ -515,7 +528,7 @@ export const NoteEditor: React.FC = () => {
                 {/* ── Left Vertical Toolbar ── */}
                 <div className="flex flex-col items-center gap-1 py-4 px-2 glass border-r border-white/5 w-[72px] flex-shrink-0 overflow-y-auto scrollbar-hide">
                     {/* Primary Tools */}
-                    <ToolBtn onClick={() => handleOpenTool('mathOCR')} title="Escritura inteligente" accent>
+                    <ToolBtn onClick={() => setInkMode(!inkMode)} title="Modo Dibujo Inteligente" accent={inkMode}>
                         <Pencil size={22} />
                         <span className="text-[10px] uppercase tracking-tighter font-black">Lápiz</span>
                     </ToolBtn>
@@ -594,6 +607,7 @@ export const NoteEditor: React.FC = () => {
                             placeholder="Sin título..."
                         />
 
+                        <div style={{ position: 'relative' }}>
                         <RichEditor
                             content={content}
                             onChange={setContent}
@@ -602,7 +616,78 @@ export const NoteEditor: React.FC = () => {
                             onEqualsDetected={(show, pos, resolve) =>
                                 setMathPill({ visible: show, pos, resolve: resolve ?? (() => {}) })
                             }
+                            inkMode={inkMode}
+                            toggleInk={toggleInk}
                         />
+                        {inkMode && (
+                            <InkCanvas
+                                ref={inkCanvasRef}
+                                active={inkMode}
+                                strokeWidth={strokeWidth}
+                                onChangeStrokes={onStrokeFinish}
+                                processingStatus={autoStatus}
+                            />
+                        )}
+                        </div>
+                        {inkMode && (
+                            <>
+                                <InkToolbar
+                                    active={inkMode}
+                                    thickness={strokeWidth}
+                                    onThicknessChange={setStrokeWidth}
+                                    onUndo={() => {
+                                        // Undo logic could be added here or via event
+                                        window.dispatchEvent(new CustomEvent('canvas-undo'));
+                                    }}
+                                    onClear={() => {
+                                        if (inkCanvasRef.current) {
+                                            // Simplest way to clear for now is re-mounting or a ref method
+                                            setInkMode(false);
+                                            setTimeout(() => setInkMode(true), 0);
+                                        }
+                                    }}
+                                    onEraser={() => {
+                                        setToast('Borrador: Usa el botón de limpiar para empezar de nuevo');
+                                        setTimeout(() => setToast(null), 3000);
+                                    }}
+                                    onBeautify={async () => {
+                                        if (!inkCanvasRef.current) return;
+                                        setProcessing(true);
+                                        setIsFlashActive(true);
+                                        setTimeout(() => setIsFlashActive(false), 300);
+                                        
+                                        const base64 = await inkCanvasRef.current.captureCanvas();
+                                        try {
+                                            const result = await postCanvasForOcr(base64);
+                                            if (!result) {
+                                                setToast('⚠️ Necesitas plan Pro para usar esta función');
+                                                return;
+                                            }
+                                            if (result.type === 'text') {
+                                                handleDrawingToText(result.content);
+                                            } else if (result.type === 'latex') {
+                                                handleInsertAsLatex(result.content);
+                                            } else if (result.type === 'svg') {
+                                                handleInsertDrawingAsImage(result.content);
+                                            }
+                                            setToast('✨ Convertido con éxito');
+                                        } catch (e) {
+                                            setToast('⚠️ Error procesando dibujo');
+                                        } finally {
+                                            setProcessing(false);
+                                            setInkMode(false);
+                                            setTimeout(() => setToast(null), 3000);
+                                        }
+                                    }}
+                                    processing={processing}
+                                />
+                            </>
+                        )}
+
+                        {/* Flash Effect */}
+                        {isFlashActive && (
+                            <div className="fixed inset-0 z-[2000] bg-white/20 pointer-events-none animate-pulse" />
+                        )}
                     </div>
                 </div>
             </div>
@@ -617,105 +702,6 @@ export const NoteEditor: React.FC = () => {
                 </div>
             </Modal>
 
-            <DrawingCanvas
-                isOpen={showDrawing}
-                onClose={() => setShowDrawing(false)}
-                onInsertAsImage={handleInsertDrawingAsImage}
-                onConvertToText={handleDrawingToText}
-                onInsertAsLatex={handleInsertAsLatex}
-            />
-
-            {showMathVision && (
-                <MathVisionOCR
-                    onClose={() => setShowMathVision(false)}
-                    onInsertRegions={handleInsertMathVisionRegions}
-                />
-            )}
-
-            {showDataVision && (
-                <DataVisionOCR
-                    onClose={() => setShowDataVision(false)}
-                    onResult={handleInsertMarkdown}
-                />
-            )}
-
-            {/* ── Summary comparison panel ── */}
-            {summaryPanel && (
-                <div style={{
-                    position: 'fixed', inset: 0, zIndex: 9999,
-                    background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '24px',
-                }}>
-                    <div style={{
-                        background: '#0a0f1e', border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: '2rem', width: '100%', maxWidth: '900px',
-                        maxHeight: '85vh', display: 'flex', flexDirection: 'column',
-                        boxShadow: '0 40px 80px rgba(0,0,0,0.6)',
-                    }}>
-                        {/* Header */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                <span style={{ fontSize: 24 }}>📝</span>
-                                <div>
-                                    <p style={{ margin: 0, fontSize: 17, fontWeight: 800, color: '#f1f5f9' }}>Resumen de la nota</p>
-                                    <p style={{ margin: 0, fontSize: 11, color: '#475569', marginTop: 2 }}>Compara el texto original con el resumen generado por IA</p>
-                                </div>
-                            </div>
-                            <button onClick={() => setSummaryPanel(null)} style={{ background: 'none', border: 'none', color: '#475569', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
-                        </div>
-
-                        {/* Columns */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, flex: 1, overflow: 'hidden', minHeight: 0 }}>
-                            {/* Original */}
-                            <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(255,255,255,0.06)', padding: '20px 24px', overflow: 'hidden' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                                    <span style={{ background: 'rgba(255,255,255,0.06)', borderRadius: 6, padding: '3px 10px', fontSize: 10, fontWeight: 800, color: '#64748b', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Original</span>
-                                    <span style={{ fontSize: 10, color: '#334155' }}>{summaryPanel.original.length} caracteres</span>
-                                </div>
-                                <div style={{ flex: 1, overflowY: 'auto', fontSize: 13, lineHeight: 1.7, color: '#94a3b8', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                                    {summaryPanel.original}
-                                </div>
-                            </div>
-
-                            {/* Summary */}
-                            <div style={{ display: 'flex', flexDirection: 'column', padding: '20px 24px', overflow: 'hidden' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                                    <span style={{ background: 'rgba(59,130,246,0.15)', borderRadius: 6, padding: '3px 10px', fontSize: 10, fontWeight: 800, color: '#60a5fa', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Resumen IA</span>
-                                    <span style={{ fontSize: 10, color: '#334155' }}>{summaryPanel.summary.length} caracteres</span>
-                                </div>
-                                <div style={{ flex: 1, overflowY: 'auto', fontSize: 13, lineHeight: 1.7, color: '#cbd5e1', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                                    {summaryPanel.summary}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, padding: '16px 28px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                            <button onClick={() => setSummaryPanel(null)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '10px 20px', color: '#64748b', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                                Cerrar
-                            </button>
-                            <button onClick={handleInsertSummary} style={{ background: 'linear-gradient(135deg,#3b82f6,#6366f1)', border: 'none', borderRadius: 12, padding: '10px 24px', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer', letterSpacing: '0.05em' }}>
-                                + Insertar resumen en la nota
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <InlineCanvas
-                mode={mode}
-                editorRef={editorAreaRef}
-                onRecognized={handleRecognized}
-                brushType={drawTool === 'shapes' ? 'pen' : drawTool}
-            />
-            <DrawingToolbar
-                mode={mode}
-                activeTool={drawTool}
-                onToolChange={setDrawTool}
-                onUndo={() => window.dispatchEvent(new CustomEvent('canvas-undo'))}
-                onClear={() => window.dispatchEvent(new CustomEvent('canvas-clear'))}
-            />
             <MathPill
                 visible={mathPill.visible}
                 position={mathPill.pos}

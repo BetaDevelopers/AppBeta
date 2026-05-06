@@ -21,6 +21,13 @@ const TEXT_RULE      = { type: 'string', required: true, maxLength: 50000 };
 const IMAGE_B64_RULE = { type: 'string', required: true, maxLength: 7000000 };
 
 router.use(verifyToken);
+
+// OCR is exempt from plan limits — auth is still required
+router.post('/ocr',
+  validateBody({ image: IMAGE_B64_RULE, mode: { type: 'string', maxLength: 20 } }),
+  ocrFromImage
+);
+
 router.use(checkPlanLimits);
 
 router.post('/chat',
@@ -34,10 +41,6 @@ router.post('/improve',    validateBody({ text: TEXT_RULE }), ai.improve);
 router.post('/summarize',  validateBody({ text: TEXT_RULE }), ai.summarize);
 router.post('/suggest',    validateBody({ text: TEXT_RULE }), ai.suggest);
 
-router.post('/ocr',
-  validateBody({ image: IMAGE_B64_RULE }),
-  ocrFromImage
-);
 router.post('/math-ocr',
   validateBody({
     imageBase64: { type: 'string', maxLength: 7000000 },

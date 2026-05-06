@@ -34,7 +34,8 @@
       "mcp__plugin_playwright_playwright__browser_navigate",
       "mcp__plugin_playwright_playwright__browser_take_screenshot",
       "Bash(python -m http.server 8899 --directory .)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8899/design-reference.html)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8899/design-reference.html)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")"
     ]
   }
 }

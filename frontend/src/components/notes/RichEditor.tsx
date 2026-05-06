@@ -17,7 +17,8 @@ import { SlashCommandExtension } from './SlashCommands';
 import { ChartBlock } from '../../extensions/ChartBlock';
 import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
-import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, AlignLeft, AlignCenter } from 'lucide-react';
+import Image from '@tiptap/extension-image';
+import { Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3, List, ListOrdered, AlignLeft, AlignCenter, Pencil } from 'lucide-react';
 
 const lowlight = createLowlight(common);
 
@@ -31,6 +32,8 @@ interface RichEditorProps {
         pos: { top: number; left: number } | null,
         resolve: () => void
     ) => void;
+    inkMode?: boolean;
+    toggleInk?: () => void;
 }
 
 function BubbleBtn({ onClick, active, children, title }: any) {
@@ -49,7 +52,7 @@ function BubbleBtn({ onClick, active, children, title }: any) {
     );
 }
 
-export default function RichEditor({ content, onChange, isTypingAI, onEditorReady, onEqualsDetected }: RichEditorProps) {
+export default function RichEditor({ content, onChange, isTypingAI, onEditorReady, onEqualsDetected, inkMode, toggleInk }: RichEditorProps) {
     const onEqualsDetectedRef = useRef(onEqualsDetected);
     useEffect(() => { onEqualsDetectedRef.current = onEqualsDetected; }, [onEqualsDetected]);
 
@@ -78,6 +81,7 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
             Mathematics,
             SlashCommandExtension,
             ChartBlock,
+            Image,
         ],
         content,
         onUpdate: ({ editor }) => {
@@ -165,7 +169,17 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
                     <BubbleBtn onClick={() => editor.chain().focus().toggleUnderline().run()}
                         active={editor.isActive('underline')} title="Subrayado"><UnderlineIcon size={14} /></BubbleBtn>
                 </div>
-
+                <div className="w-px h-5 bg-white/[0.12] mx-1.5" />
+                {/* Pencil button */}
+                <div className="flex items-center gap-1 px-1">
+                    <button
+                        onClick={toggleInk}
+                        title="Modo Lápiz"
+                        className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${inkMode ? 'bg-purple-600 text-white' : 'bg-white/5 text-slate-500 hover:bg-white/10'} `}
+                    >
+                        <Pencil size={16} />
+                    </button>
+                </div>
                 <div className="w-px h-5 bg-white/[0.12] mx-1.5" />
 
                 <div className="flex items-center gap-1">

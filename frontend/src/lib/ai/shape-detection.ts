@@ -1,56 +1,86 @@
-/**
- * Beta Shape Recognition Engine
- */
+export interface Point { x: number; y: number; }
 
-export interface Point {
-    x: number;
-    y: number;
+export type DetectedShape =
+  | { type: 'circle';    cx: number; cy: number; r: number }
+  | { type: 'rectangle'; x: number; y: number; w: number; h: number }
+  | { type: 'triangle';  p1: Point; p2: Point; p3: Point }
+  | { type: 'line';      x1: number; y1: number; x2: number; y2: number }
+  | { type: 'unknown' }
+
+function simplify(pts: Point[], step = 4): Point[] {
+  const out: Point[] = [];
+  for (let i = 0; i < pts.length; i += step) out.push(pts[i]);
+  const last = pts[pts.length - 1];
+  if (out[out.length - 1] !== last) out.push(last);
+  return out;
 }
 
-export type ShapeType = 'circle' | 'rectangle' | 'triangle' | 'line';
-
-export interface DetectedShape {
-    type: ShapeType;
-    bounds: { x: number; y: number; width: number; height: number };
-    confidence: number;
+function angleDeg(a: Point, b: Point, c: Point): number {
+  const ax = a.x - b.x, ay = a.y - b.y;
+  const cx2 = c.x - b.x, cy2 = c.y - b.y;
+  const dot = ax * cx2 + ay * cy2;
+  const mag = Math.hypot(ax, ay) * Math.hypot(cx2, cy2);
+  if (mag === 0) return 180;
+  return (Math.acos(Math.max(-1, Math.min(1, dot / mag))) * 180) / Math.PI;
 }
 
-export const detectShape = (points: Point[]): DetectedShape | null => {
-    if (points.length < 10) return null;
-
-    const xs = points.map(p => p.x);
-    const ys = points.map(p => p.y);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const minY = Math.min(...ys);
-    const maxY = Math.max(...ys);
-    const width = maxX - minX;
-    const height = maxY - minY;
-
-    const start = points[0];
-    const end = points[points.length - 1];
-    const distStartEnd = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-
-    // Circularity check
-    const centerX = minX + width / 2;
-    const centerY = minY + height / 2;
-    const radius = (width + height) / 4;
-
-    let totalError = 0;
-    points.forEach(p => {
-        const dist = Math.sqrt(Math.pow(p.x - centerX, 2) + Math.pow(p.y - centerY, 2));
-        totalError += Math.abs(dist - radius);
-    });
-
-    const circularity = totalError / points.length / radius;
-
-    if (circularity < 0.2 && distStartEnd < 50) {
-        return { type: 'circle', bounds: { x: minX, y: minY, width, height }, confidence: 1 - circularity };
+function findCorners(pts: Point[], threshold = 42): Point[] {
+  const result: Point[] = [];
+  for (let i = 1; i < pts.length - 1; i++) {
+    if (angleDeg(pts[i - 1], pts[i], pts[i + 1]) < (180 - threshold)) {
+      result.push(pts[i]);
     }
+  }
+  return result;
+}
 
-    if (distStartEnd < 100) {
-        return { type: 'rectangle', bounds: { x: minX, y: minY, width, height }, confidence: 0.8 };
+export function detectShape(points: Point[]): DetectedShape {
+  if (points.length < 8) return { type: 'unknown' };
+
+  const xs = points.map(p => p.x), ys = points.map(p => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const w = maxX - minX, h = maxY - minY;
+  const cx = minX + w / 2, cy = minY + h / 2;
+
+  const start = points[0], end = points[points.length - 1];
+  const diagonal = Math.hypot(w, h);
+  const isClosed = diagonal > 20 && Math.hypot(end.x - start.x, end.y - start.y) < diagonal * 0.3;
+
+  // ── Circle ────────────────────────────────────────────────────────────────
+  const r = (w + h) / 4;
+  const cirError = points.reduce((acc, p) => acc + Math.abs(Math.hypot(p.x - cx, p.y - cy) - r), 0);
+  if (isClosed && cirError / points.length / (r || 1) < 0.25 && w > 20 && h > 20) {
+    return { type: 'circle', cx, cy, r };
+  }
+
+  // ── Corner-based ──────────────────────────────────────────────────────────
+  const simp = simplify(points);
+  const corners = findCorners(simp);
+
+  if (isClosed) {
+    // Triangle: 2–3 corners (the start point acts as the 3rd corner)
+    if (corners.length >= 2 && corners.length <= 3) {
+      return { type: 'triangle', p1: simp[0], p2: corners[0], p3: corners[corners.length - 1] };
     }
+    // Rectangle / polygon: 3–5 corners
+    if (corners.length >= 3 && corners.length <= 5) {
+      return { type: 'rectangle', x: minX, y: minY, w, h };
+    }
+  }
 
-    return { type: 'line', bounds: { x: minX, y: minY, width, height }, confidence: 0.5 };
-};
+  // ── Straight line ─────────────────────────────────────────────────────────
+  if (!isClosed && diagonal > 30) {
+    const A = end.y - start.y, B = start.x - end.x;
+    const C = A * start.x + B * start.y;
+    const norm = Math.hypot(A, B);
+    if (norm > 0) {
+      const maxDev = points.reduce((acc, p) => Math.max(acc, Math.abs(A * p.x + B * p.y - C) / norm), 0);
+      if (maxDev < diagonal * 0.12) {
+        return { type: 'line', x1: start.x, y1: start.y, x2: end.x, y2: end.y };
+      }
+    }
+  }
+
+  return { type: 'unknown' };
+}
