@@ -27,7 +27,14 @@
       "Bash(git fetch *)",
       "Bash(git restore *)",
       "Bash(git pull *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(Start-Process -NoNewWindow -FilePath \"cmd\" -ArgumentList \"/c npm run dev > ../dev-server.log 2>&1\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173)",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "Bash(python -m http.server 8899 --directory .)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8899/design-reference.html)"
     ]
   }
 }
