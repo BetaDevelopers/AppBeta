@@ -1,0 +1,11 @@
+/* ═══════════════════════════════════════════════════════════════
+   BETA 3M — tokens.css  (entry point)
+   Imports all design-token layers in the correct order.
+   Referenced by: src/main.tsx → import './styles/tokens.css'
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 1. Full token palette (CSS custom properties) */
+@import './beta3m-tokens.css';
+
+/* 2. Design-system utilities (touch targets, scroll, sidebar helpers) */
+@import './design-system.css';
