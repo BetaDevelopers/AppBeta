@@ -16,6 +16,15 @@ const ocrFromImage = async (req, res) => {
     }
 
     const isHandwriting = mode === 'handwriting';
+    const isMath = mode === 'math';
+
+    const mathPromptText = `Eres un sistema OCR especializado en matemáticas.
+El usuario ha dibujado una expresión matemática con un lápiz digital sobre fondo negro.
+Los trazos aparecen en color blanco.
+Reconoce la expresión y conviértela a LaTeX.
+Responde SOLO con el código LaTeX, sin delimitadores $ ni $$, sin explicaciones, sin comillas.
+Si ves "x² + 2x + 1 = 0", responde: x^2 + 2x + 1 = 0
+Si ves una fracción como 1/2, responde: \\frac{1}{2}`;
 
     const promptText = isHandwriting
       ? `Eres un sistema de reconocimiento de escritura manuscrita.
@@ -61,7 +70,7 @@ REGLAS para el campo content_markdown:
       },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_tokens: isHandwriting ? 100 : 2000,
+        max_tokens: (isHandwriting || isMath) ? 200 : 2000,
         messages: [
           {
             role: 'user',
@@ -73,7 +82,7 @@ REGLAS para el campo content_markdown:
                   detail: 'high',
                 },
               },
-              { type: 'text', text: promptText },
+              { type: 'text', text: isMath ? mathPromptText : promptText },
             ],
           },
         ],
@@ -90,10 +99,12 @@ REGLAS para el campo content_markdown:
     const data = await response.json();
     const rawContent = data.choices[0].message.content.trim();
 
-    // Handwriting mode: return simple { type, content } directly
+    // Handwriting / math mode: return simple { type, content } directly
     let parsed;
     if (isHandwriting) {
       parsed = { type: 'text', content: rawContent };
+    } else if (isMath) {
+      parsed = { type: 'latex', content: rawContent };
     } else {
       // Parse JSON — elimina possibles blocs ```json ... ``` que GPT pot afegir
       try {

@@ -20,7 +20,7 @@ import { useUIStore } from '../../store/uiStore';
 import { useMathOCR, MathRegion } from '@/features/ai/hooks/useMathOCR';
 import { markdownToHtml } from '../../utils/editorUtils';
 import { useSubjectsStore } from '../../store/subjectsStore';
-import { Pencil, Camera, Sparkles, FileText, Sigma, BarChart2, GitBranch, Triangle, Target } from 'lucide-react';
+import { Pencil, Camera, Sparkles, FileText, Sigma, BarChart2, GitBranch, Triangle, Target, Trash2 } from 'lucide-react';
 import InkCanvas, { Stroke } from './InkCanvas';
 import type { InkCanvasRef } from './InkCanvas';
 import InkToolbar from './InkToolbar';
@@ -29,6 +29,175 @@ import { useAutoBeautify } from '../../hooks/useAutoBeautify';
 import FloatingObjectComponent from './FloatingObject';
 import type { FloatingObject } from '../../types/canvas';
 
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function pointInPolygon(px: number, py: number, poly: { x: number; y: number }[]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i].x, yi = poly[i].y, xj = poly[j].x, yj = poly[j].y;
+    if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi))
+      inside = !inside;
+  }
+  return inside;
+}
+
+function isObjectInLasso(obj: FloatingObject, poly: { x: number; y: number }[]): boolean {
+  if (poly.length < 3) return false;
+  const { x, y } = obj.position;
+  const { width, height } = obj.dimensions;
+  return [
+    { x, y },
+    { x: x + width, y },
+    { x: x + width, y: y + height },
+    { x, y: y + height },
+  ].some(c => pointInPolygon(c.x, c.y, poly));
+}
+
+function computeGroupBbox(objects: FloatingObject[]) {
+  const minX = Math.min(...objects.map(o => o.position.x));
+  const minY = Math.min(...objects.map(o => o.position.y));
+  const maxX = Math.max(...objects.map(o => o.position.x + o.dimensions.width));
+  const maxY = Math.max(...objects.map(o => o.position.y + o.dimensions.height));
+  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+}
+
+interface SnapLine { x1: number; y1: number; x2: number; y2: number; axis: 'x' | 'y' }
+
+function computeSnap(
+  dragging: FloatingObject,
+  others: FloatingObject[],
+  newX: number,
+  newY: number,
+  threshold = 6
+): { x: number; y: number; lines: SnapLine[] } {
+  if (others.length === 0) return { x: newX, y: newY, lines: [] };
+
+  const dw = dragging.dimensions.width;
+  const dh = dragging.dimensions.height;
+
+  // dragged anchors (desired new position)
+  const dXA = [newX, newX + dw / 2, newX + dw];
+  const dYA = [newY, newY + dh / 2, newY + dh];
+  const dXOff = [0, dw / 2, dw];
+  const dYOff = [0, dh / 2, dh];
+
+  let minDX = threshold + 1, bestXSnap = newX, bestXLine = 0;
+  let minDY = threshold + 1, bestYSnap = newY, bestYLine = 0;
+
+  for (const o of others) {
+    const ox = o.position.x, oy = o.position.y;
+    const ow = o.dimensions.width, oh = o.dimensions.height;
+    const oXA = [ox, ox + ow / 2, ox + ow];
+    const oYA = [oy, oy + oh / 2, oy + oh];
+
+    for (let di = 0; di < 3; di++) {
+      for (let oi = 0; oi < 3; oi++) {
+        const dx = Math.abs(dXA[di] - oXA[oi]);
+        if (dx < minDX) { minDX = dx; bestXSnap = oXA[oi] - dXOff[di]; bestXLine = oXA[oi]; }
+        const dy = Math.abs(dYA[di] - oYA[oi]);
+        if (dy < minDY) { minDY = dy; bestYSnap = oYA[oi] - dYOff[di]; bestYLine = oYA[oi]; }
+      }
+    }
+  }
+
+  const snappedX = minDX <= threshold ? bestXSnap : newX;
+  const snappedY = minDY <= threshold ? bestYSnap : newY;
+  const lines: SnapLine[] = [];
+
+  const snapDrag = { position: { x: snappedX, y: snappedY }, dimensions: { width: dw, height: dh } };
+  const all = [...others, snapDrag];
+
+  if (minDX <= threshold) {
+    const minY = Math.min(...all.map(o => o.position.y)) - 10;
+    const maxY = Math.max(...all.map(o => o.position.y + o.dimensions.height)) + 10;
+    lines.push({ x1: bestXLine, y1: minY, x2: bestXLine, y2: maxY, axis: 'x' });
+  }
+  if (minDY <= threshold) {
+    const minX = Math.min(...all.map(o => o.position.x)) - 10;
+    const maxX = Math.max(...all.map(o => o.position.x + o.dimensions.width)) + 10;
+    lines.push({ x1: minX, y1: bestYLine, x2: maxX, y2: bestYLine, axis: 'y' });
+  }
+
+  return { x: snappedX, y: snappedY, lines };
+}
+
+// ── Connector helpers ─────────────────────────────────────────────────────────
+
+type AnchorHandle = 'n' | 's' | 'e' | 'w';
+
+function getObjectAnchors(obj: FloatingObject): Array<{ x: number; y: number; handle: AnchorHandle }> {
+  const { x, y } = obj.position;
+  const { width: w, height: h } = obj.dimensions;
+  return [
+    { x: x + w / 2, y, handle: 'n' },
+    { x: x + w / 2, y: y + h, handle: 's' },
+    { x: x + w, y: y + h / 2, handle: 'e' },
+    { x, y: y + h / 2, handle: 'w' },
+  ];
+}
+
+function closestAnchor(from: { x: number; y: number }, obj: FloatingObject) {
+  return getObjectAnchors(obj).reduce((best, a) =>
+    Math.hypot(a.x - from.x, a.y - from.y) < Math.hypot(best.x - from.x, best.y - from.y) ? a : best
+  );
+}
+
+function translateSvgPath(path: string, dx: number, dy: number): string {
+  return path.replace(/([-\d.]+),([-\d.]+)/g, (_, x, y) =>
+    `${(parseFloat(x) + dx).toFixed(2)},${(parseFloat(y) + dy).toFixed(2)}`
+  );
+}
+
+function buildConnectorData(
+  sx: number, sy: number, sHandle: string,
+  tx: number, ty: number, tHandle: string
+): { position: { x: number; y: number }; dimensions: { width: number; height: number }; svgData: string } {
+  const off = Math.min(Math.max(Math.hypot(tx - sx, ty - sy) * 0.5, 50), 100);
+  const dirs: Record<string, [number, number]> = {
+    n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0],
+  };
+  const [sdx, sdy] = dirs[sHandle] ?? [1, 0];
+  const [tdx, tdy] = dirs[tHandle] ?? [-1, 0];
+  const cp1x = sx + sdx * off, cp1y = sy + sdy * off;
+  const cp2x = tx + tdx * off, cp2y = ty + tdy * off;
+  const PAD = 16;
+  const allX = [sx, cp1x, cp2x, tx], allY = [sy, cp1y, cp2y, ty];
+  const minX = Math.min(...allX) - PAD, minY = Math.min(...allY) - PAD;
+  const maxX = Math.max(...allX) + PAD, maxY = Math.max(...allY) + PAD;
+  const absPath = `M ${sx},${sy} C ${cp1x},${cp1y} ${cp2x},${cp2y} ${tx},${ty}`;
+  return {
+    position: { x: minX, y: minY },
+    dimensions: { width: maxX - minX, height: maxY - minY },
+    svgData: translateSvgPath(absPath, -minX, -minY),
+  };
+}
+
+function recalcConnectors(objs: FloatingObject[], movedId: string): FloatingObject[] {
+  return objs.map(o => {
+    if (o.type !== 'connector') return o;
+    if (o.sourceId !== movedId && o.targetId !== movedId) return o;
+    const src = objs.find(x => x.id === o.sourceId);
+    const tgt = objs.find(x => x.id === o.targetId);
+    if (!src || !tgt) return o;
+    const tgtCenter = { x: tgt.position.x + tgt.dimensions.width / 2, y: tgt.position.y + tgt.dimensions.height / 2 };
+    const sa = closestAnchor(tgtCenter, src);
+    const ta = closestAnchor(sa, tgt);
+    return { ...o, ...buildConnectorData(sa.x, sa.y, sa.handle, ta.x, ta.y, ta.handle) };
+  });
+}
+
+function insertTextAt(editor: any, text: string, svgEl: SVGSVGElement | null, cx: number, cy: number) {
+  if (svgEl && editor?.view?.posAtCoords) {
+    const rect = svgEl.getBoundingClientRect();
+    const pos = editor.view.posAtCoords({ left: rect.left + cx, top: rect.top + cy });
+    if (pos?.pos != null) {
+      editor.chain().focus().insertContentAt(pos.pos, text).run();
+      return;
+    }
+  }
+  editor?.chain().focus().insertContent(text).run();
+}
 
 // ── Definit FORA de NoteEditor per evitar desmuntatge en cada re-render ──
 function ToolBtn({ onClick, disabled, title, accent, children }: {
@@ -80,6 +249,22 @@ export const NoteEditor: React.FC = () => {
     const inkCanvasRef = useRef<InkCanvasRef>(null);
     // floating objects layer — must be before useAutoBeautify so handleStrokesToObject is stable
     const [floatingObjects, setFloatingObjects] = useState<FloatingObject[]>([]);
+    const floatingObjectsRef = useRef<FloatingObject[]>([]);
+    floatingObjectsRef.current = floatingObjects;
+    const [snapLines, setSnapLines] = useState<SnapLine[]>([]);
+    const [connectingPath, setConnectingPath] = useState<string | null>(null);
+    const connectingFromRef = useRef<{
+        sourceId: string; handle: AnchorHandle; anchorX: number; anchorY: number;
+    } | null>(null);
+    // ── Lasso ────────────────────────────────────────────────────────────────
+    const layerContainerRef = useRef<HTMLDivElement>(null);
+    const lassoRef = useRef<{
+        active: boolean;
+        startX: number;
+        startY: number;
+        points: { x: number; y: number }[];
+    } | null>(null);
+    const [lassoPoints, setLassoPoints] = useState<{ x: number; y: number }[]>([]);
     const handleStrokesToObject = useCallback((newObj: FloatingObject) => {
         setFloatingObjects(prev => [...prev, newObj]);
     }, []);
@@ -431,9 +616,108 @@ export const NoteEditor: React.FC = () => {
     // ── FloatingObject handlers ──────────────────────────────────────────────
 
     const handleFloatDrag = useCallback((id: string, x: number, y: number) => {
-        setFloatingObjects(prev =>
-            prev.map(o => o.id === id ? { ...o, position: { x, y } } : o)
+        const current = floatingObjectsRef.current;
+        const dragged = current.find(o => o.id === id);
+        if (!dragged) return;
+
+        const multiSelect = dragged.isSelected && current.filter(o => o.isSelected).length > 1;
+        if (multiSelect) {
+            const dx = x - dragged.position.x;
+            const dy = y - dragged.position.y;
+            setFloatingObjects(prev => prev.map(o => o.isSelected
+                ? { ...o, position: { x: o.position.x + dx, y: o.position.y + dy } }
+                : o
+            ));
+            return;
+        }
+
+        // Single-object drag: compute snap
+        let finalX = x, finalY = y;
+        if (current.length >= 2) {
+            const others = current.filter(o => o.id !== id);
+            const snap = computeSnap(dragged, others, x, y);
+            finalX = snap.x;
+            finalY = snap.y;
+            setSnapLines(snap.lines);
+        } else {
+            setSnapLines([]);
+        }
+
+        setFloatingObjects(prev => {
+            const updated = prev.map(o => o.id === id
+                ? { ...o, position: { x: finalX, y: finalY } }
+                : o
+            );
+            return recalcConnectors(updated, id);
+        });
+    }, []);
+
+    const handleFloatDragEnd = useCallback(() => {
+        setSnapLines([]);
+    }, []);
+
+    // ── Connector creation handlers ──────────────────────────────────────────
+
+    const handleFloatConnectStart = useCallback((
+        sourceId: string, handle: AnchorHandle, anchorX: number, anchorY: number
+    ) => {
+        connectingFromRef.current = { sourceId, handle, anchorX, anchorY };
+        setConnectingPath(null);
+    }, []);
+
+    const handleFloatConnectMove = useCallback((clientX: number, clientY: number) => {
+        const cf = connectingFromRef.current;
+        if (!cf || !layerContainerRef.current) return;
+        const rect = layerContainerRef.current.getBoundingClientRect();
+        const tx = clientX - rect.left, ty = clientY - rect.top;
+        const { anchorX: sx, anchorY: sy, handle } = cf;
+        const dirs: Record<string, [number, number]> = { n: [0,-1], s: [0,1], e: [1,0], w: [-1,0] };
+        const [ddx, ddy] = dirs[handle] ?? [1, 0];
+        const dist = Math.max(Math.hypot(tx - sx, ty - sy), 1);
+        const off = Math.min(dist * 0.5, 70);
+        setConnectingPath(
+            `M ${sx},${sy} C ${sx + ddx * off},${sy + ddy * off} ${tx - (tx - sx) / dist * 20},${ty - (ty - sy) / dist * 20} ${tx},${ty}`
         );
+    }, []);
+
+    const handleFloatConnectEnd = useCallback((clientX: number, clientY: number) => {
+        const cf = connectingFromRef.current;
+        connectingFromRef.current = null;
+        setConnectingPath(null);
+        if (!cf || !layerContainerRef.current) return;
+        const rect = layerContainerRef.current.getBoundingClientRect();
+        const cx = clientX - rect.left, cy = clientY - rect.top;
+        const current = floatingObjectsRef.current;
+        const target = current.find(o =>
+            o.id !== cf.sourceId &&
+            o.type !== 'connector' &&
+            cx >= o.position.x && cx <= o.position.x + o.dimensions.width &&
+            cy >= o.position.y && cy <= o.position.y + o.dimensions.height
+        );
+        if (!target) return;
+        const source = current.find(o => o.id === cf.sourceId);
+        if (!source) return;
+        const srcAnchor = { x: cf.anchorX, y: cf.anchorY, handle: cf.handle };
+        const tgtAnchor = closestAnchor(srcAnchor, target);
+        const built = buildConnectorData(srcAnchor.x, srcAnchor.y, srcAnchor.handle, tgtAnchor.x, tgtAnchor.y, tgtAnchor.handle);
+        const connObj: FloatingObject = {
+            id: crypto.randomUUID(),
+            type: 'connector',
+            ...built,
+            sourceId: cf.sourceId,
+            targetId: target.id,
+            arrowEnd: true,
+            arrowStart: false,
+            stroke: '#3B82F6',
+            strokeWidth: 1.5,
+            isSelected: false,
+            rotation: 0,
+        };
+        setFloatingObjects(prev => [...prev, connObj]);
+    }, []);
+
+    const handleFloatArrowChange = useCallback((id: string, arrowStart: boolean, arrowEnd: boolean) => {
+        setFloatingObjects(prev => prev.map(o => o.id === id ? { ...o, arrowStart, arrowEnd } : o));
     }, []);
 
     const handleFloatSelect = useCallback((id: string) => {
@@ -476,6 +760,66 @@ export const NoteEditor: React.FC = () => {
     const handleFloatFillChange = useCallback((id: string, fill: string) => {
         setFloatingObjects(prev =>
             prev.map(o => o.id === id ? { ...o, fill } : o)
+        );
+    }, []);
+
+    const handleGroupDelete = useCallback(() => {
+        setFloatingObjects(prev => prev.filter(o => !o.isSelected));
+    }, []);
+
+    // ── Lasso handlers ───────────────────────────────────────────────────────
+
+    const handleLayerPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLElement;
+        if (
+            target.closest('[data-floating-object]') ||
+            target.closest('.ProseMirror') ||
+            inkMode
+        ) return;
+
+        e.currentTarget.setPointerCapture(e.pointerId);
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        handleFloatDeselect();
+        lassoRef.current = { active: false, startX: x, startY: y, points: [{ x, y }] };
+    };
+
+    const handleLayerPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!lassoRef.current) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        if (!lassoRef.current.active) {
+            const dx = x - lassoRef.current.startX;
+            const dy = y - lassoRef.current.startY;
+            if (Math.hypot(dx, dy) < 6) return;
+            lassoRef.current.active = true;
+        }
+        lassoRef.current.points.push({ x, y });
+        setLassoPoints([...lassoRef.current.points]);
+    };
+
+    const handleLayerPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!lassoRef.current?.active) {
+            lassoRef.current = null;
+            setLassoPoints([]);
+            return;
+        }
+        const polygon = lassoRef.current.points;
+        lassoRef.current = null;
+        setFloatingObjects(prev => prev.map(o => ({ ...o, isSelected: isObjectInLasso(o, polygon) })));
+        setLassoPoints([]);
+    };
+
+    const handleOcrText = useCallback((text: string, cx: number, cy: number) => {
+        if (!editor) return;
+        insertTextAt(editor, text, inkCanvasRef.current?.getSvgElement() ?? null, cx, cy);
+    }, [editor]);
+
+    const handleFloatLatexChange = useCallback((id: string, latex: string) => {
+        setFloatingObjects(prev =>
+            prev.map(o => o.id === id ? { ...o, latexSource: latex } : o)
         );
     }, []);
 
@@ -666,17 +1010,17 @@ export const NoteEditor: React.FC = () => {
                         />
 
                         {/* ── Layer stack ─────────────────────────────── */}
+                        {(() => {
+                            const selectedObjs = floatingObjects.filter(o => o.isSelected);
+                            const groupBbox = selectedObjs.length > 1 ? computeGroupBbox(selectedObjs) : null;
+                            return (
                         <div
+                            ref={layerContainerRef}
                             style={{ position: 'relative', width: '100%', minHeight: '100%' }}
-                            onPointerDown={(e) => {
-                                const target = e.target as HTMLElement;
-                                if (
-                                    !target.closest('[data-floating-object]') &&
-                                    !target.closest('.ProseMirror')
-                                ) {
-                                    handleFloatDeselect();
-                                }
-                            }}
+                            onPointerDown={handleLayerPointerDown}
+                            onPointerMove={handleLayerPointerMove}
+                            onPointerUp={handleLayerPointerUp}
+                            onPointerCancel={handleLayerPointerUp}
                         >
                             {/* LAYER 1 — Rich text (base) */}
                             <RichEditor
@@ -705,15 +1049,81 @@ export const NoteEditor: React.FC = () => {
                                         key={obj.id}
                                         object={obj}
                                         onDrag={handleFloatDrag}
+                                        onDragEnd={handleFloatDragEnd}
                                         onSelect={handleFloatSelect}
                                         onResize={handleFloatResize}
                                         onDelete={handleFloatDelete}
                                         onColorChange={handleFloatColorChange}
                                         onStrokeWidthChange={handleFloatStrokeWidthChange}
                                         onFillChange={handleFloatFillChange}
+                                        onLatexChange={handleFloatLatexChange}
+                                        onConnectStart={!inkMode ? handleFloatConnectStart : undefined}
+                                        onConnectMove={handleFloatConnectMove}
+                                        onConnectEnd={handleFloatConnectEnd}
+                                        onArrowChange={handleFloatArrowChange}
                                     />
                                 ))}
                             </div>
+
+                            {/* LAYER 2.5 — SVG overlay: lasso + snap lines + connectors */}
+                            <svg
+                                style={{
+                                    position: 'absolute', inset: 0,
+                                    width: '100%', height: '100%',
+                                    zIndex: 2, pointerEvents: 'none',
+                                    overflow: 'visible',
+                                }}
+                            >
+                                {lassoPoints.length > 2 && (
+                                    <polygon
+                                        points={lassoPoints.map(p => `${p.x},${p.y}`).join(' ')}
+                                        stroke="#3B82F6"
+                                        strokeWidth={1.5}
+                                        strokeDasharray="6,3"
+                                        fill="rgba(59,130,246,0.05)"
+                                    />
+                                )}
+                                {groupBbox && (
+                                    <rect
+                                        x={groupBbox.x - 6} y={groupBbox.y - 6}
+                                        width={groupBbox.width + 12} height={groupBbox.height + 12}
+                                        stroke="#3B82F6" strokeWidth={1}
+                                        strokeDasharray="6,3" fill="none"
+                                    />
+                                )}
+                                {snapLines.map((sl, i) => (
+                                    <line key={i}
+                                        x1={sl.x1} y1={sl.y1} x2={sl.x2} y2={sl.y2}
+                                        stroke="#3B82F6" strokeWidth={1} opacity={0.6}
+                                    />
+                                ))}
+                                {connectingPath && (
+                                    <path
+                                        d={connectingPath}
+                                        stroke="#3B82F6" strokeWidth={1.5}
+                                        strokeDasharray="6,3" fill="none" opacity={0.8}
+                                    />
+                                )}
+                            </svg>
+
+                            {/* Group delete button */}
+                            {groupBbox && (
+                                <div
+                                    style={{
+                                        position: 'absolute',
+                                        left: groupBbox.x + groupBbox.width - 11,
+                                        top: groupBbox.y - 32,
+                                        zIndex: 5, pointerEvents: 'auto',
+                                        background: '#ef4444', borderRadius: '50%',
+                                        width: 22, height: 22,
+                                        display: 'flex', alignItems: 'center',
+                                        justifyContent: 'center', cursor: 'pointer',
+                                    }}
+                                    onPointerDown={(e) => { e.stopPropagation(); handleGroupDelete(); }}
+                                >
+                                    <Trash2 size={12} color="#fff" />
+                                </div>
+                            )}
 
                             {/* LAYER 3 — Ink canvas (drawing mode only) */}
                             {inkMode && (
@@ -723,10 +1133,13 @@ export const NoteEditor: React.FC = () => {
                                     strokeWidth={strokeWidth}
                                     onChangeStrokes={onStrokeFinish}
                                     onStrokeObject={handleStrokesToObject}
+                                    onOcrText={handleOcrText}
                                     processingStatus={autoStatus}
                                 />
                             )}
                         </div>
+                        );
+                        })()}
                         {inkMode && (
                             <>
                                 <InkToolbar

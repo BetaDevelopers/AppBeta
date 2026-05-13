@@ -14,20 +14,20 @@ export interface OCRResponse {
  * ---------------
  * Sends a base64 image of the canvas to the AI backend for conversion.
  */
-export async function postCanvasForOcr(imageBase64: string): Promise<OCRResponse | null> {
+export async function postCanvasForOcr(imageBase64: string, mode = 'handwriting'): Promise<OCRResponse | null> {
   const token = localStorage.getItem('beta3m_token');
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-  
+
   // Remove the data:image/png;base64, prefix if present
   const base64Content = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-  
+
   const res = await fetch(`${apiUrl}/ai/ocr`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token || ''}`
     },
-    body: JSON.stringify({ image: base64Content, mode: 'handwriting' })
+    body: JSON.stringify({ image: base64Content, mode })
   });
   
   if (res.status === 403) {

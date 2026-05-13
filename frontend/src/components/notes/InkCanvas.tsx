@@ -1,7 +1,8 @@
-import React, { useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useRef, useState, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { smoothPoints } from './utils/strokeUtils';
 import type { AutoStatus } from '../../hooks/useAutoBeautify';
 import type { FloatingObject } from '../../types/canvas';
+import { postCanvasForOcr } from '../../services/ocrApi';
 
 export interface Point {
   x: number;
@@ -16,12 +17,21 @@ export interface Stroke {
   timestamp: number;
 }
 
+interface LineBuffer {
+  id: string;
+  strokes: Stroke[];
+  lastStrokeTime: number;
+  debounceTimer: ReturnType<typeof setTimeout> | null;
+  boundingBox: { minX: number; minY: number; width: number; height: number };
+}
+
 type Props = {
   active: boolean;
   strokeWidth?: number;
   strokeColor?: string;
   onChangeStrokes?: (strokes: Stroke[]) => void;
   onStrokeObject?: (obj: FloatingObject) => void;
+  onOcrText?: (text: string, cx: number, cy: number) => void;
   processingStatus?: AutoStatus;
 };
 
@@ -32,6 +42,86 @@ export type InkCanvasRef = {
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+function getStrokeBbox(stroke: Stroke) {
+  const xs = stroke.points.map(p => p.x);
+  const ys = stroke.points.map(p => p.y);
+  const minX = Math.min(...xs);
+  const minY = Math.min(...ys);
+  return { minX, minY, width: Math.max(...xs) - minX, height: Math.max(...ys) - minY };
+}
+
+function mergeBboxes(
+  a: { minX: number; minY: number; width: number; height: number },
+  b: { minX: number; minY: number; width: number; height: number }
+) {
+  const minX = Math.min(a.minX, b.minX);
+  const minY = Math.min(a.minY, b.minY);
+  const maxX = Math.max(a.minX + a.width, b.minX + b.width);
+  const maxY = Math.max(a.minY + a.height, b.minY + b.height);
+  return { minX, minY, width: maxX - minX, height: maxY - minY };
+}
+
+function renderBufferToCanvas(strokes: Stroke[], padding = 20): {
+  base64: string; cx: number; cy: number;
+} | null {
+  const allPts = strokes.flatMap(s => s.points);
+  if (allPts.length === 0) return null;
+  const xs = allPts.map(p => p.x), ys = allPts.map(p => p.y);
+  const mnX = Math.min(...xs) - padding;
+  const mnY = Math.min(...ys) - padding;
+  const cw = Math.max(Math.max(...xs) - mnX + padding, 32);
+  const ch = Math.max(Math.max(...ys) - mnY + padding, 32);
+  const canvas = document.createElement('canvas');
+  canvas.width = cw;
+  canvas.height = ch;
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, cw, ch);
+  ctx.strokeStyle = '#fff';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const stroke of strokes) {
+    const pts = stroke.points;
+    if (pts.length < 2) continue;
+    ctx.lineWidth = stroke.width;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x - mnX, pts[0].y - mnY);
+    for (let i = 1; i < pts.length - 1; i++) {
+      const mx = (pts[i].x + pts[i + 1].x) / 2 - mnX;
+      const my = (pts[i].y + pts[i + 1].y) / 2 - mnY;
+      ctx.quadraticCurveTo(pts[i].x - mnX, pts[i].y - mnY, mx, my);
+    }
+    ctx.lineTo(pts[pts.length - 1].x - mnX, pts[pts.length - 1].y - mnY);
+    ctx.stroke();
+  }
+  return {
+    base64: canvas.toDataURL('image/png').replace(/^data:image\/\w+;base64,/, ''),
+    cx: mnX + cw / 2,
+    cy: mnY + ch / 2,
+  };
+}
+
+function looksLikeMath(strokes: Stroke[]): boolean {
+  if (strokes.length < 2) return false;
+  let horizontalCount = 0;
+  for (const s of strokes) {
+    const sxs = s.points.map(p => p.x);
+    const sys = s.points.map(p => p.y);
+    const sw = Math.max(...sxs) - Math.min(...sxs);
+    const sh = Math.max(...sys) - Math.min(...sys) + 0.1;
+    if (sw / sh > 6 && sh < 15) horizontalCount++;
+  }
+  if (horizontalCount >= 2) return true;
+  if (strokes.length >= 3) {
+    const allPts = strokes.flatMap(s => s.points);
+    const xs = allPts.map(p => p.x), ys = allPts.map(p => p.y);
+    const tw = Math.max(...xs) - Math.min(...xs) + 0.1;
+    const th = Math.max(...ys) - Math.min(...ys);
+    if (th / tw > 1.2) return true;
+  }
+  return false;
+}
 
 function getBoundingBox(strokes: Stroke[]) {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -112,6 +202,7 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
   strokeColor = 'rgba(255,255,255,0.8)',
   onChangeStrokes,
   onStrokeObject,
+  onOcrText,
   processingStatus = 'idle',
 }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
@@ -121,6 +212,16 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
   // Ref so finishStroke always sees latest strokes without stale closure
   const strokesRef = useRef<Stroke[]>([]);
   const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── LineBuffer state ──────────────────────────────────────────────────────
+  const lineBuffersRef = useRef<LineBuffer[]>([]);
+  const [lineBuffers, setLineBuffers] = useState<LineBuffer[]>([]);
+  const [internalStatus, setInternalStatus] = useState<AutoStatus>('idle');
+  // Stable refs so timer callbacks always call the latest prop versions
+  const onOcrTextRef = useRef(onOcrText);
+  useEffect(() => { onOcrTextRef.current = onOcrText; }, [onOcrText]);
+  const onStrokeObjectRef = useRef(onStrokeObject);
+  useEffect(() => { onStrokeObjectRef.current = onStrokeObject; }, [onStrokeObject]);
 
   useImperativeHandle(ref, () => ({
     captureCanvas: async () => {
@@ -146,6 +247,9 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     },
     clearStrokes: () => {
       if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+      lineBuffersRef.current.forEach(b => { if (b.debounceTimer) clearTimeout(b.debounceTimer); });
+      lineBuffersRef.current = [];
+      setLineBuffers([]);
       strokesRef.current = [];
       setStrokes([]);
       setCurrentPoints([]);
@@ -193,6 +297,106 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     }, 1200);
   }, [onStrokeObject]);
 
+  // ── LineBuffer: fire OCR for a completed buffer ──────────────────────────
+
+  const fireBuffer = useCallback(async (bufferId: string) => {
+    const buf = lineBuffersRef.current.find(b => b.id === bufferId);
+    if (!buf) return;
+
+    const consumed = buf.strokes;
+    const bufBbox = buf.boundingBox;
+
+    // Remove buffer and its strokes from state
+    lineBuffersRef.current = lineBuffersRef.current.filter(b => b.id !== bufferId);
+    setLineBuffers([...lineBuffersRef.current]);
+    strokesRef.current = strokesRef.current.filter(
+      s => !consumed.some(cs => cs.timestamp === s.timestamp)
+    );
+    setStrokes(prev => prev.filter(s => !consumed.some(cs => cs.timestamp === s.timestamp)));
+
+    const rendered = renderBufferToCanvas(consumed);
+    if (!rendered) return;
+
+    const isMath = looksLikeMath(consumed);
+    const mode = isMath ? 'math' : 'handwriting';
+
+    setInternalStatus('processing');
+    try {
+      const result = await postCanvasForOcr(rendered.base64, mode);
+
+      if (isMath && result?.type === 'latex' && result.content && onStrokeObjectRef.current) {
+        const equationObj: FloatingObject = {
+          id: crypto.randomUUID(),
+          type: 'equation',
+          position: { x: bufBbox.minX, y: bufBbox.minY },
+          dimensions: {
+            width: Math.max(bufBbox.width, 120),
+            height: Math.max(bufBbox.height, 60),
+          },
+          latexSource: result.content.trim(),
+          isSelected: false,
+          rotation: 0,
+          stroke: consumed[0]?.color ?? '#ffffff',
+          strokeWidth: consumed[0]?.width ?? 2,
+        };
+        onStrokeObjectRef.current(equationObj);
+        setInternalStatus('success');
+        setTimeout(() => setInternalStatus('idle'), 1000);
+      } else if (result?.content?.trim() && onOcrTextRef.current) {
+        onOcrTextRef.current(result.content.trim() + ' ', rendered.cx, rendered.cy);
+        setInternalStatus('success');
+        setTimeout(() => setInternalStatus('idle'), 1000);
+      } else {
+        setInternalStatus('fail');
+        setTimeout(() => setInternalStatus('idle'), 2000);
+      }
+    } catch {
+      setInternalStatus('fail');
+      setTimeout(() => setInternalStatus('idle'), 2000);
+    }
+  }, []);
+
+  // ── LineBuffer: assign a stroke to the correct buffer ────────────────────
+
+  const addStrokeToBuffer = useCallback((stroke: Stroke) => {
+    const strokeBbox = getStrokeBbox(stroke);
+    const buffers = lineBuffersRef.current;
+    const strokeCY = strokeBbox.minY + strokeBbox.height / 2;
+
+    const matchIdx = buffers.findIndex(b => {
+      const bCY = b.boundingBox.minY + b.boundingBox.height / 2;
+      return Math.abs(bCY - strokeCY) < 60;
+    });
+
+    if (matchIdx >= 0) {
+      const buf = buffers[matchIdx];
+      if (buf.debounceTimer) clearTimeout(buf.debounceTimer);
+      const updated: LineBuffer = {
+        ...buf,
+        strokes: [...buf.strokes, stroke],
+        lastStrokeTime: stroke.timestamp,
+        boundingBox: mergeBboxes(buf.boundingBox, strokeBbox),
+        debounceTimer: setTimeout(() => fireBuffer(buf.id), 1800),
+      };
+      const updatedBuffers = [...buffers];
+      updatedBuffers[matchIdx] = updated;
+      lineBuffersRef.current = updatedBuffers;
+      setLineBuffers([...updatedBuffers]);
+    } else {
+      const newId = crypto.randomUUID();
+      const newBuf: LineBuffer = {
+        id: newId,
+        strokes: [stroke],
+        lastStrokeTime: stroke.timestamp,
+        debounceTimer: setTimeout(() => fireBuffer(newId), 1800),
+        boundingBox: strokeBbox,
+      };
+      const updatedBuffers = [...buffers, newBuf];
+      lineBuffersRef.current = updatedBuffers;
+      setLineBuffers([...updatedBuffers]);
+    }
+  }, [fireBuffer]);
+
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!active) return;
     (e.target as SVGElement).setPointerCapture(e.pointerId);
@@ -223,7 +427,11 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     onChangeStrokes?.(updated);
     setCurrentPoints([]);
 
-    scheduleCommit(updated);
+    if (onOcrText) {
+      addStrokeToBuffer(newStroke);
+    } else {
+      scheduleCommit(updated);
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
@@ -244,10 +452,45 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     );
   };
 
-  const isPulsing = processingStatus === 'processing';
+  const displayStatus = internalStatus !== 'idle' ? internalStatus : processingStatus;
+  const isPulsing = displayStatus === 'processing';
 
   return (
     <>
+      <style>{`@keyframes ocr-fill { from { width: 0% } to { width: 100% } }`}</style>
+
+      {/* ── LineBuffer overlays ── */}
+      {lineBuffers.map(buf => (
+        <div
+          key={buf.id}
+          style={{
+            position: 'absolute',
+            left: buf.boundingBox.minX,
+            top: buf.boundingBox.minY,
+            width: Math.max(buf.boundingBox.width, 4),
+            height: Math.max(buf.boundingBox.height, 4),
+            background: `${strokeColor}0D`,
+            borderRadius: 4,
+            pointerEvents: 'none',
+            zIndex: 3,
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            key={buf.lastStrokeTime}
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              height: 2,
+              background: strokeColor,
+              opacity: 0.7,
+              animation: `ocr-fill 1800ms linear forwards`,
+            }}
+          />
+        </div>
+      ))}
+
       <svg
         ref={svgRef}
         width="100%"
@@ -273,7 +516,7 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
           )}
         </g>
       </svg>
-      <StatusPill status={processingStatus} />
+      <StatusPill status={displayStatus} />
     </>
   );
 });

@@ -1,4 +1,4 @@
-export type FloatingObjectType = 'stroke' | 'shape' | 'image' | 'ocr-scan';
+export type FloatingObjectType = 'stroke' | 'shape' | 'image' | 'ocr-scan' | 'equation' | 'connector';
 
 export type ResizeHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
 
@@ -22,6 +22,15 @@ export interface FloatingObject {
   // For OCR scan objects
   imageBase64?: string;
   ocrText?: string;
+
+  // For equation objects (LaTeX source)
+  latexSource?: string;
+
+  // For connector objects
+  sourceId?: string;
+  targetId?: string;
+  arrowStart?: boolean;
+  arrowEnd?: boolean;
 
   isSelected: boolean;
   rotation: number;

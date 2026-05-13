@@ -1,15 +1,27 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useState, useEffect } from 'react';
+import katex from 'katex';
 import type { FloatingObject, ResizeHandle } from '../../types/canvas';
+import { postCanvasForOcr } from '../../services/ocrApi';
+import { smoothPoints } from './utils/strokeUtils';
+import type { Stroke, Point } from './InkCanvas';
+
+type AnchorHandle = 'n' | 's' | 'e' | 'w';
 
 interface FloatingObjectProps {
   object: FloatingObject;
   onDrag: (id: string, x: number, y: number) => void;
+  onDragEnd?: (id: string) => void;
   onSelect: (id: string) => void;
   onResize: (id: string, x: number, y: number, width: number, height: number) => void;
   onDelete: (id: string) => void;
   onColorChange: (id: string, color: string) => void;
   onStrokeWidthChange: (id: string, width: number) => void;
   onFillChange: (id: string, fill: string) => void;
+  onLatexChange?: (id: string, latex: string) => void;
+  onConnectStart?: (id: string, handle: AnchorHandle, anchorX: number, anchorY: number) => void;
+  onConnectMove?: (clientX: number, clientY: number) => void;
+  onConnectEnd?: (clientX: number, clientY: number) => void;
+  onArrowChange?: (id: string, arrowStart: boolean, arrowEnd: boolean) => void;
 }
 
 const STROKE_COLORS = ['#FFFFFF', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#000000'];
@@ -29,17 +41,118 @@ const HANDLES: { id: ResizeHandle; cursor: string; top: string; left: string; tr
 
 // ── Component ────────────────────────────────────────────────────────────────
 
+const CONN_HANDLE_ANCHORS: Array<{
+  handle: AnchorHandle;
+  cx: (w: number, h: number) => number;
+  cy: (w: number, h: number) => number;
+}> = [
+  { handle: 'n', cx: (w) => w / 2,  cy: () => 0 },
+  { handle: 's', cx: (w) => w / 2,  cy: (_w, h) => h },
+  { handle: 'e', cx: (w) => w,       cy: (_w, h) => h / 2 },
+  { handle: 'w', cx: () => 0,        cy: (_w, h) => h / 2 },
+];
+
 export default function FloatingObjectComponent({
   object,
   onDrag,
+  onDragEnd,
   onSelect,
   onResize,
   onDelete,
   onColorChange,
   onStrokeWidthChange,
   onFillChange,
+  onLatexChange,
+  onConnectStart,
+  onConnectMove,
+  onConnectEnd,
+  onArrowChange,
 }: FloatingObjectProps) {
   const { id, position, dimensions, isSelected, svgData, imageBase64, ocrText, type } = object;
+
+  // ── Connection handles ────────────────────────────────────────────────────
+  const [showConnHandles, setShowConnHandles] = useState(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Equation edit mode ────────────────────────────────────────────────────
+  const [isEditingEq, setIsEditingEq] = useState(false);
+  const [editStrokes, setEditStrokes] = useState<Stroke[]>([]);
+  const [editCurrentPts, setEditCurrentPts] = useState<Point[]>([]);
+  const editStrokesRef = useRef<Stroke[]>([]);
+  const editSvgRef = useRef<SVGSVGElement>(null);
+  const editDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const commitEditRef = useRef<() => Promise<void>>(async () => {});
+
+  useEffect(() => {
+    commitEditRef.current = async () => {
+      const strokesToOcr = editStrokesRef.current;
+      if (strokesToOcr.length === 0) { setIsEditingEq(false); return; }
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(dimensions.width, 32);
+      canvas.height = Math.max(dimensions.height, 32);
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#fff';
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      for (const stroke of strokesToOcr) {
+        const pts = stroke.points;
+        if (pts.length < 2) continue;
+        ctx.lineWidth = stroke.width;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length - 1; i++) {
+          const mx = (pts[i].x + pts[i + 1].x) / 2;
+          const my = (pts[i].y + pts[i + 1].y) / 2;
+          ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+        }
+        ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+        ctx.stroke();
+      }
+      const base64 = canvas.toDataURL('image/png').replace(/^data:image\/\w+;base64,/, '');
+      try {
+        const result = await postCanvasForOcr(base64, 'math');
+        if (result?.content) onLatexChange?.(id, result.content.trim());
+      } catch { /* silently ignore */ }
+      editStrokesRef.current = [];
+      setEditStrokes([]);
+      setEditCurrentPts([]);
+      setIsEditingEq(false);
+    };
+  });
+
+  const toEditPoint = (e: React.PointerEvent): Point => {
+    const rect = editSvgRef.current!.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top, pressure: e.pressure || 0.5 };
+  };
+
+  const handleEditPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    e.stopPropagation();
+    (e.target as SVGElement).setPointerCapture(e.pointerId);
+    if (editDebounceRef.current) clearTimeout(editDebounceRef.current);
+    setEditCurrentPts([toEditPoint(e)]);
+  };
+
+  const handleEditPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    setEditCurrentPts(p => p.length > 0 ? [...p, toEditPoint(e)] : p);
+  };
+
+  const handleEditPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
+    (e.target as SVGElement).releasePointerCapture(e.pointerId);
+    if (editCurrentPts.length < 2) { setEditCurrentPts([]); return; }
+    const newStroke: Stroke = {
+      points: editCurrentPts,
+      width: 2,
+      color: '#ffffff',
+      timestamp: Date.now(),
+    };
+    editStrokesRef.current = [...editStrokesRef.current, newStroke];
+    setEditStrokes([...editStrokesRef.current]);
+    setEditCurrentPts([]);
+    if (editDebounceRef.current) clearTimeout(editDebounceRef.current);
+    editDebounceRef.current = setTimeout(() => commitEditRef.current(), 1800);
+  };
 
   // Drag state
   const dragRef = useRef<{
@@ -63,31 +176,58 @@ export default function FloatingObjectComponent({
   // ── Drag handlers ──────────────────────────────────────────────────────────
 
   const onBodyPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    // Only primary button / stylus
     if (e.button !== 0) return;
     e.stopPropagation();
+
+    if (type === 'equation' && e.detail >= 2) {
+      setIsEditingEq(true);
+      editStrokesRef.current = [];
+      setEditStrokes([]);
+      return;
+    }
+
     onSelect(id);
+
+    // Connectors: select only, no drag
+    if (type === 'connector') return;
+
     (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
     dragRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      startObjX: position.x,
-      startObjY: position.y,
+      startX: e.clientX, startY: e.clientY,
+      startObjX: position.x, startObjY: position.y,
     };
-  }, [id, position.x, position.y, onSelect]);
+
+    // Long press → connection handles
+    if (onConnectStart) {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = setTimeout(() => {
+        dragRef.current = null;
+        setShowConnHandles(true);
+      }, 500);
+    }
+  }, [id, type, position.x, position.y, onSelect, onConnectStart]);
 
   const onBodyPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragRef.current) return;
     const dx = e.clientX - dragRef.current.startX;
     const dy = e.clientY - dragRef.current.startY;
+    if (longPressTimerRef.current && Math.hypot(dx, dy) > 5) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
     onDrag(id, dragRef.current.startObjX + dx, dragRef.current.startObjY + dy);
   }, [id, onDrag]);
 
   const onBodyPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
     if (!dragRef.current) return;
     (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
     dragRef.current = null;
-  }, []);
+    onDragEnd?.(id);
+  }, [id, onDragEnd]);
 
   // ── Resize handlers ────────────────────────────────────────────────────────
 
@@ -201,6 +341,67 @@ export default function FloatingObjectComponent({
         </svg>
       )}
 
+      {type === 'equation' && (
+        <div style={{
+          width: '100%', height: '100%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 8, boxSizing: 'border-box', overflow: 'hidden',
+        }}>
+          {object.latexSource
+            ? <div dangerouslySetInnerHTML={{
+                __html: katex.renderToString(object.latexSource, {
+                  throwOnError: false, displayMode: true, output: 'html',
+                })
+              }} />
+            : <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>∅</span>
+          }
+          {isEditingEq && (
+            <svg
+              ref={editSvgRef}
+              style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%',
+                background: 'rgba(15,15,20,0.92)', cursor: 'crosshair', zIndex: 10,
+              }}
+              onPointerDown={handleEditPointerDown}
+              onPointerMove={handleEditPointerMove}
+              onPointerUp={handleEditPointerUp}
+              onPointerCancel={handleEditPointerUp}
+            >
+              {editStrokes.map(s => {
+                const d = smoothPoints(s.points);
+                return d ? (
+                  <path key={s.timestamp} d={d}
+                    stroke="#fff" strokeWidth={s.width}
+                    fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                ) : null;
+              })}
+              {editCurrentPts.length > 1 && (
+                <path d={smoothPoints(editCurrentPts) ?? ''}
+                  stroke="#fff" strokeWidth={2}
+                  fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              )}
+              <text x="50%" y="92%" textAnchor="middle"
+                fill="rgba(255,255,255,0.4)" fontSize={10}>
+                Dibuja la ecuación — se reconoce automáticamente
+              </text>
+              <text
+                x="96%" y="8%" textAnchor="end"
+                fill="rgba(255,255,255,0.6)" fontSize={14}
+                style={{ cursor: 'pointer' }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (editDebounceRef.current) clearTimeout(editDebounceRef.current);
+                  editStrokesRef.current = [];
+                  setEditStrokes([]);
+                  setEditCurrentPts([]);
+                  setIsEditingEq(false);
+                }}
+              >✕</text>
+            </svg>
+          )}
+        </div>
+      )}
+
       {type === 'ocr-scan' && (
         <div style={{ width: '100%', height: '100%', overflow: 'hidden', borderRadius: 4 }}>
           {imageBase64 && (
@@ -225,6 +426,38 @@ export default function FloatingObjectComponent({
             </div>
           )}
         </div>
+      )}
+
+      {type === 'connector' && svgData && (
+        <svg
+          width="100%" height="100%"
+          viewBox={`0 0 ${dimensions.width} ${dimensions.height}`}
+          style={{ overflow: 'visible', display: 'block' }}
+        >
+          <defs>
+            {object.arrowEnd && (
+              <marker id={`ae-${id}`} viewBox="0 0 10 10" refX="9" refY="5"
+                markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill={object.stroke ?? '#3B82F6'} />
+              </marker>
+            )}
+            {object.arrowStart && (
+              <marker id={`as-${id}`} viewBox="0 0 10 10" refX="1" refY="5"
+                markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 10 0 L 0 5 L 10 10 z" fill={object.stroke ?? '#3B82F6'} />
+              </marker>
+            )}
+          </defs>
+          {/* wide transparent hit area */}
+          <path d={svgData} stroke="transparent" strokeWidth={12} fill="none" />
+          <path d={svgData}
+            stroke={object.stroke ?? '#3B82F6'}
+            strokeWidth={object.strokeWidth ?? 1.5}
+            fill="none" strokeLinecap="round"
+            markerEnd={object.arrowEnd ? `url(#ae-${id})` : undefined}
+            markerStart={object.arrowStart ? `url(#as-${id})` : undefined}
+          />
+        </svg>
       )}
 
       {/* ── Selection UI ── */}
@@ -287,30 +520,71 @@ export default function FloatingObjectComponent({
               />
             </label>
 
-            {/* Fill toggle */}
-            <button
-              onPointerDown={(e) => {
-                e.stopPropagation();
-                const hasFill = object.fill && object.fill !== 'none';
-                const newFill = hasFill
-                  ? 'none'
-                  : (object.stroke?.startsWith('#')
-                      ? object.stroke + '33'
-                      : 'rgba(255,255,255,0.2)');
-                onFillChange(id, newFill);
-              }}
-              style={{
-                padding: '2px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
-                background: object.fill && object.fill !== 'none'
-                  ? 'rgba(59,130,246,0.35)'
-                  : 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: 'rgba(255,255,255,0.85)',
-                flexShrink: 0,
-              }}
-            >
-              {object.fill && object.fill !== 'none' ? 'Relleno' : 'Sin relleno'}
-            </button>
+            {type !== 'equation' && (
+              <button
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  const hasFill = object.fill && object.fill !== 'none';
+                  const newFill = hasFill
+                    ? 'none'
+                    : (object.stroke?.startsWith('#')
+                        ? object.stroke + '33'
+                        : 'rgba(255,255,255,0.2)');
+                  onFillChange(id, newFill);
+                }}
+                style={{
+                  padding: '2px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
+                  background: object.fill && object.fill !== 'none'
+                    ? 'rgba(59,130,246,0.35)'
+                    : 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: 'rgba(255,255,255,0.85)',
+                  flexShrink: 0,
+                }}
+              >
+                {object.fill && object.fill !== 'none' ? 'Relleno' : 'Sin relleno'}
+              </button>
+            )}
+
+            {type === 'equation' && (
+              <input
+                type="text"
+                value={object.latexSource ?? ''}
+                onChange={(e) => onLatexChange?.(id, e.target.value)}
+                onPointerDown={(e) => e.stopPropagation()}
+                placeholder="LaTeX…"
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: 6, color: 'white', fontSize: 11,
+                  padding: '2px 6px', width: 140,
+                  fontFamily: 'monospace', outline: 'none',
+                }}
+              />
+            )}
+
+            {type === 'connector' && (
+              <div style={{ display: 'flex', gap: 4 }}>
+                {([
+                  { label: '—', s: false, e: false },
+                  { label: '→', s: false, e: true },
+                  { label: '←', s: true, e: false },
+                  { label: '↔', s: true, e: true },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.label}
+                    onPointerDown={(ev) => { ev.stopPropagation(); onArrowChange?.(id, opt.s, opt.e); }}
+                    style={{
+                      padding: '2px 6px', borderRadius: 5, fontSize: 13, cursor: 'pointer',
+                      background: object.arrowStart === opt.s && object.arrowEnd === opt.e
+                        ? 'rgba(59,130,246,0.45)' : 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      color: 'rgba(255,255,255,0.9)',
+                    }}
+                  >{opt.label}</button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Delete button */}
@@ -338,8 +612,45 @@ export default function FloatingObjectComponent({
             ✕
           </div>
 
-          {/* Resize handles */}
-          {HANDLES.map(h => (
+          {/* Connection handles (long-press activated) */}
+          {showConnHandles && onConnectStart && CONN_HANDLE_ANCHORS.map(({ handle, cx, cy }) => {
+            const hx = cx(dimensions.width, dimensions.height);
+            const hy = cy(dimensions.width, dimensions.height);
+            const absX = position.x + hx;
+            const absY = position.y + hy;
+            return (
+              <div
+                key={handle}
+                style={{
+                  position: 'absolute',
+                  left: hx - 5, top: hy - 5,
+                  width: 10, height: 10,
+                  borderRadius: '50%',
+                  background: '#3B82F6',
+                  border: '2px solid #fff',
+                  cursor: 'crosshair',
+                  zIndex: 4,
+                  touchAction: 'none',
+                }}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  (e.target as HTMLDivElement).setPointerCapture(e.pointerId);
+                  onConnectStart(id, handle, absX, absY);
+                  setShowConnHandles(false);
+                }}
+                onPointerMove={(e) => { e.stopPropagation(); onConnectMove?.(e.clientX, e.clientY); }}
+                onPointerUp={(e) => {
+                  e.stopPropagation();
+                  (e.target as HTMLDivElement).releasePointerCapture(e.pointerId);
+                  onConnectEnd?.(e.clientX, e.clientY);
+                }}
+                onPointerCancel={(e) => { e.stopPropagation(); onConnectEnd?.(e.clientX, e.clientY); }}
+              />
+            );
+          })}
+
+          {/* Resize handles — not for connectors */}
+          {type !== 'connector' && HANDLES.map(h => (
             <div
               key={h.id}
               style={{
