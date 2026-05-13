@@ -5,6 +5,7 @@ import type { Point } from '../lib/ai/shape-detection';
 import type { DetectedShape } from '../lib/ai/shape-detection';
 import { postCanvasForOcr } from '../services/ocrApi';
 import type { Stroke } from '../components/notes/InkCanvas';
+import type { FloatingObject } from '../types/canvas';
 
 export type AutoStatus = 'idle' | 'processing' | 'success' | 'fail';
 
@@ -95,6 +96,33 @@ function shapeToSvgDataUrl(shape: DetectedShape): { dataUrl: string; cx: number;
   return { dataUrl: `data:image/svg+xml;base64,${btoa(svg)}`, cx, cy };
 }
 
+// ── Shape → normalized SVG path (coords relative to bbox) ────────────────
+
+function shapeToNormalizedSvgPath(shape: DetectedShape, offsetX: number, offsetY: number): string {
+  const n = (v: number) => Math.round((v - offsetX) * 100) / 100;
+  const m = (v: number) => Math.round((v - offsetY) * 100) / 100;
+
+  if (shape.type === 'circle') {
+    const cx = n(shape.cx), cy = m(shape.cy), r = shape.r;
+    // Two-arc full circle
+    return `M ${cx},${cy - r} A ${r},${r} 0 1,0 ${cx},${cy + r} A ${r},${r} 0 1,0 ${cx},${cy - r} Z`;
+  }
+  if (shape.type === 'rectangle') {
+    const x = n(shape.x), y = m(shape.y), w = shape.w, h = shape.h;
+    return `M ${x},${y} H ${x + w} V ${y + h} H ${x} Z`;
+  }
+  if (shape.type === 'triangle') {
+    const p1 = `${n(shape.p1.x)},${m(shape.p1.y)}`;
+    const p2 = `${n(shape.p2.x)},${m(shape.p2.y)}`;
+    const p3 = `${n(shape.p3.x)},${m(shape.p3.y)}`;
+    return `M ${p1} L ${p2} L ${p3} Z`;
+  }
+  if (shape.type === 'line') {
+    return `M ${n(shape.x1)},${m(shape.y1)} L ${n(shape.x2)},${m(shape.y2)}`;
+  }
+  return '';
+}
+
 // ── Insert content at screen position ─────────────────────────────────────
 
 function insertImageAt(editor: any, src: string, svgEl: SVGSVGElement | null, drawCx: number, drawCy: number) {
@@ -125,8 +153,9 @@ function insertTextAt(editor: any, text: string, svgEl: SVGSVGElement | null, dr
 
 export function useAutoBeautify(
   editor: any,
-  inkRef: RefObject<InkCanvasHandle>,
+  inkRef: RefObject<InkCanvasHandle | null>,
   active: boolean,
+  onStrokeObject?: (obj: FloatingObject) => void,
 ) {
   const [status, setStatus] = useState<AutoStatus>('idle');
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -148,12 +177,40 @@ export function useAutoBeautify(
       const pts: Point[] = strokes[0].points.map(p => ({ x: p.x, y: p.y }));
       const shape = detectShape(pts);
       if (shape.type !== 'unknown') {
-        const shaped = shapeToSvgDataUrl(shape);
-        if (shaped) {
-          insertImageAt(editor, shaped.dataUrl, svgEl, shaped.cx, shaped.cy);
-          inkRef.current?.clearStrokes();
-          setStatus('success');
-          setTimeout(() => setStatus('idle'), 1000);
+        if (onStrokeObject) {
+          const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+          const PAD = 12;
+          const minX = Math.min(...xs) - PAD;
+          const minY = Math.min(...ys) - PAD;
+          const w = Math.max(...xs) - Math.min(...xs) + PAD * 2;
+          const h = Math.max(...ys) - Math.min(...ys) + PAD * 2;
+          const svgData = shapeToNormalizedSvgPath(shape, minX, minY);
+          if (svgData) {
+            const shapeObj: FloatingObject = {
+              id: crypto.randomUUID(),
+              type: 'shape',
+              position: { x: minX, y: minY },
+              dimensions: { width: Math.max(w, 40), height: Math.max(h, 40) },
+              svgData,
+              stroke: strokes[0].color,
+              strokeWidth: strokes[0].width,
+              fill: 'none',
+              isSelected: false,
+              rotation: 0,
+            };
+            onStrokeObject(shapeObj);
+            inkRef.current?.clearStrokes();
+            setStatus('success');
+            setTimeout(() => setStatus('idle'), 1000);
+          }
+        } else {
+          const shaped = shapeToSvgDataUrl(shape);
+          if (shaped) {
+            insertImageAt(editor, shaped.dataUrl, svgEl, shaped.cx, shaped.cy);
+            inkRef.current?.clearStrokes();
+            setStatus('success');
+            setTimeout(() => setStatus('idle'), 1000);
+          }
         }
         return;
       }
@@ -181,7 +238,7 @@ export function useAutoBeautify(
       setStatus('fail');
       setTimeout(() => setStatus('idle'), 2000);
     }
-  }, [active, editor, inkRef]);
+  }, [active, editor, inkRef, onStrokeObject]);
 
   const onStrokeFinish = useCallback((strokes: Stroke[]) => {
     if (debounce.current) clearTimeout(debounce.current);

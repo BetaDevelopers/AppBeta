@@ -1,0 +1,88 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e7]: Modo invitado · Tus notas no se guardan en la nube
+    - button "Crear cuenta gratuita" [ref=e8]
+  - banner [ref=e9]:
+    - generic [ref=e10]:
+      - button "Abrir menú" [ref=e11]:
+        - img [ref=e12]
+      - generic [ref=e14] [cursor=pointer]:
+        - generic [ref=e16]: 3M
+        - generic [ref=e17]: BETA 3M
+    - generic [ref=e18]:
+      - button "✨" [ref=e19]:
+        - generic [ref=e20]: ✨
+      - generic [ref=e22] [cursor=pointer]:
+        - generic [ref=e23]: Modo Invitado
+        - generic [ref=e24]: Sin cuenta
+      - button "Iniciar sessió" [ref=e26]:
+        - img [ref=e27]
+  - generic [ref=e29]:
+    - complementary [ref=e30]:
+      - generic [ref=e31]:
+        - generic [ref=e32]: Navegació
+        - button "Colapsar" [ref=e33]:
+          - img [ref=e34]
+      - generic [ref=e36]:
+        - button "Crear nueva nota" [ref=e37]:
+          - generic [ref=e40]:
+            - img [ref=e41]
+            - generic [ref=e43]: Crear nueva nota
+        - button "Todas mis notas" [ref=e45]:
+          - generic [ref=e47]: Todas mis notas
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - generic [ref=e50]: Asignaturas
+            - button "Nueva asignatura" [ref=e51]:
+              - img [ref=e52]
+          - paragraph [ref=e56]: Sin asignaturas
+        - button "Herramientas" [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - text: Herramientas
+          - img [ref=e62]
+      - generic [ref=e65]:
+        - generic [ref=e66]: Beta Access
+        - generic [ref=e67]: v24.4.09
+    - main [ref=e68]:
+      - generic [ref=e69]:
+        - img [ref=e71]
+        - generic [ref=e73]:
+          - heading "Escribe tu primera nota" [level=2] [ref=e74]
+          - paragraph [ref=e75]: Digitaliza tus apuntes con IA y organiza tu conocimiento de forma profesional.
+        - button "Nueva nota inteligente" [ref=e76]:
+          - img [ref=e78]
+          - generic [ref=e80]: Nueva nota inteligente
+        - generic [ref=e81]:
+          - generic [ref=e82]:
+            - generic [ref=e83]: ✨
+            - generic [ref=e84]: IA integrada
+          - generic [ref=e85]:
+            - generic [ref=e86]: 📷
+            - generic [ref=e87]: Escaneo OCR
+          - generic [ref=e88]:
+            - generic [ref=e89]: ∑
+            - generic [ref=e90]: Matemáticas
+    - complementary [ref=e91]:
+      - generic [ref=e92]:
+        - generic [ref=e93]:
+          - generic [ref=e94]:
+            - img [ref=e96]
+            - generic [ref=e98]: Recursos
+          - paragraph [ref=e99]: Archivos adjuntos
+        - generic [ref=e100]:
+          - button "OCR Express" [ref=e101]:
+            - img [ref=e102]
+            - generic [ref=e107]: OCR Express
+            - img [ref=e108]
+          - button "Insertar imagen" [disabled]:
+            - generic:
+              - img
+            - generic: Insertar imagen
+        - generic [ref=e112]:
+          - img [ref=e114]
+          - generic [ref=e117]: Exportar
+        - paragraph [ref=e120]: Abre una nota para exportar
+      - generic [ref=e122]:
+        - generic [ref=e123]: Estado IA
+        - generic [ref=e126]: Listo

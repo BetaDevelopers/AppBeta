@@ -26,6 +26,8 @@ import type { InkCanvasRef } from './InkCanvas';
 import InkToolbar from './InkToolbar';
 import { postCanvasForOcr } from '../../services/ocrApi';
 import { useAutoBeautify } from '../../hooks/useAutoBeautify';
+import FloatingObjectComponent from './FloatingObject';
+import type { FloatingObject } from '../../types/canvas';
 
 
 // ── Definit FORA de NoteEditor per evitar desmuntatge en cada re-render ──
@@ -76,7 +78,12 @@ export const NoteEditor: React.FC = () => {
     const [inkMode, setInkMode] = useState(false);
     const toggleInk = () => setInkMode(prev => !prev);
     const inkCanvasRef = useRef<InkCanvasRef>(null);
-    const { status: autoStatus, onStrokeFinish } = useAutoBeautify(editor, inkCanvasRef, inkMode);
+    // floating objects layer — must be before useAutoBeautify so handleStrokesToObject is stable
+    const [floatingObjects, setFloatingObjects] = useState<FloatingObject[]>([]);
+    const handleStrokesToObject = useCallback((newObj: FloatingObject) => {
+        setFloatingObjects(prev => [...prev, newObj]);
+    }, []);
+    const { status: autoStatus, onStrokeFinish } = useAutoBeautify(editor, inkCanvasRef, inkMode, handleStrokesToObject);
     const [processing, setProcessing] = useState(false);
     // duplicate declarations removed
     const editorAreaRef = useRef<HTMLDivElement>(null);
@@ -421,6 +428,57 @@ export const NoteEditor: React.FC = () => {
     handleSummarizeRef.current = handleSummarize;
     handleSuggestSubjectRef.current = handleSuggestSubject;
 
+    // ── FloatingObject handlers ──────────────────────────────────────────────
+
+    const handleFloatDrag = useCallback((id: string, x: number, y: number) => {
+        setFloatingObjects(prev =>
+            prev.map(o => o.id === id ? { ...o, position: { x, y } } : o)
+        );
+    }, []);
+
+    const handleFloatSelect = useCallback((id: string) => {
+        setFloatingObjects(prev =>
+            prev.map(o => ({ ...o, isSelected: o.id === id }))
+        );
+    }, []);
+
+    const handleFloatDeselect = useCallback(() => {
+        setFloatingObjects(prev =>
+            prev.map(o => ({ ...o, isSelected: false }))
+        );
+    }, []);
+
+    const handleFloatResize = useCallback((id: string, x: number, y: number, width: number, height: number) => {
+        setFloatingObjects(prev =>
+            prev.map(o => o.id === id
+                ? { ...o, position: { x, y }, dimensions: { width, height } }
+                : o
+            )
+        );
+    }, []);
+
+    const handleFloatDelete = useCallback((id: string) => {
+        setFloatingObjects(prev => prev.filter(o => o.id !== id));
+    }, []);
+
+    const handleFloatColorChange = useCallback((id: string, color: string) => {
+        setFloatingObjects(prev =>
+            prev.map(o => o.id === id ? { ...o, stroke: color } : o)
+        );
+    }, []);
+
+    const handleFloatStrokeWidthChange = useCallback((id: string, width: number) => {
+        setFloatingObjects(prev =>
+            prev.map(o => o.id === id ? { ...o, strokeWidth: width } : o)
+        );
+    }, []);
+
+    const handleFloatFillChange = useCallback((id: string, fill: string) => {
+        setFloatingObjects(prev =>
+            prev.map(o => o.id === id ? { ...o, fill } : o)
+        );
+    }, []);
+
     const handleDelete = async () => {
         if (currentNote) {
             await deleteNote(currentNote.id);
@@ -607,27 +665,67 @@ export const NoteEditor: React.FC = () => {
                             placeholder="Sin título..."
                         />
 
-                        <div style={{ position: 'relative' }}>
-                        <RichEditor
-                            content={content}
-                            onChange={setContent}
-                            isTypingAI={isTypingAI}
-                            onEditorReady={setEditor}
-                            onEqualsDetected={(show, pos, resolve) =>
-                                setMathPill({ visible: show, pos, resolve: resolve ?? (() => {}) })
-                            }
-                            inkMode={inkMode}
-                            toggleInk={toggleInk}
-                        />
-                        {inkMode && (
-                            <InkCanvas
-                                ref={inkCanvasRef}
-                                active={inkMode}
-                                strokeWidth={strokeWidth}
-                                onChangeStrokes={onStrokeFinish}
-                                processingStatus={autoStatus}
+                        {/* ── Layer stack ─────────────────────────────── */}
+                        <div
+                            style={{ position: 'relative', width: '100%', minHeight: '100%' }}
+                            onPointerDown={(e) => {
+                                const target = e.target as HTMLElement;
+                                if (
+                                    !target.closest('[data-floating-object]') &&
+                                    !target.closest('.ProseMirror')
+                                ) {
+                                    handleFloatDeselect();
+                                }
+                            }}
+                        >
+                            {/* LAYER 1 — Rich text (base) */}
+                            <RichEditor
+                                content={content}
+                                onChange={setContent}
+                                isTypingAI={isTypingAI}
+                                onEditorReady={setEditor}
+                                onEqualsDetected={(show, pos, resolve) =>
+                                    setMathPill({ visible: show, pos, resolve: resolve ?? (() => {}) })
+                                }
+                                inkMode={inkMode}
+                                toggleInk={toggleInk}
                             />
-                        )}
+
+                            {/* LAYER 2 — Floating objects */}
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    zIndex: 2,
+                                    pointerEvents: 'none',
+                                }}
+                            >
+                                {floatingObjects.map(obj => (
+                                    <FloatingObjectComponent
+                                        key={obj.id}
+                                        object={obj}
+                                        onDrag={handleFloatDrag}
+                                        onSelect={handleFloatSelect}
+                                        onResize={handleFloatResize}
+                                        onDelete={handleFloatDelete}
+                                        onColorChange={handleFloatColorChange}
+                                        onStrokeWidthChange={handleFloatStrokeWidthChange}
+                                        onFillChange={handleFloatFillChange}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* LAYER 3 — Ink canvas (drawing mode only) */}
+                            {inkMode && (
+                                <InkCanvas
+                                    ref={inkCanvasRef}
+                                    active={inkMode}
+                                    strokeWidth={strokeWidth}
+                                    onChangeStrokes={onStrokeFinish}
+                                    onStrokeObject={handleStrokesToObject}
+                                    processingStatus={autoStatus}
+                                />
+                            )}
                         </div>
                         {inkMode && (
                             <>
