@@ -20,7 +20,9 @@ import { useUIStore } from '../../store/uiStore';
 import { useMathOCR, MathRegion } from '@/features/ai/hooks/useMathOCR';
 import { markdownToHtml } from '../../utils/editorUtils';
 import { useSubjectsStore } from '../../store/subjectsStore';
-import { Pencil, Camera, Sparkles, FileText, Sigma, BarChart2, GitBranch, Triangle, Target, Trash2 } from 'lucide-react';
+import { Pencil, Camera, Sparkles, FileText, Sigma, BarChart2, GitBranch, Triangle, Target, Trash2, Undo2, Redo2, Clock } from 'lucide-react';
+import TimelineView from './TimelineView';
+import { useFloatingHistory } from '../../hooks/useHistory';
 import InkCanvas, { Stroke } from './InkCanvas';
 import type { InkCanvasRef } from './InkCanvas';
 import InkToolbar from './InkToolbar';
@@ -243,6 +245,7 @@ export const NoteEditor: React.FC = () => {
         pos: { top: number; left: number } | null;
         resolve: () => void;
     }>({ visible: false, pos: null, resolve: () => {} });
+    const [showTimeline, setShowTimeline] = useState(false);
     // ink mode state
     const [inkMode, setInkMode] = useState(false);
     const toggleInk = () => setInkMode(prev => !prev);
@@ -256,6 +259,10 @@ export const NoteEditor: React.FC = () => {
     const connectingFromRef = useRef<{
         sourceId: string; handle: AnchorHandle; anchorX: number; anchorY: number;
     } | null>(null);
+    // History must be declared before handleStrokesToObject which depends on pushSnapshot
+    const { pushSnapshot, undo, redo, canUndo, canRedo } = useFloatingHistory(
+        floatingObjects, setFloatingObjects, currentNote ? String(currentNote.id) : undefined
+    );
     // ── Lasso ────────────────────────────────────────────────────────────────
     const layerContainerRef = useRef<HTMLDivElement>(null);
     const lassoRef = useRef<{
@@ -267,7 +274,8 @@ export const NoteEditor: React.FC = () => {
     const [lassoPoints, setLassoPoints] = useState<{ x: number; y: number }[]>([]);
     const handleStrokesToObject = useCallback((newObj: FloatingObject) => {
         setFloatingObjects(prev => [...prev, newObj]);
-    }, []);
+        setTimeout(() => pushSnapshot(), 0);
+    }, [pushSnapshot]);
     const { status: autoStatus, onStrokeFinish } = useAutoBeautify(editor, inkCanvasRef, inkMode, handleStrokesToObject);
     const [processing, setProcessing] = useState(false);
     // duplicate declarations removed
@@ -387,6 +395,17 @@ export const NoteEditor: React.FC = () => {
         if (editor) storeSetEditor(editor);
         return () => { storeSetEditor(null); };
     }, [editor]);
+
+    // Undo/redo keyboard shortcuts
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if (!(e.ctrlKey || e.metaKey)) return;
+            if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+            else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [undo, redo]);
 
 
     const handleOCRResult = (
@@ -654,7 +673,8 @@ export const NoteEditor: React.FC = () => {
 
     const handleFloatDragEnd = useCallback(() => {
         setSnapLines([]);
-    }, []);
+        setTimeout(() => pushSnapshot(), 0);
+    }, [pushSnapshot]);
 
     // ── Connector creation handlers ──────────────────────────────────────────
 
@@ -714,11 +734,13 @@ export const NoteEditor: React.FC = () => {
             rotation: 0,
         };
         setFloatingObjects(prev => [...prev, connObj]);
-    }, []);
+        setTimeout(() => pushSnapshot(), 0);
+    }, [pushSnapshot]);
 
     const handleFloatArrowChange = useCallback((id: string, arrowStart: boolean, arrowEnd: boolean) => {
         setFloatingObjects(prev => prev.map(o => o.id === id ? { ...o, arrowStart, arrowEnd } : o));
-    }, []);
+        setTimeout(() => pushSnapshot(), 0);
+    }, [pushSnapshot]);
 
     const handleFloatSelect = useCallback((id: string) => {
         setFloatingObjects(prev =>
@@ -743,29 +765,28 @@ export const NoteEditor: React.FC = () => {
 
     const handleFloatDelete = useCallback((id: string) => {
         setFloatingObjects(prev => prev.filter(o => o.id !== id));
-    }, []);
+        setTimeout(() => pushSnapshot(), 0);
+    }, [pushSnapshot]);
 
     const handleFloatColorChange = useCallback((id: string, color: string) => {
-        setFloatingObjects(prev =>
-            prev.map(o => o.id === id ? { ...o, stroke: color } : o)
-        );
-    }, []);
+        setFloatingObjects(prev => prev.map(o => o.id === id ? { ...o, stroke: color } : o));
+        setTimeout(() => pushSnapshot(), 0);
+    }, [pushSnapshot]);
 
     const handleFloatStrokeWidthChange = useCallback((id: string, width: number) => {
-        setFloatingObjects(prev =>
-            prev.map(o => o.id === id ? { ...o, strokeWidth: width } : o)
-        );
-    }, []);
+        setFloatingObjects(prev => prev.map(o => o.id === id ? { ...o, strokeWidth: width } : o));
+        setTimeout(() => pushSnapshot(), 0);
+    }, [pushSnapshot]);
 
     const handleFloatFillChange = useCallback((id: string, fill: string) => {
-        setFloatingObjects(prev =>
-            prev.map(o => o.id === id ? { ...o, fill } : o)
-        );
-    }, []);
+        setFloatingObjects(prev => prev.map(o => o.id === id ? { ...o, fill } : o));
+        setTimeout(() => pushSnapshot(), 0);
+    }, [pushSnapshot]);
 
     const handleGroupDelete = useCallback(() => {
         setFloatingObjects(prev => prev.filter(o => !o.isSelected));
-    }, []);
+        setTimeout(() => pushSnapshot(), 0);
+    }, [pushSnapshot]);
 
     // ── Lasso handlers ───────────────────────────────────────────────────────
 
@@ -818,10 +839,9 @@ export const NoteEditor: React.FC = () => {
     }, [editor]);
 
     const handleFloatLatexChange = useCallback((id: string, latex: string) => {
-        setFloatingObjects(prev =>
-            prev.map(o => o.id === id ? { ...o, latexSource: latex } : o)
-        );
-    }, []);
+        setFloatingObjects(prev => prev.map(o => o.id === id ? { ...o, latexSource: latex } : o));
+        setTimeout(() => pushSnapshot(), 0);
+    }, [pushSnapshot]);
 
     const handleDelete = async () => {
         if (currentNote) {
@@ -933,6 +953,28 @@ export const NoteEditor: React.FC = () => {
                     <ToolBtn onClick={() => setInkMode(!inkMode)} title="Modo Dibujo Inteligente" accent={inkMode}>
                         <Pencil size={22} />
                         <span className="text-[10px] uppercase tracking-tighter font-black">Lápiz</span>
+                    </ToolBtn>
+
+                    <div className="flex gap-1 w-full">
+                        <button
+                            onClick={undo} disabled={!canUndo}
+                            title="Deshacer (Ctrl+Z)"
+                            className="flex-1 flex items-center justify-center py-1.5 rounded-[10px] bg-white/[0.04] border border-white/5 text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 disabled:opacity-25 transition-all active:scale-95"
+                        >
+                            <Undo2 size={16} />
+                        </button>
+                        <button
+                            onClick={redo} disabled={!canRedo}
+                            title="Rehacer (Ctrl+Y)"
+                            className="flex-1 flex items-center justify-center py-1.5 rounded-[10px] bg-white/[0.04] border border-white/5 text-slate-400 hover:bg-white/[0.08] hover:text-slate-200 disabled:opacity-25 transition-all active:scale-95"
+                        >
+                            <Redo2 size={16} />
+                        </button>
+                    </div>
+
+                    <ToolBtn onClick={() => setShowTimeline(v => !v)} title="Vista cronológica" accent={showTimeline}>
+                        <Clock size={20} />
+                        <span className="text-[10px] uppercase tracking-tighter font-black">Timeline</span>
                     </ToolBtn>
 
                     <ToolBtn onClick={() => handleOpenTool('smartCamera')} title="Escaneo Rápido">
@@ -1057,6 +1099,8 @@ export const NoteEditor: React.FC = () => {
                                         onStrokeWidthChange={handleFloatStrokeWidthChange}
                                         onFillChange={handleFloatFillChange}
                                         onLatexChange={handleFloatLatexChange}
+                                        onResizeEnd={() => setTimeout(() => pushSnapshot(), 0)}
+                                        noteContext={editor?.getText?.().substring(0, 300)}
                                         onConnectStart={!inkMode ? handleFloatConnectStart : undefined}
                                         onConnectMove={handleFloatConnectMove}
                                         onConnectEnd={handleFloatConnectEnd}
@@ -1123,6 +1167,16 @@ export const NoteEditor: React.FC = () => {
                                 >
                                     <Trash2 size={12} color="#fff" />
                                 </div>
+                            )}
+
+                            {/* Timeline overlay */}
+                            {showTimeline && (
+                                <TimelineView
+                                    floatingObjects={floatingObjects}
+                                    tiptapText={editor?.getText?.() ?? content.replace(/<[^>]*>/g, ' ')}
+                                    onClose={() => setShowTimeline(false)}
+                                    onObjectMove={handleFloatDrag}
+                                />
                             )}
 
                             {/* LAYER 3 — Ink canvas (drawing mode only) */}

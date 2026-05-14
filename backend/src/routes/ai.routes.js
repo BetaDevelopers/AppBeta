@@ -2,6 +2,8 @@ const router = require('express').Router();
 const { verifyToken }      = require('../middleware/auth');
 const ai                   = require('../controllers/ai.controller');
 const { ocrFromImage }     = require('../controllers/ocr.controller');
+const { askObject }        = require('../controllers/ask-object.controller');
+const { completeSketch }   = require('../controllers/complete-sketch.controller');
 const {
   mathOCR,
   segmentMathOCR,
@@ -15,6 +17,7 @@ const {
   createTableAssist,
 } = require('../controllers/math.controller');
 const { checkPlanLimits }  = require('../middleware/checkPlanLimits');
+const { aiLimiter }        = require('../middleware/rateLimiters');
 const { validateBody }     = require('../middleware/validate');
 
 const TEXT_RULE      = { type: 'string', required: true, maxLength: 50000 };
@@ -89,6 +92,23 @@ router.post('/calibrate',
 router.post('/table-assist',
   validateBody({ instruction: { type: 'string', required: true, maxLength: 50000 } }),
   createTableAssist
+);
+
+router.post('/ask-object',
+  aiLimiter,
+  validateBody({
+    objectData:  { type: 'string', maxLength: 5000 },
+    objectType:  { type: 'string', required: true, maxLength: 50 },
+    noteContext:  { type: 'string', maxLength: 1000 },
+  }),
+  askObject
+);
+
+router.post('/complete-sketch',
+  verifyToken,
+  aiLimiter,
+  validateBody({ partialPath: { type: 'string', required: true, maxLength: 2000 } }),
+  completeSketch
 );
 
 module.exports = router;

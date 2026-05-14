@@ -22,6 +22,8 @@ interface FloatingObjectProps {
   onConnectMove?: (clientX: number, clientY: number) => void;
   onConnectEnd?: (clientX: number, clientY: number) => void;
   onArrowChange?: (id: string, arrowStart: boolean, arrowEnd: boolean) => void;
+  onResizeEnd?: (id: string) => void;
+  noteContext?: string;
 }
 
 const STROKE_COLORS = ['#FFFFFF', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#000000'];
@@ -67,8 +69,66 @@ export default function FloatingObjectComponent({
   onConnectMove,
   onConnectEnd,
   onArrowChange,
+  onResizeEnd,
+  noteContext,
 }: FloatingObjectProps) {
   const { id, position, dimensions, isSelected, svgData, imageBase64, ocrText, type } = object;
+
+  // ── AI answer bubble ──────────────────────────────────────────────────────
+  const [answerBubble, setAnswerBubble] = useState<string | null>(null);
+  const [isAskingAI, setIsAskingAI] = useState(false);
+  const [displayedText, setDisplayedText] = useState('');
+  const typewriterRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!answerBubble) { setDisplayedText(''); return; }
+    let i = 0;
+    setDisplayedText('');
+    if (typewriterRef.current) clearInterval(typewriterRef.current);
+    typewriterRef.current = setInterval(() => {
+      i++;
+      setDisplayedText(answerBubble.slice(0, i));
+      if (i >= answerBubble.length && typewriterRef.current) {
+        clearInterval(typewriterRef.current);
+      }
+    }, 20);
+    return () => { if (typewriterRef.current) clearInterval(typewriterRef.current); };
+  }, [answerBubble]);
+
+  useEffect(() => {
+    if (!isSelected) { setAnswerBubble(null); setIsAskingAI(false); }
+  }, [isSelected]);
+
+  const handleAskAI = async () => {
+    const apiUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+    const token = localStorage.getItem('beta3m_token');
+    const objectDataMap: Record<string, string> = {
+      stroke: object.svgData ?? '',
+      shape: object.svgData ?? '',
+      equation: object.latexSource ?? '',
+      'ocr-scan': object.ocrText ?? '',
+      connector: 'connector',
+      image: '',
+    };
+    const objectData = objectDataMap[type] ?? '';
+    setIsAskingAI(true);
+    setAnswerBubble(null);
+    try {
+      const res = await fetch(`${apiUrl}/ai/ask-object`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token || ''}`,
+        },
+        body: JSON.stringify({ objectData, objectType: type, noteContext }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAnswerBubble(data.answer ?? '');
+      }
+    } catch { /* silently ignore */ }
+    setIsAskingAI(false);
+  };
 
   // ── Connection handles ────────────────────────────────────────────────────
   const [showConnHandles, setShowConnHandles] = useState(false);
@@ -294,7 +354,8 @@ export default function FloatingObjectComponent({
   const onHandlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
     resizeRef.current = null;
-  }, []);
+    onResizeEnd?.(id);
+  }, [id, onResizeEnd]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -611,6 +672,66 @@ export default function FloatingObjectComponent({
           >
             ✕
           </div>
+
+          {/* Ask AI button */}
+          <div
+            style={{
+              position: 'absolute',
+              top: -24,
+              right: 26,
+              width: 20,
+              height: 20,
+              borderRadius: '50%',
+              background: isAskingAI ? 'rgba(59,130,246,0.6)' : 'rgba(59,130,246,0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 2,
+              fontSize: 12,
+              color: '#fff',
+              fontWeight: 700,
+              lineHeight: 1,
+            }}
+            onPointerDown={(e) => { e.stopPropagation(); if (!isAskingAI) handleAskAI(); }}
+          >
+            {isAskingAI ? '…' : '?'}
+          </div>
+
+          {/* AI answer bubble */}
+          {answerBubble !== null && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 'calc(100% + 8px)',
+                left: 0,
+                maxWidth: 280,
+                minWidth: 180,
+                background: 'rgba(15,15,20,0.95)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 10,
+                padding: 12,
+                fontSize: 12,
+                lineHeight: 1.6,
+                color: 'rgba(255,255,255,0.9)',
+                zIndex: 10,
+                pointerEvents: 'auto',
+                whiteSpace: 'pre-wrap',
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              {displayedText}
+              <div
+                style={{
+                  position: 'absolute', top: 6, right: 8,
+                  cursor: 'pointer', fontSize: 11,
+                  color: 'rgba(255,255,255,0.4)',
+                  lineHeight: 1,
+                }}
+                onPointerDown={(e) => { e.stopPropagation(); setAnswerBubble(null); }}
+              >✕</div>
+            </div>
+          )}
 
           {/* Connection handles (long-press activated) */}
           {showConnHandles && onConnectStart && CONN_HANDLE_ANCHORS.map(({ handle, cx, cy }) => {

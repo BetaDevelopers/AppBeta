@@ -107,4 +107,24 @@ async function chatWithHistory(systemPrompt, messages) {
   return data.choices[0].message.content.trim();
 }
 
-module.exports = { improveText, summarizeText, suggestSubject, chatWithHistory };
+async function completeSketchPath(partialPath) {
+  return callOpenAI(
+    'You are an SVG path completion assistant. Return ONLY the SVG path d-attribute value, no other text.',
+    `Complete this SVG path to form a recognizable shape. Return ONLY the 'd' attribute value of the completion path, no other text, no quotes.\nPartial path: ${partialPath.substring(0, 300)}`
+  );
+}
+
+async function askAboutObject(objectData, objectType, noteContext) {
+  return callOpenAI(
+    'Eres un asistente de notas inteligente que ayuda a los estudiantes a entender el contenido de sus apuntes.',
+    `Tipo de objeto: ${objectType}.
+Datos del objeto: ${(objectData ?? '').substring(0, 500)}.
+Contexto de la nota (primeras 300 palabras): ${(noteContext ?? '').substring(0, 300)}.
+
+Describe brevemente qué es este objeto y cómo se relaciona con la nota.
+Responde en el mismo idioma que el contexto de la nota.
+Máximo 3 frases.`
+  );
+}
+
+module.exports = { improveText, summarizeText, suggestSubject, chatWithHistory, askAboutObject, completeSketchPath };

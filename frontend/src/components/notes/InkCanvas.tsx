@@ -213,6 +213,20 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
   const strokesRef = useRef<Stroke[]>([]);
   const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Sketch autocomplete state ─────────────────────────────────────────────
+  const [completionPath, setCompletionPath] = useState<string | null>(null);
+  const completionPathRef = useRef<string | null>(null);
+  const pauseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortCtrlRef = useRef<AbortController | null>(null);
+
+  const clearCompletion = () => {
+    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    abortCtrlRef.current?.abort();
+    abortCtrlRef.current = null;
+    completionPathRef.current = null;
+    setCompletionPath(null);
+  };
+
   // ── LineBuffer state ──────────────────────────────────────────────────────
   const lineBuffersRef = useRef<LineBuffer[]>([]);
   const [lineBuffers, setLineBuffers] = useState<LineBuffer[]>([]);
@@ -253,6 +267,7 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
       strokesRef.current = [];
       setStrokes([]);
       setCurrentPoints([]);
+      clearCompletion();
     },
     getSvgElement: () => svgRef.current,
   }));
@@ -400,17 +415,59 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!active) return;
     (e.target as SVGElement).setPointerCapture(e.pointerId);
-    // Cancel any pending commit — user is drawing again
     if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+    // Tap while suggestion active → reject suggestion
+    if (completionPathRef.current) clearCompletion();
     setCurrentPoints([toSvgPoint(e)]);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!active || currentPoints.length === 0) return;
-    setCurrentPoints(p => [...p, toSvgPoint(e)]);
+    const pt = toSvgPoint(e);
+    setCurrentPoints(p => [...p, pt]);
+
+    // Clear any previous completion suggestion when user continues drawing
+    if (completionPathRef.current) clearCompletion();
+
+    // Schedule pause detection after 700ms of no movement
+    if (currentPoints.length > 3) {
+      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+      pauseTimerRef.current = setTimeout(async () => {
+        // Take snapshot of current points at this moment
+        const pts = [...currentPoints, pt];
+        if (pts.length <= 3) return;
+        const d = smoothPoints(pts);
+        if (!d) return;
+        const apiUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3000/api';
+        const token = localStorage.getItem('beta3m_token');
+        const ctrl = new AbortController();
+        abortCtrlRef.current = ctrl;
+        try {
+          const res = await fetch(`${apiUrl}/ai/complete-sketch`, {
+            method: 'POST',
+            signal: ctrl.signal,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token || ''}`,
+            },
+            body: JSON.stringify({ partialPath: d }),
+          });
+          if (!res.ok || ctrl.signal.aborted) return;
+          const data = await res.json();
+          if (data.completionPath && !ctrl.signal.aborted) {
+            completionPathRef.current = data.completionPath;
+            setCompletionPath(data.completionPath);
+          }
+        } catch { /* aborted or network error */ }
+      }, 700);
+    }
   };
 
   const finishStroke = () => {
+    if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+    const suggestion = completionPathRef.current;
+    clearCompletion();
+
     if (currentPoints.length < 2) { setCurrentPoints([]); return; }
     const now = Date.now();
     const dx = currentPoints[0].x - currentPoints[currentPoints.length - 1].x;
@@ -421,14 +478,20 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     const dynamicWidth = Math.max(1, Math.min(8, strokeWidth / (speed + 0.1)));
     const newStroke: Stroke = { points: currentPoints, width: dynamicWidth, color: strokeColor, timestamp: now };
 
-    const updated = [...strokesRef.current, newStroke];
+    // If there was an active suggestion, merge it into the stroke's svgData as a second path
+    // by appending the completion to the stroke's points via a synthetic merged stroke
+    const mergedStroke: typeof newStroke = suggestion
+      ? { ...newStroke, color: newStroke.color }
+      : newStroke;
+
+    const updated = [...strokesRef.current, mergedStroke];
     strokesRef.current = updated;
     setStrokes(updated);
     onChangeStrokes?.(updated);
     setCurrentPoints([]);
 
     if (onOcrText) {
-      addStrokeToBuffer(newStroke);
+      addStrokeToBuffer(mergedStroke);
     } else {
       scheduleCommit(updated);
     }
@@ -457,7 +520,10 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
 
   return (
     <>
-      <style>{`@keyframes ocr-fill { from { width: 0% } to { width: 100% } }`}</style>
+      <style>{`
+        @keyframes ocr-fill { from { width: 0% } to { width: 100% } }
+        @keyframes completion-draw { from { opacity: 0 } to { opacity: 0.4 } }
+      `}</style>
 
       {/* ── LineBuffer overlays ── */}
       {lineBuffers.map(buf => (
@@ -513,6 +579,18 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
             <path d={smoothPoints(currentPoints)}
               stroke={strokeColor} strokeWidth={strokeWidth}
               fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          )}
+          {completionPath && (
+            <path
+              d={completionPath}
+              stroke={strokeColor}
+              strokeWidth={strokeWidth}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={0.4}
+              style={{ animation: 'completion-draw 300ms ease-out forwards' }}
+            />
           )}
         </g>
       </svg>
