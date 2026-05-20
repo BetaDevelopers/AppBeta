@@ -10,6 +10,8 @@ import {
     Calculator,
     Languages,
     Wand2,
+    MessageSquare,
+    Highlighter,
 } from 'lucide-react';
 import { mathFix } from '../../api/mathApi';
 import { apiClient } from '../../api/client';
@@ -39,6 +41,16 @@ interface ColorDotProps {
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
+
+const HIGHLIGHT_COLORS = [
+    { label: 'Quitar',   value: '' },
+    { label: 'Amarillo', value: '#FEF08A' },
+    { label: 'Verde',    value: '#86EFAC' },
+    { label: 'Azul',     value: '#93C5FD' },
+    { label: 'Rosa',     value: '#FDA4AF' },
+    { label: 'Naranja',  value: '#FCD34D' },
+    { label: 'Morado',   value: '#C4B5FD' },
+];
 
 const TEXT_COLORS = [
     { label: 'Default',  value: '#E2E8F0' },
@@ -80,7 +92,7 @@ function ActionBtn({ icon: Icon, label, onClick, danger = false, loading = false
                     ? 'hover:bg-red-500/15 text-red-400'
                     : active
                     ? 'bg-blue-500/20 text-blue-300'
-                    : 'hover:bg-white/8 text-slate-300'
+                    : 'hover:bg-[#1a1a1a] text-[#e4e4e4]'
                 }`}
         >
             {loading ? (
@@ -133,7 +145,7 @@ function Divider() {
     return (
         <div
             className="my-1 mx-1"
-            style={{ height: '1px', background: 'rgba(255,255,255,0.08)' }}
+            style={{ height: '1px', background: '#1a1a1a' }}
         />
     );
 }
@@ -150,7 +162,7 @@ function TranslateDropdown({ onSelect, style }: TranslateDropdownProps) {
         <div className="absolute top-full left-0 mt-2 z-[300] rounded-xl overflow-hidden py-1" style={style}>
             {LANGUAGES.map(lang => (
                 <button key={lang.code} onClick={() => onSelect(lang.code)}
-                    className="w-full text-left px-3 py-2.5 text-[13px] text-slate-300 hover:bg-white/[0.06] hover:text-white transition-colors flex items-center gap-2">
+                    className="w-full text-left px-3 py-2.5 text-[13px] text-[#e4e4e4] hover:bg-[#1a1a1a] hover:text-white transition-colors flex items-center gap-2">
                     <span>{lang.flag}</span>
                     <span>{lang.label}</span>
                 </button>
@@ -261,6 +273,36 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
         }
     };
 
+    const handleHighlight = (color: string) => {
+        if (!color) {
+            editor.chain().focus().unsetHighlight().run();
+        } else {
+            editor.chain().focus().setHighlight({ color }).run();
+        }
+    };
+
+    const handleExplain = async () => {
+        const text = getSelectedText();
+        if (!text) return;
+        setLoadingAction('explain');
+        try {
+            const res = await apiClient.post<{ reply: string }>('/ai/chat', {
+                messages: [{
+                    role: 'user',
+                    content: `Explica brevemente este fragmento en 2-3 oraciones claras, como si se lo explicaras a un estudiante:\n\n"${text}"`,
+                }],
+            });
+            if (res.reply) {
+                const { to } = editor.state.selection;
+                editor.chain().focus().insertContentAt(to, `<p><em>${res.reply}</em></p>`).run();
+            }
+        } catch (err) {
+            console.error('Explicar error:', err);
+        } finally {
+            setLoadingAction(null);
+        }
+    };
+
     const handleEnderezar = async () => {
         const text = getSelectedText();
         if (!text) return;
@@ -280,21 +322,21 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
     // ── Container style ───────────────────────────────────────────────────────
 
     const containerStyle: React.CSSProperties = {
-        background: 'rgba(15, 15, 30, 0.96)',
+        background: '#0d0d0d',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
-        border: '1px solid rgba(255,255,255,0.1)',
-        borderRadius: '16px',
+        border: '1px solid #1a1a1a',
+        borderRadius: '12px',
         padding: '6px',
         boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.4)',
         minWidth: '260px',
     };
 
     const dropdownContainerStyle: React.CSSProperties = {
-        background: 'rgba(15, 15, 30, 0.96)',
+        background: '#0d0d0d',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
-        border: '1px solid rgba(255,255,255,0.1)',
+        border: '1px solid #1a1a1a',
         boxShadow: '0 16px 48px rgba(0,0,0,0.6), 0 4px 16px rgba(0,0,0,0.4)',
     };
 
@@ -335,6 +377,12 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
                         label="Resolver"
                         onClick={handleResolve}
                     />
+                    <ActionBtn
+                        icon={MessageSquare}
+                        label="Explicar"
+                        onClick={handleExplain}
+                        loading={loadingAction === 'explain'}
+                    />
                     <div className="relative">
                         <ActionBtn
                             icon={Languages}
@@ -355,7 +403,31 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
 
                 <Divider />
 
-                {/* ROW 3: Color picker */}
+                {/* ROW 3: Highlight colors */}
+                <div className="flex items-center gap-1.5 px-3 py-1">
+                    <Highlighter size={13} className="text-[#555] flex-shrink-0" />
+                    {HIGHLIGHT_COLORS.map((c) => (
+                        c.value === '' ? (
+                            <button key="none" onClick={() => handleHighlight('')}
+                                title="Quitar resaltado"
+                                className="w-5 h-5 rounded-full border border-[#444] flex items-center justify-center text-[#555] hover:text-white hover:border-white/60 transition-all text-[10px]">
+                                ✕
+                            </button>
+                        ) : (
+                            <ColorDot
+                                key={c.value}
+                                color={c.value}
+                                label={c.label}
+                                active={editor.isActive('highlight', { color: c.value })}
+                                onClick={() => handleHighlight(c.value)}
+                            />
+                        )
+                    ))}
+                </div>
+
+                <Divider />
+
+                {/* ROW 4: Text color picker */}
                 <div className="flex items-center gap-2 px-3 py-1.5">
                     {TEXT_COLORS.map((c) => (
                         <ColorDot

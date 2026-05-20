@@ -3,6 +3,7 @@ import { useNotesStore } from '../../store/notesStore';
 import { useSubjectsStore } from '../../store/subjectsStore';
 import { useAuthStore } from '../../store/authStore';
 import { BASE_URL } from '../../api/client';
+import { Clipboard, Brain, Search, Pencil, MessageSquare, BookOpen, Check, AlertTriangle } from 'lucide-react';
 
 // ── Tipus ────────────────────────────────────────────────────
 type ContextScope = 'current' | 'subject' | 'all';
@@ -20,10 +21,10 @@ interface ChatWidgetProps {
 
 // ── Accions ràpides ──────────────────────────────────────────
 const QUICK_ACTIONS = [
-    { icon: '📋', label: 'Resum',      prompt: 'Fes-me un resum estructurat d\'aquesta nota.' },
-    { icon: '🧠', label: 'Preguntes',  prompt: 'Genera 5 preguntes d\'examen sobre aquest contingut amb les respostes.' },
-    { icon: '🔍', label: 'Explica',    prompt: 'Explica els conceptes principals d\'aquesta nota de forma clara.' },
-    { icon: '✏',  label: 'Millora',    prompt: 'Suggereix com millorar l\'estructura i la claredat d\'aquesta nota.' },
+    { icon: <Clipboard size={14}/>, label: 'Resum',      prompt: 'Fes-me un resum estructurat d\'aquesta nota.' },
+    { icon: <Brain size={14}/>,     label: 'Preguntes',  prompt: 'Genera 5 preguntes d\'examen sobre aquest contingut amb les respostes.' },
+    { icon: <Search size={14}/>,    label: 'Explica',    prompt: 'Explica els conceptes principals d\'aquesta nota de forma clara.' },
+    { icon: <Pencil size={14}/>,    label: 'Millora',    prompt: 'Suggereix com millorar l\'estructura i la claredat d\'aquesta nota.' },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -226,7 +227,7 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
             {/* ── Header ── */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#0a0f1e] flex-shrink-0">
                 <div className="flex items-center gap-2">
-                    <span className="text-base">💬</span>
+                    <MessageSquare size={14}/>
                     <span className="text-sm font-semibold text-white">Assistent IA</span>
                     {loading && (
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -263,7 +264,7 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
                 >
                     {scopeOptions.map(o => (
                         <option key={o.value} value={o.value} className="bg-[#0d1322] text-slate-200">
-                            📚 Context: {o.label}
+                            Context: {o.label}
                         </option>
                     ))}
                 </select>
@@ -301,9 +302,9 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
                                     title="Copiar resposta"
                                 >
                                     {copiedId === msg.id ? (
-                                        <><span>✓</span><span>Copiat</span></>
+                                        <><Check size={14}/><span>Copiat</span></>
                                     ) : (
-                                        <><span>📋</span><span>Copiar</span></>
+                                        <><Clipboard size={14}/><span>Copiar</span></>
                                     )}
                                 </button>
                             )}
@@ -330,8 +331,8 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
 
                 {/* Error */}
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2 text-[11px] text-red-300">
-                        ⚠ {error}
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2 text-[11px] text-red-300 flex items-center gap-1">
+                        <AlertTriangle size={14}/> {error}
                     </div>
                 )}
 

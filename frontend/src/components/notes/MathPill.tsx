@@ -1,4 +1,5 @@
 import React from 'react';
+import { Zap } from 'lucide-react';
 
 interface MathPillProps {
     visible: boolean;
@@ -37,7 +38,7 @@ export default function MathPill({ visible, position, onResolve }: MathPillProps
                 letterSpacing: '0.02em',
             }}
         >
-            <span style={{ fontSize: 15 }}>⚡</span>
+            <Zap size={14} />
             <span>Resolver</span>
         </div>
     );

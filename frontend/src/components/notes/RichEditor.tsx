@@ -44,7 +44,7 @@ function BubbleBtn({ onClick, active, children, title }: any) {
             className={`px-3 py-1.5 rounded-xl transition-all duration-150 flex items-center justify-center min-w-[36px] active:scale-[0.92]
         ${active
                     ? 'bg-blue-600 text-white shadow-[0_0_10px_rgba(59,130,246,0.4)] scale-105'
-                    : 'text-slate-500 hover:text-white hover:bg-white/5'
+                    : 'text-[#555] hover:text-white hover:bg-[#111]'
                 }`}
         >
             {children}
@@ -89,7 +89,7 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
         },
         editorProps: {
             attributes: {
-                class: `tiptap focus:outline-none py-10 px-0 min-h-[600px] w-full text-slate-200 leading-relaxed text-lg ${isTypingAI ? 'ai-typing' : ''}`,
+                class: `tiptap focus:outline-none py-10 px-0 min-h-[600px] w-full text-[#e4e4e4] leading-relaxed text-lg ${isTypingAI ? 'ai-typing' : ''}`,
             },
         },
     });
@@ -159,8 +159,8 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
 
     return (
         <div className="flex-1 w-full max-w-4xl mx-auto flex flex-col">
-            {/* Toolbar Permanent — Super Sleek */}
-            <div className="flex items-center gap-1.5 glass border border-white/5 px-3 py-2.5 mb-10 sticky top-[80px] z-[90] backdrop-blur-3xl rounded-2xl shadow-xl">
+            {/* Toolbar Permanent — oculta en modo lápiz para no interferir con el stylus */}
+            <div className={`flex items-center gap-1.5 glass border border-[#111] px-3 py-2.5 mb-10 sticky top-[80px] z-[90] backdrop-blur-3xl rounded-xl shadow-xl transition-all duration-200 ${inkMode ? 'opacity-0 pointer-events-none select-none' : 'opacity-100'}`}>
                 <div className="flex items-center gap-1 px-1">
                     <BubbleBtn onClick={() => editor.chain().focus().toggleBold().run()}
                         active={editor.isActive('bold')} title="Negrita"><Bold size={14} /></BubbleBtn>
@@ -169,18 +169,18 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
                     <BubbleBtn onClick={() => editor.chain().focus().toggleUnderline().run()}
                         active={editor.isActive('underline')} title="Subrayado"><UnderlineIcon size={14} /></BubbleBtn>
                 </div>
-                <div className="w-px h-5 bg-white/[0.12] mx-1.5" />
+                <div className="w-px h-5 bg-[#1a1a1a] mx-1.5" />
                 {/* Pencil button */}
                 <div className="flex items-center gap-1 px-1">
                     <button
                         onClick={toggleInk}
                         title="Modo Lápiz"
-                        className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${inkMode ? 'bg-purple-600 text-white' : 'bg-white/5 text-slate-500 hover:bg-white/10'} `}
+                        className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${inkMode ? 'bg-purple-600 text-white' : 'bg-[#111] text-[#555] hover:bg-white/10'} `}
                     >
                         <Pencil size={16} />
                     </button>
                 </div>
-                <div className="w-px h-5 bg-white/[0.12] mx-1.5" />
+                <div className="w-px h-5 bg-[#1a1a1a] mx-1.5" />
 
                 <div className="flex items-center gap-1">
                     <BubbleBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
@@ -191,7 +191,7 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
                         active={editor.isActive('heading', { level: 3 })} title="Título 3"><Heading3 size={14} /></BubbleBtn>
                 </div>
 
-                <div className="w-px h-5 bg-white/[0.12] mx-1.5" />
+                <div className="w-px h-5 bg-[#1a1a1a] mx-1.5" />
 
                 <div className="flex items-center gap-1">
                     <BubbleBtn onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -204,7 +204,7 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
                     </BubbleBtn>
                 </div>
 
-                <div className="w-px h-5 bg-white/[0.12] mx-1.5" />
+                <div className="w-px h-5 bg-[#1a1a1a] mx-1.5" />
 
                 <div className="flex items-center gap-1">
                     <BubbleBtn onClick={() => editor.chain().focus().setTextAlign('left').run()}

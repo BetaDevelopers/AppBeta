@@ -2,7 +2,7 @@ import React, { useRef, useState, useCallback, forwardRef, useImperativeHandle, 
 import { smoothPoints } from './utils/strokeUtils';
 import type { AutoStatus } from '../../hooks/useAutoBeautify';
 import type { FloatingObject } from '../../types/canvas';
-import { postCanvasForOcr } from '../../services/ocrApi';
+import { postCanvasForOcr, fixHandwritingText } from '../../services/ocrApi';
 
 export interface Point {
   x: number;
@@ -103,23 +103,44 @@ function renderBufferToCanvas(strokes: Stroke[], padding = 20): {
 }
 
 function looksLikeMath(strokes: Stroke[]): boolean {
-  if (strokes.length < 2) return false;
+  if (strokes.length === 0) return false;
+
+  const allPts = strokes.flatMap(s => s.points);
+  const xs = allPts.map(p => p.x), ys = allPts.map(p => p.y);
+  const totalW = Math.max(...xs) - Math.min(...xs) + 0.1;
+  const totalH = Math.max(...ys) - Math.min(...ys) + 0.1;
+
   let horizontalCount = 0;
+  let smallCircleCount = 0;
+  let verticalCount = 0;
+
   for (const s of strokes) {
     const sxs = s.points.map(p => p.x);
     const sys = s.points.map(p => p.y);
     const sw = Math.max(...sxs) - Math.min(...sxs);
     const sh = Math.max(...sys) - Math.min(...sys) + 0.1;
-    if (sw / sh > 6 && sh < 15) horizontalCount++;
+    const aspect = sw / sh;
+
+    if (aspect > 5 && sh < 20) horizontalCount++;
+    if (aspect > 0.5 && aspect < 2 && sw < totalW * 0.3 && sh < totalH * 0.5) smallCircleCount++;
+    if (aspect < 0.3 && sh > 20) verticalCount++;
   }
+
   if (horizontalCount >= 2) return true;
-  if (strokes.length >= 3) {
-    const allPts = strokes.flatMap(s => s.points);
-    const xs = allPts.map(p => p.x), ys = allPts.map(p => p.y);
-    const tw = Math.max(...xs) - Math.min(...xs) + 0.1;
-    const th = Math.max(...ys) - Math.min(...ys);
-    if (th / tw > 1.2) return true;
+  if (strokes.length >= 4 && smallCircleCount >= 2) return true;
+  if (totalH / totalW > 1.5 && strokes.length >= 3) return true;
+
+  if (strokes.length === 1) {
+    const pts = strokes[0].points;
+    let equalSignPattern = 0;
+    for (let i = 5; i < pts.length - 5; i++) {
+      const dy = Math.abs(pts[i].y - pts[i - 5].y);
+      const dx = Math.abs(pts[i].x - pts[i - 5].x);
+      if (dx > dy * 3) equalSignPattern++;
+    }
+    if (equalSignPattern > pts.length * 0.6) return true;
   }
+
   return false;
 }
 
@@ -358,7 +379,9 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
         setInternalStatus('success');
         setTimeout(() => setInternalStatus('idle'), 1000);
       } else if (result?.content?.trim() && onOcrTextRef.current) {
-        onOcrTextRef.current(result.content.trim() + ' ', rendered.cx, rendered.cy);
+        const raw = result.content.trim();
+        const fixed = await fixHandwritingText(raw);
+        onOcrTextRef.current(fixed + ' ', rendered.cx, rendered.cy);
         setInternalStatus('success');
         setTimeout(() => setInternalStatus('idle'), 1000);
       } else {
@@ -391,7 +414,7 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
         strokes: [...buf.strokes, stroke],
         lastStrokeTime: stroke.timestamp,
         boundingBox: mergeBboxes(buf.boundingBox, strokeBbox),
-        debounceTimer: setTimeout(() => fireBuffer(buf.id), 1800),
+        debounceTimer: setTimeout(() => fireBuffer(buf.id), 1000),
       };
       const updatedBuffers = [...buffers];
       updatedBuffers[matchIdx] = updated;
@@ -403,7 +426,7 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
         id: newId,
         strokes: [stroke],
         lastStrokeTime: stroke.timestamp,
-        debounceTimer: setTimeout(() => fireBuffer(newId), 1800),
+        debounceTimer: setTimeout(() => fireBuffer(newId), 1000),
         boundingBox: strokeBbox,
       };
       const updatedBuffers = [...buffers, newBuf];
@@ -567,6 +590,7 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
           background: 'transparent',
           pointerEvents: active ? 'all' : 'none',
           cursor: active ? 'crosshair' : 'default',
+          touchAction: 'none',
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

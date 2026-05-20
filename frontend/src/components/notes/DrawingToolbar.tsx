@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Pen, Pencil, Diamond, Trash2 } from 'lucide-react';
 import { PointerMode } from '../../hooks/usePointerMode';
 
 export type DrawTool = 'pen' | 'marker' | 'shapes' | 'eraser';
@@ -11,11 +12,11 @@ interface DrawingToolbarProps {
     onClear: () => void;
 }
 
-const TOOLS: { id: DrawTool; icon: string; label: string }[] = [
-    { id: 'pen',    icon: '🖊',  label: 'Lápiz' },
-    { id: 'marker', icon: '✏️', label: 'Rotulador' },
-    { id: 'shapes', icon: '🔶', label: 'Formas' },
-    { id: 'eraser', icon: '⬜', label: 'Borrador' },
+const TOOLS: { id: DrawTool; icon: React.ReactElement; label: string }[] = [
+    { id: 'pen',    icon: <Pen size={20} />,     label: 'Lápiz' },
+    { id: 'marker', icon: <Pencil size={20} />,  label: 'Rotulador' },
+    { id: 'shapes', icon: <Diamond size={20} />, label: 'Formas' },
+    { id: 'eraser', icon: <span style={{ fontSize: 20 }}>⬜</span>, label: 'Borrador' },
 ];
 
 const TOOLBAR_STYLE: React.CSSProperties = {
@@ -107,9 +108,9 @@ export default function DrawingToolbar({
             <button
                 onClick={() => { onClear(); resetHideTimer(); }}
                 title="Limpiar todo"
-                style={{ ...btnStyle(false), fontSize: 16, color: '#f87171' }}
+                style={{ ...btnStyle(false), color: '#f87171' }}
             >
-                🗑
+                <Trash2 size={18} />
             </button>
         </div>
     );

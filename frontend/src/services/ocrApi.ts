@@ -14,6 +14,23 @@ export interface OCRResponse {
  * ---------------
  * Sends a base64 image of the canvas to the AI backend for conversion.
  */
+export async function fixHandwritingText(text: string): Promise<string> {
+  const token = localStorage.getItem('beta3m_token');
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  try {
+    const res = await fetch(`${apiUrl}/ai/math-fix`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token || ''}` },
+      body: JSON.stringify({ text, mode: 'handwriting' }),
+    });
+    if (!res.ok) return text;
+    const data = await res.json();
+    return (data.result || data.text || text).trim();
+  } catch {
+    return text;
+  }
+}
+
 export async function postCanvasForOcr(imageBase64: string, mode = 'handwriting'): Promise<OCRResponse | null> {
   const token = localStorage.getItem('beta3m_token');
   const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';

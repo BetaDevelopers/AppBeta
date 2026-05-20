@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import { Calculator, X } from 'lucide-react';
+import { Calculator, X, AlertTriangle, Check } from 'lucide-react';
 import { apiClient } from '../../api/client';
 
 const SLIDE_IN_CSS = `
@@ -79,7 +79,7 @@ function LoadingState() {
 function ErrorState({ message }: { message: string }) {
     return (
         <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-[14px]">
-            ⚠ {message}
+            <AlertTriangle size={14} /> {message}
         </div>
     );
 }
@@ -120,7 +120,7 @@ function renderSolution(text: string): React.ReactNode {
                     className="mt-2 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-3"
                 >
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                        <span className="text-emerald-400 text-[18px]">✓</span>
+                        <Check size={14} className="text-emerald-400" />
                     </div>
                     <div>
                         <p className="text-emerald-400 text-[11px] font-black uppercase tracking-widest mb-1">

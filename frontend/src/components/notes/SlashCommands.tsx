@@ -5,6 +5,7 @@ import { ReactRenderer } from '@tiptap/react';
 import tippy from 'tippy.js';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
+import { Sparkles, Lightbulb, Pencil, Image, BarChart2, Camera, TrendingDown } from 'lucide-react';
 
 const COMMANDS = [
     // FORMAT
@@ -16,18 +17,18 @@ const COMMANDS = [
     { category: 'FORMAT', icon: '1.', label: 'Numerada', desc: 'Llista ordenada', action: 'orderedList', search: 'numerada' },
 
     // EINES IA
-    { category: 'EINES IA', icon: '✨', label: 'Optimitzar', desc: 'Millorar text amb IA', action: 'ai-optimize', search: 'optimizar millorar' },
+    { category: 'EINES IA', icon: <Sparkles size={14}/>, label: 'Optimitzar', desc: 'Millorar text amb IA', action: 'ai-optimize', search: 'optimizar millorar' },
     { category: 'EINES IA', icon: 'Σ', label: 'Resumir', desc: 'Resum automàtic', action: 'ai-summarize', search: 'resumir resum' },
-    { category: 'EINES IA', icon: '💡', label: 'Suggerir', desc: 'Suggerir assignatura', action: 'ai-suggest', search: 'suggerir assignatura' },
+    { category: 'EINES IA', icon: <Lightbulb size={14}/>, label: 'Suggerir', desc: 'Suggerir assignatura', action: 'ai-suggest', search: 'suggerir assignatura' },
 
     // INSERIR
     { category: 'INSERIR', icon: '▦', label: 'Taula', desc: 'Inserir taula 3x3', action: 'table', search: 'taula cuadrícula' },
     { category: 'INSERIR', icon: '∑', label: 'Fórmula', desc: 'Equació LaTeX ($...$)', action: 'math', search: 'formula equacio latex' },
-    { category: 'INSERIR', icon: '✏', label: 'Dibuix', desc: 'Llenç de dibuix a mà', action: 'drawing', search: 'dibuix llapis' },
-    { category: 'INSERIR', icon: '🖼', label: 'Imatge', desc: 'Pujar imatge', action: 'image', search: 'imatge foto' },
-    { category: 'INSERIR', icon: '📊', label: 'Gràfic', desc: 'Generar gràfic de dades', action: 'chart', search: 'grafic' },
-    { category: 'INSERIR', icon: '📸', label: 'MathVision', desc: 'OCR matemàtic visual', action: 'math-vision', search: 'mathvision camera' },
-    { category: 'INSERIR', icon: '📉', label: 'DataVision', desc: 'Extreure dades de gràfics', action: 'data-vision', search: 'datavision' },
+    { category: 'INSERIR', icon: <Pencil size={14}/>, label: 'Dibuix', desc: 'Llenç de dibuix a mà', action: 'drawing', search: 'dibuix llapis' },
+    { category: 'INSERIR', icon: <Image size={14}/>, label: 'Imatge', desc: 'Pujar imatge', action: 'image', search: 'imatge foto' },
+    { category: 'INSERIR', icon: <BarChart2 size={14}/>, label: 'Gràfic', desc: 'Generar gràfic de dades', action: 'chart', search: 'grafic' },
+    { category: 'INSERIR', icon: <Camera size={14}/>, label: 'MathVision', desc: 'OCR matemàtic visual', action: 'math-vision', search: 'mathvision camera' },
+    { category: 'INSERIR', icon: <TrendingDown size={14}/>, label: 'DataVision', desc: 'Extreure dades de gràfics', action: 'data-vision', search: 'datavision' },
 ];
 
 export const SlashCommandList = forwardRef((props: any, ref) => {

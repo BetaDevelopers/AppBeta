@@ -2,6 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useSubjectsStore } from '../../store/subjectsStore';
+import {
+    FileText, Ruler, Leaf, Zap, BookOpen, Microscope,
+    Palette, Monitor, Landmark, Music, Globe, Lightbulb,
+    Calculator, FlaskConical, BarChart2,
+} from 'lucide-react';
 
 interface SubjectModalProps {
     isOpen: boolean;
@@ -15,11 +20,17 @@ const COLORS = [
     '#84CC16', '#F97316', '#6366F1', '#14B8A6',
 ];
 
-const EMOJIS = [
-    '📝', '📐', '🌿', '⚡', '📚', '🔬',
-    '🎨', '💻', '🏛️', '🎵', '🌍', '💡',
-    '🧮', '⚗️', '📊',
+const ICON_KEYS = [
+    'FileText', 'Ruler', 'Leaf', 'Zap', 'BookOpen', 'Microscope',
+    'Palette', 'Monitor', 'Landmark', 'Music', 'Globe', 'Lightbulb',
+    'Calculator', 'FlaskConical', 'BarChart2',
 ];
+
+const ICON_MAP: Record<string, React.ElementType> = {
+    FileText, Ruler, Leaf, Zap, BookOpen, Microscope,
+    Palette, Monitor, Landmark, Music, Globe, Lightbulb,
+    Calculator, FlaskConical, BarChart2,
+};
 
 export const SubjectModal: React.FC<SubjectModalProps> = ({ isOpen, onClose, subject }) => {
     const [name, setName] = useState('');
@@ -165,22 +176,25 @@ export const SubjectModal: React.FC<SubjectModalProps> = ({ isOpen, onClose, sub
                         >
                             —
                         </button>
-                        {EMOJIS.map((e) => (
-                            <button
-                                key={e}
-                                type="button"
-                                onClick={() => setIcon(icon === e ? null : e)}
-                                className={`h-11 rounded-xl text-lg transition-all duration-200 border
-                                    ${icon === e
-                                        ? 'bg-[#21262D] border-blue-500/40 scale-110'
-                                        : 'bg-transparent border-white/5 hover:bg-[#21262D]/50 hover:border-white/10 hover:scale-105'
-                                    }`}
-                                style={{ minHeight: '44px' }}
-                                aria-label={e}
-                            >
-                                {e}
-                            </button>
-                        ))}
+                        {ICON_KEYS.map((key) => {
+                            const IconComp = ICON_MAP[key];
+                            return (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    onClick={() => setIcon(icon === key ? null : key)}
+                                    className={`h-11 rounded-xl flex items-center justify-center transition-all duration-200 border
+                                        ${icon === key
+                                            ? 'bg-[#21262D] border-blue-500/40 scale-110'
+                                            : 'bg-transparent border-white/5 hover:bg-[#21262D]/50 hover:border-white/10 hover:scale-105'
+                                        }`}
+                                    style={{ minHeight: '44px' }}
+                                    aria-label={key}
+                                >
+                                    <IconComp size={20} className="text-slate-300" />
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 

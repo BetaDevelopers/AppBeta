@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { apiClient } from '../api/client';
 import type { UserStats } from '../types';
+import { FileText, BookOpen, Sparkles, Check, X } from 'lucide-react';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -102,7 +103,7 @@ function Toast({ msg, type }: { msg: string; type: 'ok' | 'err' }) {
             color: type === 'ok' ? '#4ade80' : '#f87171',
             zIndex: 9999, whiteSpace: 'nowrap',
         }}>
-            {type === 'ok' ? '✓' : '✕'} {msg}
+            {type === 'ok' ? <Check size={14}/> : <X size={14}/>} {msg}
         </div>
     );
 }
@@ -272,9 +273,9 @@ export const PerfilPage: React.FC = () => {
                         display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10,
                     }}>
                         {[
-                            { label: 'Notes', value: stats.notes, icon: '📝' },
-                            { label: 'Assignatures', value: stats.subjects, icon: '📚' },
-                            { label: 'Usos IA', value: stats.ai_uses_this_month, icon: '✨' },
+                            { label: 'Notes', value: stats.notes, icon: <FileText size={14}/> },
+                            { label: 'Assignatures', value: stats.subjects, icon: <BookOpen size={14}/> },
+                            { label: 'Usos IA', value: stats.ai_uses_this_month, icon: <Sparkles size={14}/> },
                         ].map(s => (
                             <div key={s.label} style={{
                                 padding: '16px 12px', borderRadius: 16, textAlign: 'center',

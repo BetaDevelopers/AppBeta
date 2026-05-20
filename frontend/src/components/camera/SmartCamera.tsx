@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import katex from 'katex';
+import { Camera, Eye, AlertTriangle } from 'lucide-react';
 import { ocrImage } from '../../api/mathApi';
 
 interface SmartCameraProps {
@@ -140,8 +141,8 @@ export default function SmartCamera({ onResult }: SmartCameraProps) {
 
             <div className="flex items-center justify-between mb-8 px-2">
                 <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 rounded-2xl bg-sky-500/10 flex items-center justify-center text-3xl border border-sky-500/20 shadow-xl shadow-sky-500/5">
-                        📸
+                    <div className="w-14 h-14 rounded-2xl bg-sky-500/10 flex items-center justify-center border border-sky-500/20 shadow-xl shadow-sky-500/5">
+                        <Camera size={28} className="text-sky-400" />
                     </div>
                     <div>
                         <h2 className="text-2xl font-black text-white tracking-tighter">Vision AI Hub</h2>
@@ -215,8 +216,8 @@ export default function SmartCamera({ onResult }: SmartCameraProps) {
                 {/* IDLE PHASE */}
                 {phase === 'idle' && (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-6 animate-in fade-in zoom-in-95">
-                        <div className="w-24 h-24 rounded-full bg-slate-800/50 flex items-center justify-center text-5xl mb-2 border border-white/5 shadow-2xl">
-                            👁️
+                        <div className="w-24 h-24 rounded-full bg-slate-800/50 flex items-center justify-center mb-2 border border-white/5 shadow-2xl">
+                            <Eye size={48} className="text-slate-500" />
                         </div>
                         <p className="text-slate-500 font-bold text-sm tracking-wide text-center max-w-[280px]">
                             Alinea tu documento o apuntes para digitalizarlos con precisión matemática.
@@ -304,7 +305,7 @@ export default function SmartCamera({ onResult }: SmartCameraProps) {
 
             {error && (
                 <div className="mt-8 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold flex items-center gap-3 animate-in slide-in-from-top-4">
-                    <span className="text-lg">⚠</span> {error}
+                    <AlertTriangle size={18} /> {error}
                 </div>
             )}
         </div>

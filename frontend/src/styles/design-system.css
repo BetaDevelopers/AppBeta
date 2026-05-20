@@ -1,27 +1,26 @@
 /* ═══════════════════════════════════════════════════
-   BETA 3M — DESIGN SYSTEM v2
-   Tablet-first (Android), touch-optimized, dark theme
+   BETA 3M — DESIGN SYSTEM v3 — Raycast/Blue
    ═══════════════════════════════════════════════════ */
 
 :root {
   /* ── Colors ─────────────────────────────────────── */
-  --color-bg-primary:     #0D1117;
-  --color-bg-secondary:   #161B22;
-  --color-bg-tertiary:    #21262D;
-  --color-bg-elevated:    #2D333B;
+  --color-bg-primary:     #000000;
+  --color-bg-secondary:   #0a0a0a;
+  --color-bg-tertiary:    #111111;
+  --color-bg-elevated:    #141414;
 
-  --color-border:         rgba(255, 255, 255, 0.08);
-  --color-border-strong:  rgba(255, 255, 255, 0.15);
+  --color-border:         #1a1a1a;
+  --color-border-strong:  #222222;
 
-  --color-text-primary:   #E6EDF3;
-  --color-text-secondary: #8B949E;
-  --color-text-muted:     #484F58;
+  --color-text-primary:   #fafafa;
+  --color-text-secondary: #666666;
+  --color-text-muted:     #333333;
 
-  --color-accent-blue:    #388BFD;
-  --color-accent-purple:  #A371F7;
-  --color-accent-green:   #3FB950;
-  --color-accent-orange:  #F78166;
-  --color-accent-yellow:  #E3B341;
+  --color-accent-blue:    #3b82f6;
+  --color-accent-purple:  #3b82f6;
+  --color-accent-green:   #22c55e;
+  --color-accent-orange:  #f97316;
+  --color-accent-yellow:  #eab308;
 
   /* ── Typography ──────────────────────────────────── */
   --font-size-xs:   11px;
@@ -41,69 +40,27 @@
   --line-height-relaxed: 1.8;
 
   /* ── Spacing ─────────────────────────────────────── */
-  --space-1:  4px;
-  --space-2:  8px;
-  --space-3:  12px;
-  --space-4:  16px;
-  --space-5:  20px;
-  --space-6:  24px;
-  --space-8:  32px;
-  --space-10: 40px;
+  --space-1:  4px;  --space-2: 8px;  --space-3: 12px;
+  --space-4:  16px; --space-5: 20px; --space-6: 24px;
+  --space-8:  32px; --space-10: 40px;
 
   /* ── Touch & Radius ──────────────────────────────── */
   --touch-target:    48px;
   --touch-target-lg: 56px;
 
-  --border-radius-sm:   6px;
-  --border-radius-md:   10px;
-  --border-radius-lg:   14px;
-  --border-radius-xl:   20px;
+  --border-radius-sm:   4px;
+  --border-radius-md:   8px;
+  --border-radius-lg:   10px;
+  --border-radius-xl:   12px;
   --border-radius-full: 9999px;
 
-  /* ── Animations (GPU-only, Android-safe) ────────── */
+  /* ── Animations ────────────────────────────────── */
   --transition-fast:   120ms ease;
   --transition-normal: 200ms ease;
   --transition-slow:   300ms ease;
 }
 
 /* ─── Touch base ─────────────────────────────────────── */
-/* Prevent tap highlight flash on Android Chrome */
 * { -webkit-tap-highlight-color: transparent; }
-
-/* Prevent double-tap zoom on buttons */
-button, a, [role="button"] {
-  touch-action: manipulation;
-}
-
-/* Prevent iOS/Android zoom on input focus */
-input, textarea, select {
-  font-size: max(16px, 1rem) !important;
-}
-
-/* Universal touch feedback */
-button:active,
-[role="button"]:active,
-.ds-touch-feedback:active {
-  transform: scale(0.96);
-  opacity: 0.85;
-  transition: transform var(--transition-fast), opacity var(--transition-fast);
-}
-
-/* ─── Scroll touch ────────────────────────────────────── */
-.scroll-touch {
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-}
-
-/* ─── Sidebar scroll fix ──────────────────────────────── */
-/* Use opacity + visibility instead of width to avoid reflow */
-.sidebar-hidden {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-.sidebar-visible {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: all;
-}
+button, a, [role="button"] { touch-action: manipulation; }
+input, textarea, select { font-size: max(16px, 1rem) !important; }

@@ -15,18 +15,18 @@ function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title
     return (
         <div className="px-5 pt-4 pb-3">
             <div className="flex items-center gap-2">
-                <span className="flex items-center text-[#484F58]">{icon}</span>
-                <span className="text-[11px] font-semibold text-[#484F58] uppercase tracking-widest">{title}</span>
+                <span className="flex items-center text-[#444]">{icon}</span>
+                <span className="text-[11px] font-semibold text-[#444] uppercase tracking-widest">{title}</span>
             </div>
             {subtitle && (
-                <p className="text-[13px] text-[#8B949E] mt-1 pl-7 truncate">{subtitle}</p>
+                <p className="text-[13px] text-[#555] mt-1 pl-7 truncate">{subtitle}</p>
             )}
         </div>
     );
 }
 
 function Divider() {
-    return <div className="mx-5 border-t border-[rgba(255,255,255,0.08)] my-1" />;
+    return <div className="mx-5 border-t border-[#1a1a1a] my-1" />;
 }
 
 function ActionButton({
@@ -44,10 +44,10 @@ function ActionButton({
 }) {
     const variantClass =
         variant === 'primary'
-            ? 'bg-[#388BFD] text-white border-[#388BFD]/30 hover:bg-[#2f7be8]'
+            ? 'bg-[#3b82f6] text-white border-[#3b82f6]/30 hover:bg-[#2f7be8]'
             : variant === 'danger'
             ? 'bg-transparent text-[#F78166] border-[rgba(247,129,102,0.2)] hover:bg-[rgba(247,129,102,0.08)]'
-            : 'bg-[#21262D] text-[#8B949E] border-[rgba(255,255,255,0.08)] hover:bg-[#2D333B] hover:text-[#E6EDF3]';
+            : 'bg-[#111] text-[#555] border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-[#fafafa]';
 
     return (
         <button
@@ -144,7 +144,7 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
     return (
         <aside
             className={`
-                sidebar flex-shrink-0 bg-[#161B22] border-l border-[rgba(255,255,255,0.08)] flex flex-col overflow-hidden shadow-xl z-[50]
+                sidebar flex-shrink-0 bg-[#0a0a0a] border-l border-[#1a1a1a] flex flex-col overflow-hidden shadow-xl z-[50]
                 ${isOverlay ? 'absolute right-0 top-0 h-full' : 'relative'}
             `}
             style={{ width: 'var(--sidebar-right)' }}
@@ -152,10 +152,10 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
             {/* Close button — shown when overlay */}
             {isOverlay && onClose && (
                 <div className="flex items-center justify-between px-5 pt-4 pb-2">
-                    <span className="text-[11px] font-semibold text-[#484F58] uppercase tracking-widest">Panel</span>
+                    <span className="text-[11px] font-semibold text-[#444] uppercase tracking-widest">Panel</span>
                     <button
                         onClick={onClose}
-                        className="flex items-center justify-center rounded-xl text-[#484F58] hover:text-[#E6EDF3] hover:bg-[#21262D] transition-colors"
+                        className="flex items-center justify-center rounded-xl text-[#444] hover:text-[#fafafa] hover:bg-[#111] transition-colors"
                         style={{ width: '44px', height: '44px' }}
                         aria-label="Cerrar panel"
                     >
@@ -175,8 +175,8 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
                         onClick={() => setShowUpload(v => !v)}
                         className={`w-full flex items-center gap-3 px-4 rounded-xl border transition-all duration-150 active:scale-[0.97] ${
                             showUpload
-                                ? 'bg-[rgba(56,139,253,0.1)] border-[rgba(56,139,253,0.3)] text-[#388BFD]'
-                                : 'bg-[#21262D] border-[rgba(255,255,255,0.08)] text-[#8B949E] hover:bg-[#2D333B] hover:text-[#E6EDF3]'
+                                ? 'bg-[rgba(59,130,246,0.1)] border-[rgba(59,130,246,0.3)] text-[#3b82f6]'
+                                : 'bg-[#111] border-[#1a1a1a] text-[#555] hover:bg-[#1a1a1a] hover:text-[#fafafa]'
                         }`}
                         style={{ height: 'var(--touch-md)', fontSize: '15px', fontWeight: 500 }}
                     >
@@ -184,12 +184,12 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
                         <span>OCR Express</span>
                         <ChevronDown
                             size={14}
-                            className={`ml-auto text-[#484F58] transition-transform duration-200 ${showUpload ? 'rotate-180' : ''}`}
+                            className={`ml-auto text-[#444] transition-transform duration-200 ${showUpload ? 'rotate-180' : ''}`}
                         />
                     </button>
 
                     {showUpload && (
-                        <div className="rounded-xl bg-[#21262D] border border-[rgba(255,255,255,0.08)] p-3 animate-fade-in-down">
+                        <div className="rounded-xl bg-[#111] border border-[#1a1a1a] p-3 animate-fade-in-down">
                             <FileUploadOCR
                                 onResult={noEditor ? undefined : insertText}
                                 onInsertImage={noEditor ? undefined : insertImage}
@@ -214,14 +214,14 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
                     {noteImages.length > 0 && (
                         <div className="mt-1">
                             <div className="flex items-center justify-between px-1 mb-2">
-                                <span className="text-[11px] font-semibold text-[#484F58] uppercase tracking-widest">Multimedia</span>
-                                <span className="text-[11px] font-medium text-[#388BFD]">{noteImages.length}</span>
+                                <span className="text-[11px] font-semibold text-[#444] uppercase tracking-widest">Multimedia</span>
+                                <span className="text-[11px] font-medium text-[#3b82f6]">{noteImages.length}</span>
                             </div>
                             <div className="grid grid-cols-3 gap-2">
                                 {noteImages.map((src, i) => (
                                     <div
                                         key={i}
-                                        className="group/img relative aspect-square rounded-xl overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[#21262D] cursor-zoom-in"
+                                        className="group/img relative aspect-square rounded-xl overflow-hidden border border-[#1a1a1a] bg-[#111] cursor-zoom-in"
                                     >
                                         <img
                                             src={src}
@@ -245,8 +245,8 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
                 />
                 <div className="px-4 pb-6 flex flex-col gap-2">
                     {!currentNote ? (
-                        <div className="px-4 py-5 rounded-xl border border-dashed border-[rgba(255,255,255,0.08)] text-center">
-                            <p className="text-[13px] text-[#484F58]">Abre una nota para exportar</p>
+                        <div className="px-4 py-5 rounded-xl border border-dashed border-[#1a1a1a] text-center">
+                            <p className="text-[13px] text-[#444]">Abre una nota para exportar</p>
                         </div>
                     ) : (
                         <>
@@ -259,9 +259,9 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
             </div>
 
             {/* Status footer */}
-            <div className="p-4 border-t border-[rgba(255,255,255,0.08)] safe-area-bottom">
+            <div className="p-4 border-t border-[#1a1a1a] safe-area-bottom">
                 <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-[#484F58]">Estado IA</span>
+                    <span className="text-[11px] text-[#444]">Estado IA</span>
                     <div className="flex items-center gap-1.5">
                         <div className="w-1.5 h-1.5 rounded-full bg-[#3FB950] animate-pulse" />
                         <span className="text-[11px] text-[#3FB950] font-medium">Listo</span>

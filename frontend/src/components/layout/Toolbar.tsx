@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useNotesStore } from '../../store/notesStore';
 import { useUIStore } from '../../store/uiStore';
+import { Crown, Sparkles } from 'lucide-react';
 
 interface ToolbarProps {
     onToggleChat?: () => void;
@@ -62,8 +63,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         await fetch(subjectId ?? undefined);
     };
 
-    const planLabel =
-        user?.plan === 'premium' ? '👑 Premium'
+    const planLabel: React.ReactNode =
+        user?.plan === 'premium' ? <><Crown size={14}/> Premium</>
             : user?.plan === 'pro' ? '⭐ Pro'
                 : 'Free';
 
@@ -231,7 +232,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                     style={{ height: '44px', minWidth: '44px' }}
                     title="Assistent IA"
                 >
-                    <span className="text-base">✨</span>
+                    <Sparkles size={14}/>
                     {/* Show "IA" text on tablet and desktop */}
                     <span className="hidden tablet:inline desktop:inline text-sm">IA</span>
                 </button>

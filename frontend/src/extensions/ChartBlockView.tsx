@@ -21,13 +21,14 @@ export function ChartBlockView({ node, updateAttributes, selected }: any) {
     const show = hovering || selected || resizing || moving;
 
     // ── Resize ──────────────────────────────────────────────
-    const onResizeStart = useCallback((e: React.MouseEvent, inverted = false) => {
+    const onResizeStart = useCallback((e: React.PointerEvent, inverted = false) => {
         e.preventDefault();
         e.stopPropagation();
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
         resizeRef.current = { x: e.clientX, w: width || 500 };
         setResizing(true);
 
-        const onMove = (ev: MouseEvent) => {
+        const onMove = (ev: PointerEvent) => {
             const delta = inverted
                 ? -(ev.clientX - resizeRef.current.x)
                 :  (ev.clientX - resizeRef.current.x);
@@ -35,25 +36,25 @@ export function ChartBlockView({ node, updateAttributes, selected }: any) {
         };
         const onUp = () => {
             setResizing(false);
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
         };
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
     }, [width, updateAttributes]);
 
     // ── Free move (translate) ────────────────────────────────
-    const onMoveStart = useCallback((e: React.MouseEvent) => {
-        // Only left-button, not on resize handles
-        if (e.button !== 0) return;
+    const onMoveStart = useCallback((e: React.PointerEvent) => {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
         e.preventDefault();
         e.stopPropagation();
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
         moveRef.current = { x: e.clientX, y: e.clientY, tx: dtx, ty: dty };
         dragDist.current = 0;
         setMoving(true);
 
-        const onMove = (ev: MouseEvent) => {
+        const onMove = (ev: PointerEvent) => {
             const dx = ev.clientX - moveRef.current.x;
             const dy = ev.clientY - moveRef.current.y;
             dragDist.current = Math.max(dragDist.current, Math.abs(dx) + Math.abs(dy));
@@ -64,11 +65,11 @@ export function ChartBlockView({ node, updateAttributes, selected }: any) {
         };
         const onUp = () => {
             setMoving(false);
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
         };
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
     }, [dtx, dty, updateAttributes]);
 
     // ── Edit on click (only if barely moved) ────────────────
@@ -101,12 +102,13 @@ export function ChartBlockView({ node, updateAttributes, selected }: any) {
                 src={src}
                 alt={alt}
                 draggable={false}
-                onMouseDown={onMoveStart}
+                onPointerDown={onMoveStart}
                 onClick={handleClick}
                 style={{
                     width: '100%',
                     display: 'block',
                     borderRadius: '12px',
+                    touchAction: 'none',
                     cursor: moving ? 'grabbing' : (show ? 'grab' : 'default'),
                     border: show ? '2px solid rgba(99,102,241,0.7)' : '2px solid transparent',
                     transition: moving ? 'none' : 'border-color 0.15s',
@@ -117,10 +119,10 @@ export function ChartBlockView({ node, updateAttributes, selected }: any) {
             {/* Resize handles — corners only */}
             {show && (
                 <>
-                    <Handle style={{ right: -5, bottom: -5, width: 14, height: 14, borderRadius: '50%', cursor: 'se-resize' }}
-                        onMouseDown={e => onResizeStart(e, false)} />
-                    <Handle style={{ left: -5,  bottom: -5, width: 14, height: 14, borderRadius: '50%', cursor: 'sw-resize' }}
-                        onMouseDown={e => onResizeStart(e, true)} />
+                    <Handle style={{ right: -5, bottom: -5, width: 20, height: 20, borderRadius: '50%', cursor: 'se-resize' }}
+                        onPointerDown={e => onResizeStart(e, false)} />
+                    <Handle style={{ left: -5,  bottom: -5, width: 20, height: 20, borderRadius: '50%', cursor: 'sw-resize' }}
+                        onPointerDown={e => onResizeStart(e, true)} />
                 </>
             )}
 
@@ -165,10 +167,10 @@ export function ChartBlockView({ node, updateAttributes, selected }: any) {
     );
 }
 
-function Handle({ style, onMouseDown }: { style: React.CSSProperties; onMouseDown: (e: React.MouseEvent) => void }) {
+function Handle({ style, onPointerDown }: { style: React.CSSProperties; onPointerDown: (e: React.PointerEvent) => void }) {
     return (
         <div
-            onMouseDown={onMouseDown}
+            onPointerDown={onPointerDown}
             style={{
                 position: 'absolute',
                 background: 'rgb(99,102,241)',

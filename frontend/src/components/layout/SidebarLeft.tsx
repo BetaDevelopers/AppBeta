@@ -136,7 +136,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
         <>
             <aside
                 className={`
-                    sidebar flex-shrink-0 bg-[#161B22] border-r border-[rgba(255,255,255,0.08)] h-full flex flex-col overflow-hidden shadow-xl
+                    sidebar flex-shrink-0 bg-[#0a0a0a] border-r border-[#1a1a1a] h-full flex flex-col overflow-hidden shadow-xl
                     transition-all duration-300 ease-out safe-area-left
                     ${overlayClass}
                 `}
@@ -145,13 +145,13 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                 {/* ── Header ─────────────────────────────────────── */}
                 <div className={`flex items-center pt-5 pb-4 ${isIconOnly ? 'justify-center px-2' : 'justify-between px-5'}`}>
                     {!isIconOnly && (
-                        <span className="text-[11px] font-semibold text-[#484F58] uppercase tracking-widest">
+                        <span className="text-[11px] font-semibold text-[#444] uppercase tracking-widest">
                             Navegació
                         </span>
                     )}
                     <button
                         onClick={isOverlay ? onClose : onToggle}
-                        className="flex items-center justify-center rounded-lg text-[#484F58] hover:text-[#E6EDF3] hover:bg-[#21262D] transition-colors"
+                        className="flex items-center justify-center rounded-lg text-[#444] hover:text-[#fafafa] hover:bg-[#111] transition-colors"
                         style={{ width: '44px', height: '44px' }}
                         aria-label={isOverlay ? 'Cerrar sidebar' : (collapsed ? 'Expandir' : 'Colapsar')}
                         title={isOverlay ? 'Cerrar' : (collapsed ? 'Expandir sidebar' : 'Colapsar sidebar')}
@@ -177,7 +177,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                         style={{ height: 'var(--touch-md)' }}
                         title={isIconOnly ? 'Crear nueva nota' : undefined}
                     >
-                        <div className="absolute inset-0 bg-gradient-to-r from-[#1d6fee] to-[#388BFD]" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#1d6fee] to-[#3b82f6]" />
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.18),transparent_70%)]" />
                         <div className="relative flex items-center justify-center gap-2 text-white font-semibold text-[15px]">
                             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,18 +194,18 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                             className={`w-full flex items-center rounded-xl text-[15px] font-medium transition-colors
                                 ${isIconOnly ? 'justify-center' : 'gap-3 px-4'}
                                 ${activeSubjectId === null
-                                    ? 'bg-[rgba(56,139,253,0.1)] text-[#388BFD]'
-                                    : 'text-[#8B949E] hover:bg-[#21262D] hover:text-[#E6EDF3]'
+                                    ? 'bg-[rgba(59,130,246,0.1)] text-[#3b82f6]'
+                                    : 'text-[#555] hover:bg-[#111] hover:text-[#fafafa]'
                                 }`}
                             style={{ height: 'var(--touch-md)' }}
                             title={isIconOnly ? 'Todas mis notas' : undefined}
                         >
-                            <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 transition-all ${activeSubjectId === null ? 'bg-[#388BFD] shadow-[0_0_8px_rgba(56,139,253,0.6)]' : 'bg-[#2D333B]'}`} />
+                            <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 transition-all ${activeSubjectId === null ? 'bg-[#3b82f6] shadow-[0_0_8px_rgba(56,139,253,0.6)]' : 'bg-[#1a1a1a]'}`} />
                             {!isIconOnly && (
                                 <>
                                     <span className="flex-1 text-left">Todas mis notas</span>
                                     {notes.length > 0 && (
-                                        <span className="ml-auto text-[11px] font-medium text-[#484F58]">{notes.length}</span>
+                                        <span className="ml-auto text-[11px] font-medium text-[#444]">{notes.length}</span>
                                     )}
                                 </>
                             )}
@@ -216,12 +216,12 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                     {!isIconOnly && (
                         <div>
                             <div className="flex items-center justify-between px-1 mb-2">
-                                <span className="text-[11px] font-semibold text-[#484F58] uppercase tracking-widest">
+                                <span className="text-[11px] font-semibold text-[#444] uppercase tracking-widest">
                                     Asignaturas
                                 </span>
                                 <button
                                     onClick={handleOpenCreate}
-                                    className="flex items-center justify-center rounded-lg text-[#484F58] hover:text-[#388BFD] hover:bg-[rgba(56,139,253,0.1)] transition-colors"
+                                    className="flex items-center justify-center rounded-lg text-[#444] hover:text-[#3b82f6] hover:bg-[rgba(59,130,246,0.1)] transition-colors"
                                     style={{ width: '32px', height: '32px' }}
                                     aria-label="Nueva asignatura"
                                 >
@@ -238,8 +238,8 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                                         data-subject={s.id}
                                         className={`group w-full flex items-center gap-2 pl-4 pr-1 rounded-xl text-[14px] transition-all cursor-pointer select-none
                                             ${activeSubjectId === s.id
-                                                ? 'bg-[#21262D] text-[#E6EDF3] font-semibold'
-                                                : 'text-[#8B949E] hover:bg-[#21262D]/50 hover:text-[#E6EDF3] font-medium'
+                                                ? 'bg-[#111] text-[#fafafa] font-semibold'
+                                                : 'text-[#555] hover:bg-[#111]/50 hover:text-[#fafafa] font-medium'
                                             }`}
                                         style={{ height: '44px' }}
                                         onClick={() => handleSubjectClick(s)}
@@ -262,7 +262,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                                         <span className="truncate flex-1 text-left">{s.name}</span>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleOpenEdit(s); }}
-                                            className="flex-shrink-0 flex items-center justify-center rounded-lg text-[#484F58] hover:text-[#8B949E] hover:bg-[#21262D] transition-colors"
+                                            className="flex-shrink-0 flex items-center justify-center rounded-lg text-[#444] hover:text-[#555] hover:bg-[#111] transition-colors"
                                             style={{ width: '32px', height: '32px' }}
                                             aria-label="Editar asignatura"
                                             title="Editar"
@@ -273,7 +273,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                                         </button>
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleDeleteSubject(s); }}
-                                            className="flex-shrink-0 flex items-center justify-center rounded-lg text-[#484F58] hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                            className="flex-shrink-0 flex items-center justify-center rounded-lg text-[#444] hover:text-red-400 hover:bg-red-500/10 transition-colors"
                                             style={{ width: '32px', height: '32px' }}
                                             aria-label="Eliminar asignatura"
                                             title="Eliminar"
@@ -285,8 +285,8 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                                     </div>
                                 ))}
                                 {subjects.length === 0 && (
-                                    <div className="px-4 py-5 rounded-xl border border-dashed border-[rgba(255,255,255,0.08)] text-center">
-                                        <p className="text-[13px] text-[#484F58]">Sin asignaturas</p>
+                                    <div className="px-4 py-5 rounded-xl border border-dashed border-[#1a1a1a] text-center">
+                                        <p className="text-[13px] text-[#444]">Sin asignaturas</p>
                                     </div>
                                 )}
                             </div>
@@ -299,7 +299,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                             <>
                                 <button
                                     onClick={() => setEinesOpen(v => !v)}
-                                    className="w-full flex items-center justify-between px-1 mb-1 rounded-lg hover:bg-[#21262D] transition-colors text-[#484F58] hover:text-[#8B949E]"
+                                    className="w-full flex items-center justify-between px-1 mb-1 rounded-lg hover:bg-[#111] transition-colors text-[#444] hover:text-[#555]"
                                     style={{ height: '36px' }}
                                 >
                                     <span className="text-[11px] font-semibold uppercase tracking-widest flex items-center gap-2">
@@ -318,10 +318,10 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                                             <button
                                                 key={tool}
                                                 onClick={() => handleOpenTool(tool)}
-                                                className="w-full flex items-center gap-3 px-4 rounded-xl text-[13px] font-medium text-[#8B949E] hover:bg-[rgba(56,139,253,0.08)] hover:text-[#388BFD] transition-all duration-150 active:scale-[0.97]"
+                                                className="w-full flex items-center gap-3 px-4 rounded-xl text-[13px] font-medium text-[#555] hover:bg-[rgba(56,139,253,0.08)] hover:text-[#3b82f6] transition-all duration-150 active:scale-[0.97]"
                                                 style={{ height: 'var(--touch-sm)' }}
                                             >
-                                                <span className="w-5 flex items-center justify-center flex-shrink-0 text-[#8B949E]">{icon}</span>
+                                                <span className="w-5 flex items-center justify-center flex-shrink-0 text-[#555]">{icon}</span>
                                                 <span className="flex-1 text-left">{label}</span>
                                             </button>
                                         ))}
@@ -335,13 +335,13 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                                     <button
                                         key={tool}
                                         onClick={() => handleOpenTool(tool)}
-                                        className="group/tool relative flex items-center justify-center rounded-xl text-[#8B949E] hover:bg-[rgba(56,139,253,0.1)] hover:text-[#388BFD] transition-all duration-150 active:scale-90"
+                                        className="group/tool relative flex items-center justify-center rounded-xl text-[#555] hover:bg-[rgba(59,130,246,0.1)] hover:text-[#3b82f6] transition-all duration-150 active:scale-90"
                                         style={{ width: 'var(--touch-md)', height: 'var(--touch-md)' }}
                                         title={label}
                                     >
-                                        <span className="flex items-center justify-center text-[#8B949E]">{icon}</span>
+                                        <span className="flex items-center justify-center text-[#555]">{icon}</span>
                                         {/* Tooltip */}
-                                        <span className="pointer-events-none absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-[#1C2128] border border-white/10 text-[12px] text-[#E6EDF3] whitespace-nowrap opacity-0 group-hover/tool:opacity-100 transition-opacity shadow-xl z-50">
+                                        <span className="pointer-events-none absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-[#111] border border-[#1a1a1a] text-[12px] text-[#fafafa] whitespace-nowrap opacity-0 group-hover/tool:opacity-100 transition-opacity shadow-xl z-50">
                                             {label}
                                         </span>
                                     </button>
@@ -353,10 +353,10 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
 
                 {/* ── Footer ─────────────────────────────────────── */}
                 {!isIconOnly && (
-                    <div className="px-5 py-4 border-t border-[rgba(255,255,255,0.08)] safe-area-bottom">
+                    <div className="px-5 py-4 border-t border-[#1a1a1a] safe-area-bottom">
                         <div className="flex items-center justify-between">
-                            <span className="text-[11px] text-[#484F58]">Beta Access</span>
-                            <span className="text-[11px] text-[#484F58]">v24.4.09</span>
+                            <span className="text-[11px] text-[#444]">Beta Access</span>
+                            <span className="text-[11px] text-[#444]">v24.4.09</span>
                         </div>
                     </div>
                 )}
@@ -370,15 +370,15 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                     <>
                         <div className="fixed inset-0 z-[300]" onClick={closeContextMenu} />
                         <div
-                            className="fixed z-[301] bg-[#1C2128] border border-white/10 rounded-xl shadow-2xl py-1 min-w-[140px]"
+                            className="fixed z-[301] bg-[#111] border border-[#1a1a1a] rounded-xl shadow-2xl py-1 min-w-[140px]"
                             style={{ left: contextMenu.x, top: contextMenu.y }}
                         >
                             <button
-                                className="w-full flex items-center gap-3 px-4 py-3 text-[14px] text-[#E6EDF3] hover:bg-[#21262D] transition-colors text-left"
+                                className="w-full flex items-center gap-3 px-4 py-3 text-[14px] text-[#fafafa] hover:bg-[#111] transition-colors text-left"
                                 style={{ minHeight: '48px' }}
                                 onClick={() => handleOpenEdit(s)}
                             >
-                                <svg className="w-4 h-4 text-[#8B949E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 text-[#555]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                                 Editar

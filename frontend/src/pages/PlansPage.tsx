@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { FileText, Crown, Hand, Check, X } from 'lucide-react';
 
 const PLANS = [
     {
@@ -9,7 +10,7 @@ const PLANS = [
         monthlyPrice: '0€',
         yearlyPrice: '0€',
         period: 'per sempre',
-        icon: '📝',
+        icon: <FileText size={14}/>,
         colorClass: 'border-white/10',
         badgeClass: '',
         textClass: 'text-gray-400',
@@ -57,7 +58,7 @@ const PLANS = [
         monthlyPrice: '9,99€',
         yearlyPrice: '7,99€',
         period: '/mes',
-        icon: '👑',
+        icon: <Crown size={14}/>,
         colorClass: 'border-purple-500/40 bg-purple-600/5',
         textClass: 'text-purple-400',
         btnClass: 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/25',
@@ -108,7 +109,7 @@ export default function PlansPage() {
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/10 border border-blue-500/20
                         rounded-full text-xs font-bold text-blue-400 mb-8 uppercase tracking-widest shadow-xl">
                     <span className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
-                    Hola, {user?.email.split('@')[0]} 👋
+                    Hola, {user?.email.split('@')[0]} <Hand size={14}/>
                 </div>
                 <h1 className="text-6xl font-black mb-6 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent tracking-tighter">
                     Escull el teu futur
@@ -182,7 +183,7 @@ export default function PlansPage() {
                                 <li key={i} className="flex items-start gap-4">
                                     <div className={`mt-1 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black
                     ${f.ok ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-gray-700'}`}>
-                                        {f.ok ? '✓' : '✗'}
+                                        {f.ok ? <Check size={14}/> : <X size={14}/>}
                                     </div>
                                     <span className={`text-sm font-bold leading-snug
                     ${f.ok ? 'text-gray-300' : 'text-gray-600'}`}>

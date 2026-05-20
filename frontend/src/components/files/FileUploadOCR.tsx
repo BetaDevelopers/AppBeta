@@ -1,5 +1,6 @@
 import React, { useRef, useState, useCallback } from 'react';
 import katex from 'katex';
+import { Folder, AlertTriangle, Image } from 'lucide-react';
 import { mathOCRImage } from '../../api/mathApi';
 
 interface FileUploadOCRProps {
@@ -98,8 +99,8 @@ export default function FileUploadOCR({ onResult, onInsertImage }: FileUploadOCR
                             }`}
                     >
                         {/* Icon */}
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all duration-200 ${dragging ? 'bg-[#7C5CFF]/20 scale-110' : 'bg-[rgba(255,255,255,0.04)]'}`}>
-                            📁
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 ${dragging ? 'bg-[#7C5CFF]/20 scale-110' : 'bg-[rgba(255,255,255,0.04)]'}`}>
+                            <Folder size={20} className="text-[#8B949E]" />
                         </div>
 
                         <div className="text-center">
@@ -122,7 +123,7 @@ export default function FileUploadOCR({ onResult, onInsertImage }: FileUploadOCR
 
                     {error && (
                         <div className="mt-2 px-3 py-2 rounded-lg bg-[rgba(247,129,102,0.08)] border border-[rgba(247,129,102,0.15)] text-[#F78166] text-[11px] flex items-center gap-2">
-                            <span>⚠</span>
+                            <AlertTriangle size={14} />
                             <span>{error}</span>
                         </div>
                     )}
@@ -180,9 +181,9 @@ export default function FileUploadOCR({ onResult, onInsertImage }: FileUploadOCR
                         {onInsertImage && imageSrc && (
                             <button
                                 onClick={() => onInsertImage(imageSrc)}
-                                className="w-full h-9 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8B949E] hover:text-[#E6EDF3] hover:bg-[rgba(255,255,255,0.07)] text-[11px] font-semibold transition-all active:scale-95"
+                                className="w-full h-9 rounded-lg bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#8B949E] hover:text-[#E6EDF3] hover:bg-[rgba(255,255,255,0.07)] text-[11px] font-semibold transition-all active:scale-95 flex items-center justify-center gap-1.5"
                             >
-                                🖼 Insertar imagen
+                                <Image size={14} /> Insertar imagen
                             </button>
                         )}
                         <button
