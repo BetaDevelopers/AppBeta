@@ -21,10 +21,10 @@ interface ChatWidgetProps {
 
 // ── Accions ràpides ──────────────────────────────────────────
 const QUICK_ACTIONS = [
-    { icon: <Clipboard size={14}/>, label: 'Resum',      prompt: 'Fes-me un resum estructurat d\'aquesta nota.' },
-    { icon: <Brain size={14}/>,     label: 'Preguntes',  prompt: 'Genera 5 preguntes d\'examen sobre aquest contingut amb les respostes.' },
-    { icon: <Search size={14}/>,    label: 'Explica',    prompt: 'Explica els conceptes principals d\'aquesta nota de forma clara.' },
-    { icon: <Pencil size={14}/>,    label: 'Millora',    prompt: 'Suggereix com millorar l\'estructura i la claredat d\'aquesta nota.' },
+    { icon: <Clipboard size={14}/>, label: 'Resumen',    prompt: 'Hazme un resumen estructurado de esta nota.' },
+    { icon: <Brain size={14}/>,     label: 'Preguntas',  prompt: 'Genera 5 preguntas de examen sobre este contenido con las respuestas.' },
+    { icon: <Search size={14}/>,    label: 'Explica',    prompt: 'Explica los conceptos principales de esta nota de forma clara.' },
+    { icon: <Pencil size={14}/>,    label: 'Mejora',     prompt: 'Sugiere cómo mejorar la estructura y claridad de esta nota.' },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -71,8 +71,8 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
                 id: uid(),
                 role: 'assistant',
                 content: currentNote
-                    ? `Hola! Tinc el context de la nota **"${currentNote.title || 'Sense títol'}"**. En què et puc ajudar?`
-                    : 'Hola! Soc el teu assistent d\'estudi. Obre una nota per tenir context, o pregunta\'m el que necessitis.',
+                    ? `¡Hola! Tengo el contexto de la nota **"${currentNote.title || 'Sin título'}"**. ¿En qué puedo ayudarte?`
+                    : '¡Hola! Soy tu asistente de estudio. Abre una nota para tener contexto, o pregúntame lo que necesites.',
             }]);
         }
     }, [open]);
@@ -85,8 +85,8 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
             const title = currentNote?.title || 'Sense títol';
             setMessages(prev => [
                 ...prev,
-                { id: uid(), role: 'separator', content: `── Nota canviada: ${title} ──` },
-                { id: uid(), role: 'assistant', content: `He carregat la nota **"${title}"**. Pots preguntar-me qualsevol cosa sobre ella.` },
+                { id: uid(), role: 'separator', content: `── Nota cambiada: ${title} ──` },
+                { id: uid(), role: 'assistant', content: `He cargado la nota **"${title}"**. Puedes preguntarme cualquier cosa sobre ella.` },
             ]);
             setContextScope('current');
         }
@@ -108,7 +108,7 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
         if (contextScope === 'current') {
             if (!currentNote) return '';
             const plain = stripHtml(currentNote.content).substring(0, 3000);
-            return `Títol: ${currentNote.title || 'Sense títol'}\n\n${plain}`;
+            return `Título: ${currentNote.title || 'Sin título'}\n\n${plain}`;
         }
 
         if (contextScope === 'subject') {
@@ -116,15 +116,15 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
             const subjectNotes = notes
                 .filter(n => n.subject_id === currentNote.subject_id)
                 .slice(0, 5);
-            const subjectName = subjects.find(s => s.id === currentNote.subject_id)?.name || 'Assignatura';
-            return `Assignatura: ${subjectName}\n\n` + subjectNotes
-                .map(n => `## ${n.title || 'Sense títol'}\n${stripHtml(n.content).substring(0, 600)}`)
+            const subjectName = subjects.find(s => s.id === currentNote.subject_id)?.name || 'Asignatura';
+            return `Asignatura: ${subjectName}\n\n` + subjectNotes
+                .map(n => `## ${n.title || 'Sin título'}\n${stripHtml(n.content).substring(0, 600)}`)
                 .join('\n\n---\n\n');
         }
 
         // 'all'
         return notes.slice(0, 10)
-            .map(n => `## ${n.title || 'Sense títol'}\n${stripHtml(n.content).substring(0, 300)}`)
+            .map(n => `## ${n.title || 'Sin título'}\n${stripHtml(n.content).substring(0, 300)}`)
             .join('\n\n---\n\n');
     }, [contextScope, currentNote, notes, subjects]);
 
@@ -203,8 +203,8 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
             id: uid(),
             role: 'assistant',
             content: currentNote
-                ? `Conversa reiniciada. Tinc el context de **"${currentNote.title || 'Sense títol'}"**.`
-                : 'Conversa reiniciada. Pregunta\'m el que necessitis.',
+                ? `Conversación reiniciada. Tengo el contexto de **"${currentNote.title || 'Sin título'}"**.`
+                : 'Conversación reiniciada. Pregúntame lo que necesites.',
         }]);
         setError(null);
     };
@@ -213,8 +213,8 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
     const subjectName = subjects.find(s => s.id === currentNote?.subject_id)?.name;
     const scopeOptions: { value: ContextScope; label: string }[] = [
         { value: 'current', label: 'Nota actual' },
-        { value: 'subject', label: subjectName ? `Assignatura: ${subjectName}` : 'Assignatura' },
-        { value: 'all',     label: 'Totes les notes' },
+        { value: 'subject', label: subjectName ? `Asignatura: ${subjectName}` : 'Asignatura' },
+        { value: 'all',     label: 'Todas las notas' },
     ];
 
     if (!open) return null;
@@ -228,7 +228,7 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#0a0f1e] flex-shrink-0">
                 <div className="flex items-center gap-2">
                     <MessageSquare size={14}/>
-                    <span className="text-sm font-semibold text-white">Assistent IA</span>
+                    <span className="text-sm font-semibold text-white">Asistente IA</span>
                     {loading && (
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                     )}
@@ -237,7 +237,7 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
                     <button
                         onClick={clearChat}
                         className="p-1.5 rounded-lg text-slate-600 hover:text-slate-300 hover:bg-white/5 transition-all"
-                        title="Netejar conversa"
+                        title="Limpiar conversación"
                     >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -246,7 +246,7 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
                     <button
                         onClick={onClose}
                         className="p-1.5 rounded-lg text-slate-600 hover:text-slate-300 hover:bg-white/5 transition-all"
-                        title="Tancar"
+                        title="Cerrar"
                     >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -299,10 +299,10 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
                                 <button
                                     onClick={() => copyMessage(msg)}
                                     className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-slate-700 hover:text-slate-400 transition-all"
-                                    title="Copiar resposta"
+                                    title="Copiar respuesta"
                                 >
                                     {copiedId === msg.id ? (
-                                        <><Check size={14}/><span>Copiat</span></>
+                                        <><Check size={14}/><span>Copiado</span></>
                                     ) : (
                                         <><Clipboard size={14}/><span>Copiar</span></>
                                     )}
@@ -361,7 +361,7 @@ export default function ChatWidget({ open, onClose }: ChatWidgetProps) {
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Escriu un missatge... (Enter per enviar)"
+                    placeholder="Escribe un mensaje..."
                     disabled={loading}
                     rows={1}
                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[12px] text-slate-200 placeholder:text-slate-700 outline-none focus:border-blue-500/40 transition-all resize-none scrollbar-hide disabled:opacity-50"

@@ -929,7 +929,7 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
                                         updateNote(currentNote.id, { subject_id: val });
                                     }}
                                 >
-                                    <option value="" className="bg-[#0a0a0a] text-[#555] uppercase">Sense Assignatura</option>
+                                    <option value="" className="bg-[#0a0a0a] text-[#555] uppercase">Sin asignatura</option>
                                     {subjects.map(s => (
                                         <option key={s.id} value={s.id} className="bg-[#0a0a0a] text-white uppercase">
                                             {s.name}
@@ -950,7 +950,7 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
                         {syncStatus === 'syncing' && (
                             <>
                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping inline-block" />
-                                <span className="text-blue-400">Guardant...</span>
+                                <span className="text-blue-400">Guardando...</span>
                             </>
                         )}
                         {syncStatus === 'synced' && (
@@ -959,7 +959,7 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
                                 </span>
-                                <span className="text-emerald-500">Sincronitzat</span>
+                                <span className="text-emerald-500">Sincronizado</span>
                             </>
                         )}
                         {syncStatus === 'local' && (
@@ -1071,7 +1071,7 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
                 </div>
 
                 {/* Àrea d'edició principal */}
-                <div ref={editorAreaRef} className="flex-1 overflow-y-auto px-6 sm:px-16 py-16 note-editor-scroll relative" style={{ touchAction: inkMode ? 'none' : 'auto' }}>
+                <div ref={editorAreaRef} className="flex-1 overflow-y-auto overflow-x-hidden px-6 sm:px-16 py-16 note-editor-scroll relative" style={{ touchAction: inkMode ? 'none' : 'auto' }}>
                     {/* Empty-state overlay */}
                     {isEmpty && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none animate-fade-in-up">

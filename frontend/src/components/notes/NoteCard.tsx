@@ -34,7 +34,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
             onKeyDown={(e) => e.key === 'Enter' && setCurrentNote(note)}
             className={`group relative w-full text-left p-5 rounded-[var(--border-radius-xl)] transition-all duration-150 overflow-hidden border cursor-pointer active:scale-[0.98] ${isActive
                 ? 'bg-[rgba(59,130,246,0.08)] border-[rgba(59,130,246,0.4)] shadow-[0_0_24px_rgba(59,130,246,0.1)]'
-                : 'bg-[#0a0a0a] border-[#1a1a1a] hover:border-[#222] hover:bg-[#1c2230] hover:translate-x-1'
+                : 'bg-[#0a0a0a] border-[#1a1a1a] hover:border-[#222] hover:bg-[#141414] hover:translate-x-1'
                 }`}
             style={{ minHeight: '140px' }}
         >
@@ -63,7 +63,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                         </button>
 
                         {showMenu && (
-                            <div className="absolute right-0 top-full mt-2 w-48 bg-[#1c2128] border border-[#1a1a1a] rounded-xl shadow-2xl z-[100] py-1 overflow-hidden" onClick={e => e.stopPropagation()}>
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-[#1a1a1a] rounded-xl shadow-2xl z-[100] py-1 overflow-hidden" onClick={e => e.stopPropagation()}>
                                 {!showMove ? (
                                     <>
                                         <button onClick={() => {
@@ -113,7 +113,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                 </p>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between pt-3 border-t border-[rgba(255,255,255,0.06)]">
+                <div className="flex items-center justify-between pt-3 border-t border-[#141414]">
                     <div className="flex items-center gap-1.5">
                         <svg className="w-3 h-3 text-[#444]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"
@@ -125,7 +125,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                     </div>
 
                     {note.ai_processed && (
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-[rgba(59,130,246,0.1)] rounded-[var(--border-radius-sm)] border border-[rgba(56,139,253,0.2)]">
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-[rgba(59,130,246,0.1)] rounded-[var(--border-radius-sm)] border border-[rgba(59,130,246,0.2)]">
                             <span className="text-[#3b82f6]" style={{ fontSize: 'var(--font-size-xs)' }}>✨ Smart</span>
                         </div>
                     )}

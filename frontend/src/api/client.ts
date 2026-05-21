@@ -15,8 +15,12 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     });
 
     if (res.status === 401) {
-        useAuthStore.getState().logout();
-        throw new Error('Sessió expirada');
+        const err = await res.json().catch(() => ({}));
+        if (token) {
+            useAuthStore.getState().logout();
+            throw new Error('Sessió expirada');
+        }
+        throw new Error(err.error || 'Credencials incorrectes');
     }
 
     if (!res.ok) {

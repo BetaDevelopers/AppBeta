@@ -340,7 +340,7 @@ export const PerfilPage: React.FC = () => {
                         </Field>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
                             <Btn onClick={handleSaveProfile} disabled={savingProfile}>
-                                {savingProfile ? 'Guardant…' : 'Guardar canvis'}
+                                {savingProfile ? 'Guardando...' : 'Guardar cambios'}
                             </Btn>
                         </div>
                     </Section>
@@ -399,7 +399,7 @@ export const PerfilPage: React.FC = () => {
                                 Veure plans →
                             </Btn>
                             <Btn onClick={logout} variant="ghost">
-                                Tancar sessió
+                                Cerrar sesión
                             </Btn>
                         </div>
                     </Section>
@@ -418,7 +418,7 @@ export const PerfilPage: React.FC = () => {
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div>
                                 <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>Eliminar compte</div>
-                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Totes les teves notes i dades s'eliminaran permanentment.</div>
+                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Todas tus notas y datos se eliminarán permanentemente.</div>
                             </div>
                             <Btn onClick={() => setShowDelete(true)} variant="danger" small>Eliminar</Btn>
                         </div>

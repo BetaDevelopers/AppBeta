@@ -1,0 +1,105 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - navigation [ref=e5]:
+        - link "Sobre Nosotros" [ref=e6] [cursor=pointer]:
+          - /url: /about
+        - link "Servicios" [ref=e7] [cursor=pointer]:
+          - /url: /services
+        - link "Galería" [ref=e8] [cursor=pointer]:
+          - /url: /gallery
+      - link "Sorella Salón" [ref=e9] [cursor=pointer]:
+        - /url: /
+        - img "Sorella Salón" [ref=e10]
+      - navigation [ref=e11]:
+        - link "Eventos" [ref=e12] [cursor=pointer]:
+          - /url: /events
+        - link "Productos" [ref=e13] [cursor=pointer]:
+          - /url: /products
+        - link "Contacto" [ref=e14] [cursor=pointer]:
+          - /url: /contact
+        - link "Iniciar Sesión" [ref=e15] [cursor=pointer]:
+          - /url: /login
+  - main [ref=e16]:
+    - generic [ref=e17]:
+      - img "Background" [ref=e21]
+      - generic [ref=e22]:
+        - heading "Bienvenida a Sorella Salón" [level=1] [ref=e23]
+        - paragraph [ref=e24]: Belleza natural · Elegancia · Cuidado personal
+        - generic [ref=e25]:
+          - link "Explora nuestros servicios" [ref=e26] [cursor=pointer]:
+            - /url: /services
+          - link "Ver nuestro trabajo" [ref=e27] [cursor=pointer]:
+            - /url: /gallery
+    - generic [ref=e28]:
+      - generic [ref=e29]:
+        - heading "Últimas miradas" [level=3] [ref=e30]
+        - paragraph [ref=e31]: Un vistazo rápido a nuestro trabajo — visita la galería para ver más.
+      - generic [ref=e32]:
+        - img "look" [ref=e35]
+        - img "look" [ref=e38]
+        - img "look" [ref=e41]
+    - generic [ref=e42]:
+      - generic [ref=e43]:
+        - heading "Nuestros Servicios" [level=2] [ref=e44]
+        - paragraph [ref=e45]: Tratamientos pensados para realzar tu belleza natural.
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - generic [ref=e48]: FOTO
+          - heading "Keratina" [level=3] [ref=e49]
+          - paragraph [ref=e50]: Servicios profesionales con productos de máxima calidad.
+        - generic [ref=e51]:
+          - generic [ref=e52]: FOTO
+          - heading "Tratamiento capilar" [level=3] [ref=e53]
+          - paragraph [ref=e54]: Servicios profesionales con productos de máxima calidad.
+        - generic [ref=e55]:
+          - generic [ref=e56]: FOTO
+          - heading "Peluquería" [level=3] [ref=e57]
+          - paragraph [ref=e58]: Servicios profesionales con productos de máxima calidad.
+        - generic [ref=e59]:
+          - generic [ref=e60]: FOTO
+          - heading "Extensiones" [level=3] [ref=e61]
+          - paragraph [ref=e62]: Servicios profesionales con productos de máxima calidad.
+    - generic [ref=e64]:
+      - heading "Novias" [level=2] [ref=e65]
+      - paragraph [ref=e66]: Peinados, maquillaje y preparación para tu día más especial.
+    - generic [ref=e72]:
+      - heading "¿Lista para brillar?" [level=2] [ref=e73]
+      - paragraph [ref=e74]: Reserva tu cita con nuestro equipo profesional.
+      - link "Reserva tu cita" [ref=e75] [cursor=pointer]:
+        - /url: /contact
+  - contentinfo [ref=e76]:
+    - generic [ref=e77]:
+      - generic [ref=e78]:
+        - heading "Sorella Salón" [level=3] [ref=e79]
+        - paragraph [ref=e80]:
+          - img [ref=e81]
+          - text: Carrer de la Indústria 10, 08460 Santa Maria de Palautordera
+        - paragraph [ref=e83]:
+          - img [ref=e84]
+          - link "+34 938 09 53 08" [ref=e86] [cursor=pointer]:
+            - /url: tel:+34938095308
+        - link "@sorellasalon" [ref=e87] [cursor=pointer]:
+          - /url: https://instagram.com/sorellasalon
+          - img [ref=e88]
+          - text: "@sorellasalon"
+        - navigation [ref=e90]:
+          - link "· Sobre Nosotros" [ref=e91] [cursor=pointer]:
+            - /url: /about
+          - link "· Servicios" [ref=e92] [cursor=pointer]:
+            - /url: /services
+          - link "· Galería" [ref=e93] [cursor=pointer]:
+            - /url: /gallery
+          - link "· Novias" [ref=e94] [cursor=pointer]:
+            - /url: /novias
+          - link "· Contacto" [ref=e95] [cursor=pointer]:
+            - /url: /contact
+      - iframe [ref=e97]:
+        
+    - generic [ref=e98]:
+      - text: © 2026 Sorella Salón ·
+      - link "Aviso legal" [ref=e99] [cursor=pointer]:
+        - /url: "#legal"
+      - text: ·
+      - link "Política de privacidad" [ref=e100] [cursor=pointer]:
+        - /url: "#privacy"

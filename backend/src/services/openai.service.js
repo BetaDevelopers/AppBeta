@@ -114,16 +114,17 @@ async function completeSketchPath(partialPath) {
   );
 }
 
-async function askAboutObject(objectData, objectType, noteContext) {
-  return callOpenAI(
-    'Eres un asistente de notas inteligente que ayuda a los estudiantes a entender el contenido de sus apuntes.',
-    `Tipo de objeto: ${objectType}.
+async function askAboutObject(objectData, objectType, noteContext, customPrompt) {
+  const userPrompt = customPrompt ?? `Tipo de objeto: ${objectType}.
 Datos del objeto: ${(objectData ?? '').substring(0, 500)}.
 Contexto de la nota (primeras 300 palabras): ${(noteContext ?? '').substring(0, 300)}.
 
 Describe brevemente qué es este objeto y cómo se relaciona con la nota.
 Responde en el mismo idioma que el contexto de la nota.
-Máximo 3 frases.`
+Máximo 3 frases.`;
+  return callOpenAI(
+    'Eres un asistente de notas inteligente que ayuda a los estudiantes a entender el contenido de sus apuntes.',
+    userPrompt
   );
 }
 

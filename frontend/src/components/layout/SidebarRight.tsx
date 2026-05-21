@@ -144,7 +144,7 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
     return (
         <aside
             className={`
-                sidebar flex-shrink-0 bg-[#0a0a0a] border-l border-[#1a1a1a] flex flex-col overflow-hidden shadow-xl z-[50]
+                sidebar flex-shrink-0 bg-[#0a0a0a] border-l border-[#1a1a1a] flex flex-col overflow-hidden shadow-xl z-[120]
                 ${isOverlay ? 'absolute right-0 top-0 h-full' : 'relative'}
             `}
             style={{ width: 'var(--sidebar-right)' }}

@@ -129,7 +129,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
     const isIconOnly = collapsed && !isOverlay && open;
     // Overlay closed → hidden; overlay open → shown as absolute drawer
     const overlayClass = isOverlay
-        ? `absolute top-0 left-0 h-full z-40 ${open ? 'translate-x-0' : '-translate-x-full'}`
+        ? `absolute top-0 left-0 h-full z-[120] ${open ? 'translate-x-0' : '-translate-x-full'}`
         : 'relative';
 
     return (
@@ -146,7 +146,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                 <div className={`flex items-center pt-5 pb-4 ${isIconOnly ? 'justify-center px-2' : 'justify-between px-5'}`}>
                     {!isIconOnly && (
                         <span className="text-[11px] font-semibold text-[#444] uppercase tracking-widest">
-                            Navegació
+                            Navegación
                         </span>
                     )}
                     <button

@@ -50,7 +50,7 @@ const getOne = async (req, res) => {
 };
 
 const create = async (req, res) => {
-  const { title = 'Sense títol', content = '', subject_id = null } = req.body;
+  const { title = 'Sin título', content = '', subject_id = null } = req.body;
   const userId = req.user.id;
 
   // subject_id ha de ser null o un enter positiu

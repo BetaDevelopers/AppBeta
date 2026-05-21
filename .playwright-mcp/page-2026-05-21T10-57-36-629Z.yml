@@ -1,0 +1,71 @@
+- generic [ref=e5]:
+  - banner [ref=e6]:
+    - generic [ref=e7]:
+      - button "Abrir menú" [active] [ref=e8]:
+        - img [ref=e9]
+      - generic [ref=e11] [cursor=pointer]:
+        - generic [ref=e13]: 3M
+        - generic [ref=e14]: BETA 3M
+    - generic [ref=e15]:
+      - button "Assistent IA" [ref=e16]:
+        - img [ref=e17]
+      - button "Free" [ref=e20]
+      - generic [ref=e23] [cursor=pointer]: T
+      - button "Tancar sessió" [ref=e24]:
+        - img [ref=e25]
+  - generic [ref=e27]:
+    - complementary [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]: Navegació
+        - button "Cerrar sidebar" [ref=e32]:
+          - img [ref=e33]
+      - generic [ref=e35]:
+        - button "Crear nueva nota" [ref=e36]:
+          - generic [ref=e39]:
+            - img [ref=e40]
+            - generic [ref=e42]: Crear nueva nota
+        - button "Todas mis notas 1" [ref=e44]:
+          - generic [ref=e46]: Todas mis notas
+          - generic [ref=e47]: "1"
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - generic [ref=e50]: Asignaturas
+            - button "Nueva asignatura" [ref=e51]:
+              - img [ref=e52]
+          - paragraph [ref=e56]: Sin asignaturas
+        - button "Herramientas" [ref=e58]:
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - text: Herramientas
+          - img [ref=e62]
+      - generic [ref=e65]:
+        - generic [ref=e66]: Beta Access
+        - generic [ref=e67]: v24.4.09
+    - main [ref=e68]:
+      - generic [ref=e70]:
+        - generic [ref=e71]:
+          - generic [ref=e72]:
+            - heading "Mis notas" [level=2] [ref=e73]
+            - paragraph [ref=e74]: 1 nota
+          - button "Nueva nota" [ref=e75]:
+            - img [ref=e76]
+            - text: Nueva nota
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - img [ref=e80]
+            - textbox "Buscar notas..." [ref=e83]
+          - button "IA" [disabled] [ref=e84]:
+            - img [ref=e85]
+            - generic [ref=e88]: IA
+        - button "Sense títol Sin contenido... Hoy" [ref=e91] [cursor=pointer]:
+          - generic [ref=e92]:
+            - generic [ref=e93]:
+              - heading "Sense títol" [level=4] [ref=e94]
+              - button [ref=e96]:
+                - img [ref=e97]
+            - paragraph [ref=e101]: Sin contenido...
+            - generic [ref=e103]:
+              - img [ref=e104]
+              - generic [ref=e106]: Hoy
+    - button "Abrir panel derecho" [ref=e107]:
+      - img [ref=e108]

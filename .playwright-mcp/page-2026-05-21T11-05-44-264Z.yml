@@ -1,0 +1,159 @@
+- generic [ref=e5]:
+  - banner [ref=e6]:
+    - generic [ref=e7]:
+      - button "Abrir menú" [ref=e8]:
+        - img [ref=e9]
+      - generic [ref=e11] [cursor=pointer]:
+        - generic [ref=e13]: 3M
+        - generic [ref=e14]: BETA 3M
+    - generic [ref=e15]:
+      - button "Asistente IA" [ref=e16]:
+        - img [ref=e17]
+      - button "Free" [ref=e20]
+      - generic [ref=e23] [cursor=pointer]: T
+      - button "Cerrar sesión" [ref=e24]:
+        - img [ref=e25]
+  - generic [ref=e27]:
+    - complementary [ref=e28]:
+      - generic [ref=e29]:
+        - generic [ref=e30]: Navegación
+        - button "Cerrar sidebar" [ref=e31]:
+          - img [ref=e32]
+      - generic [ref=e34]:
+        - button "Crear nueva nota" [ref=e35]:
+          - generic [ref=e38]:
+            - img [ref=e39]
+            - generic [ref=e41]: Crear nueva nota
+        - button "Todas mis notas 2" [ref=e42]:
+          - generic [ref=e44]: Todas mis notas
+          - generic [ref=e45]: "2"
+        - generic:
+          - generic [ref=e46]:
+            - generic [ref=e47]: Asignaturas
+            - button "Nueva asignatura" [ref=e48]:
+              - img [ref=e49]
+          - generic [ref=e51]:
+            - paragraph: Sin asignaturas
+        - button "Herramientas" [ref=e52]:
+          - generic [ref=e53]:
+            - img [ref=e54]
+            - text: Herramientas
+          - img
+      - generic [ref=e57]:
+        - generic:
+          - generic [ref=e58]: Beta Access
+          - generic [ref=e59]: v24.4.09
+    - main [ref=e60]:
+      - generic [ref=e128]:
+        - generic [ref=e129]:
+          - generic [ref=e130]:
+            - button [ref=e131]:
+              - img [ref=e132]
+            - generic [ref=e137]:
+              - combobox [ref=e138] [cursor=pointer]:
+                - option "Sin asignatura" [selected]
+              - generic:
+                - img
+          - generic [ref=e139]:
+            - generic [ref=e144]: Sincronizado
+            - button [ref=e145]:
+              - img [ref=e146]
+        - generic [ref=e148]:
+          - generic [ref=e149]:
+            - button "Lápiz" [ref=e150]:
+              - img [ref=e151]
+              - generic [ref=e154]: Lápiz
+            - generic [ref=e155]:
+              - button "Deshacer (Ctrl+Z)" [disabled] [ref=e156]:
+                - img [ref=e157]
+              - button "Rehacer (Ctrl+Y)" [disabled] [ref=e160]:
+                - img [ref=e161]
+            - button "Elegante" [ref=e165]:
+              - img [ref=e166]
+              - generic [ref=e169]: Elegante
+            - button "Resumir" [ref=e170]:
+              - img [ref=e171]
+              - generic [ref=e174]: Resumir
+            - button "Tareas" [ref=e175]:
+              - img [ref=e176]
+              - generic [ref=e179]: Tareas
+            - button "Estudio" [disabled] [ref=e180]:
+              - img [ref=e181]
+              - generic [ref=e183]: Estudio
+            - button "Voz" [ref=e184]:
+              - img [ref=e185]
+              - generic [ref=e188]: Voz
+          - generic [ref=e190]:
+            - textbox "Sin título..." [ref=e191]: Sense títol
+            - generic [ref=e192]:
+              - generic [ref=e193]:
+                - generic [ref=e194]:
+                  - generic [ref=e195]:
+                    - button "Negrita" [ref=e196]:
+                      - img [ref=e197]
+                    - button "Cursiva" [ref=e199]:
+                      - img [ref=e200]
+                    - button "Subrayado" [ref=e202]:
+                      - img [ref=e203]
+                  - button "Modo Lápiz" [ref=e206]:
+                    - img [ref=e207]
+                  - generic [ref=e210]:
+                    - button "Título 1" [ref=e211]:
+                      - img [ref=e212]
+                    - button "Título 2" [ref=e214]:
+                      - img [ref=e215]
+                    - button "Título 3" [ref=e217]:
+                      - img [ref=e218]
+                  - generic [ref=e221]:
+                    - button "Lista" [ref=e222]:
+                      - img [ref=e223]
+                    - button "Lista numerada" [ref=e224]:
+                      - img [ref=e225]
+                  - generic [ref=e228]:
+                    - button "Alinear izquierda" [ref=e229]:
+                      - img [ref=e230]
+                    - button "Centrar" [ref=e231]:
+                      - img [ref=e232]
+                - paragraph [ref=e235]: "Ecuaciones de primer grado: 2x + 4 = 10"
+              - img
+    - button "Abrir panel derecho" [ref=e333]:
+      - img [ref=e334]
+  - generic [ref=e336]:
+    - generic [ref=e337]:
+      - generic [ref=e338]:
+        - img [ref=e339]
+        - generic [ref=e341]: Asistente IA
+      - generic [ref=e342]:
+        - button "Netejar conversa" [ref=e343]:
+          - img [ref=e344]
+        - button "Tancar" [ref=e346]:
+          - img [ref=e347]
+    - combobox [ref=e350] [cursor=pointer]:
+      - 'option "Context: Nota actual" [selected]'
+      - 'option "Context: Assignatura"'
+      - 'option "Context: Totes les notes"'
+    - generic [ref=e352]:
+      - generic [ref=e354]:
+        - text: Hola! Tinc el context de la nota
+        - strong [ref=e355]: "\"Sense títol\""
+        - text: . En què et puc ajudar?
+      - button "Copiar" [ref=e356]:
+        - img [ref=e357]
+        - generic [ref=e360]: Copiar
+    - generic [ref=e361]:
+      - button "Resum" [ref=e362]:
+        - img [ref=e364]
+        - generic [ref=e367]: Resum
+      - button "Preguntes" [ref=e368]:
+        - img [ref=e370]
+        - generic [ref=e378]: Preguntes
+      - button "Explica" [ref=e379]:
+        - img [ref=e381]
+        - generic [ref=e384]: Explica
+      - button "Millora" [ref=e385]:
+        - img [ref=e387]
+        - generic [ref=e390]: Millora
+    - generic [ref=e391]:
+      - textbox "Escriu un missatge... (Enter per enviar)" [active] [ref=e392]
+      - button "Enviar" [disabled] [ref=e393]:
+        - img [ref=e394]

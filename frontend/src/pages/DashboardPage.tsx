@@ -132,7 +132,7 @@ export default function DashboardPage() {
                 {/* Overlay backdrop — mobile & tablet-portrait */}
                 {isLeftOverlay && leftOpen && (
                     <div
-                        className="absolute inset-0 bg-black/60 z-30"
+                        className="absolute inset-0 bg-black/60 z-[110]"
                         onClick={() => setLeftOpen(false)}
                     />
                 )}
@@ -150,7 +150,7 @@ export default function DashboardPage() {
                 {/* Right sidebar overlay backdrop */}
                 {isRightOverlay && rightOpen && (
                     <div
-                        className="absolute inset-0 bg-black/40 z-30"
+                        className="absolute inset-0 bg-black/40 z-[110]"
                         onClick={() => setRightOpen(false)}
                     />
                 )}
@@ -158,7 +158,7 @@ export default function DashboardPage() {
                 {/* Right sidebar toggle button — visible on tablet/mobile */}
                 {!rightOpen && isRightOverlay && (
                     <button
-                        className="toolbar absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center bg-[#1e293b] border border-white/10 border-r-0 rounded-l-xl text-[#8B949E] hover:text-white transition-colors shadow-xl"
+                        className="toolbar absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center bg-[#1e293b] border border-white/10 border-r-0 rounded-l-xl text-[#555] hover:text-white transition-colors shadow-xl"
                         style={{ width: '28px', height: '52px' }}
                         onClick={() => setRightOpen(true)}
                         aria-label="Abrir panel derecho"

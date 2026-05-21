@@ -1,0 +1,65 @@
+- generic [ref=e33]:
+  - banner [ref=e34]:
+    - generic [ref=e35]:
+      - button "Abrir menú" [ref=e36]:
+        - img [ref=e37]
+      - generic [ref=e39] [cursor=pointer]:
+        - generic [ref=e41]: 3M
+        - generic [ref=e42]: BETA 3M
+    - generic [ref=e43]:
+      - button "Assistent IA" [ref=e44]:
+        - img [ref=e45]
+      - button "Free" [ref=e48]
+      - generic [ref=e51] [cursor=pointer]: T
+      - button "Tancar sessió" [ref=e52]:
+        - img [ref=e53]
+  - generic [ref=e55]:
+    - complementary [ref=e56]:
+      - generic [ref=e57]:
+        - generic [ref=e58]: Navegació
+        - button "Cerrar sidebar" [ref=e59]:
+          - img [ref=e60]
+      - generic [ref=e62]:
+        - button "Crear nueva nota" [ref=e63]:
+          - generic [ref=e66]:
+            - img [ref=e67]
+            - generic [ref=e69]: Crear nueva nota
+        - button "Todas mis notas" [ref=e70]:
+          - generic [ref=e72]: Todas mis notas
+        - generic:
+          - generic [ref=e73]:
+            - generic [ref=e74]: Asignaturas
+            - button "Nueva asignatura" [ref=e75]:
+              - img [ref=e76]
+          - generic [ref=e78]:
+            - paragraph: Sin asignaturas
+        - button "Herramientas" [ref=e79]:
+          - generic [ref=e80]:
+            - img [ref=e81]
+            - text: Herramientas
+          - img
+      - generic [ref=e84]:
+        - generic:
+          - generic [ref=e85]: Beta Access
+          - generic [ref=e86]: v24.4.09
+    - main [ref=e87]:
+      - generic [ref=e88]:
+        - img [ref=e90]
+        - generic [ref=e92]:
+          - heading "Escribe tu primera nota" [level=2] [ref=e93]
+          - paragraph [ref=e94]: Digitaliza tus apuntes con IA y organiza tu conocimiento de forma profesional.
+        - button "Nueva nota inteligente" [ref=e95]:
+          - img [ref=e97]
+          - generic [ref=e99]: Nueva nota inteligente
+        - generic [ref=e100]:
+          - generic [ref=e101]:
+            - img [ref=e102]
+            - generic [ref=e105]: IA integrada
+          - generic [ref=e106]:
+            - img [ref=e107]
+            - generic [ref=e110]: Escaneo OCR
+          - generic [ref=e111]:
+            - img [ref=e112]
+            - generic [ref=e114]: Matemáticas
+    - button "Abrir panel derecho" [ref=e115]:
+      - img [ref=e116]
