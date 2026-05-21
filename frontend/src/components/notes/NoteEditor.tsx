@@ -20,13 +20,15 @@ import { useUIStore } from '../../store/uiStore';
 import { useMathOCR, MathRegion } from '@/features/ai/hooks/useMathOCR';
 import { markdownToHtml } from '../../utils/editorUtils';
 import { useSubjectsStore } from '../../store/subjectsStore';
-import { Pencil, Sparkles, FileText, Trash2, Undo2, Redo2, Mic, MicOff, BookOpen, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Sparkles, FileText, Trash2, Undo2, Redo2, Mic, MicOff, BookOpen, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useVoiceTranscription } from '../../hooks/useVoiceTranscription';
 import { useFloatingHistory } from '../../hooks/useHistory';
 import InkCanvas, { Stroke } from './InkCanvas';
 import type { InkCanvasRef } from './InkCanvas';
-import InkToolbar from './InkToolbar';
 import { postCanvasForOcr } from '../../services/ocrApi';
+import BottomToolbar from '../toolbar/BottomToolbar';
+import RulerOverlay from '../toolbar/RulerOverlay';
+import type { DrawSettings, RulerState } from '../toolbar/BottomToolbar';
 import { useAutoBeautify } from '../../hooks/useAutoBeautify';
 import FloatingObjectComponent from './FloatingObject';
 import type { FloatingObject } from '../../types/canvas';
@@ -289,6 +291,16 @@ export const NoteEditor: React.FC = () => {
     const { mode, setMode } = usePointerMode(editorAreaRef);
     const [strokeWidth, setStrokeWidth] = useState(2);
     const [isFlashActive, setIsFlashActive] = useState(false);
+    const [drawSettings, setDrawSettings] = useState<DrawSettings>({
+        tool: 'pencil',
+        color: 'rgba(255,255,255,0.85)',
+        width: 2,
+        opacity: 1,
+        drawWithFinger: false,
+        palmRejection: true,
+    });
+    const [rulerActive, setRulerActive] = useState(false);
+    const [rulerState, setRulerState] = useState<RulerState>({ ax: 80, ay: 200, bx: 420, by: 200 });
     const isEmpty =
         title.trim() === '' &&
         content.replace(/<[^>]*>/g, '').trim() === '';
@@ -887,6 +899,33 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
         insertTextAt(editor, text, inkCanvasRef.current?.getSvgElement() ?? null, cx, cy);
     }, [editor]);
 
+    const handleTextToolTap = useCallback((x: number, y: number) => {
+        const newObj: FloatingObject = {
+            id: crypto.randomUUID(),
+            type: 'text',
+            position: { x, y },
+            dimensions: { width: 200, height: 80 },
+            textContent: '',
+            stroke: drawSettings.color,
+            fontSize: 16,
+            isSelected: true,
+            rotation: 0,
+        };
+        setFloatingObjects(prev => [...prev, newObj]);
+        setTimeout(() => pushSnapshot(), 0);
+    }, [drawSettings.color, pushSnapshot]);
+
+    const handleAddFloatingObject = useCallback((obj: Omit<FloatingObject, 'id' | 'isSelected' | 'rotation'>) => {
+        const full: FloatingObject = {
+            ...obj,
+            id: crypto.randomUUID(),
+            isSelected: false,
+            rotation: 0,
+        };
+        setFloatingObjects(prev => [...prev, full]);
+        setTimeout(() => pushSnapshot(), 0);
+    }, [pushSnapshot]);
+
     const handleFloatLatexChange = useCallback((id: string, latex: string) => {
         setFloatingObjects(prev => prev.map(o => o.id === id ? { ...o, latexSource: latex } : o));
         setTimeout(() => pushSnapshot(), 0);
@@ -1000,15 +1039,10 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
             </div>
 
             {/* Main: Left Vertical Toolbar + Editor */}
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-hidden flex-col">
+              <div className="flex flex-1 overflow-hidden">
                 {/* ── Left Vertical Toolbar ── */}
                 <div className="flex flex-col items-center gap-1 py-4 px-2 glass border-r border-[#111] w-[72px] flex-shrink-0 overflow-y-auto scrollbar-hide">
-                    {/* Primary Tools */}
-                    <ToolBtn onClick={() => setInkMode(!inkMode)} title="Modo Dibujo Inteligente" accent={inkMode}>
-                        <Pencil size={22} />
-                        <span className="text-[10px] uppercase tracking-tighter font-black">Lápiz</span>
-                    </ToolBtn>
-
                     <div className="flex gap-1 w-full">
                         <button
                             onClick={undo} disabled={!canUndo}
@@ -1216,70 +1250,28 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
                                 <InkCanvas
                                     ref={inkCanvasRef}
                                     active={inkMode}
-                                    strokeWidth={strokeWidth}
+                                    strokeWidth={drawSettings.width}
+                                    strokeColor={drawSettings.color}
+                                    drawTool={drawSettings.tool}
+                                    drawOpacity={drawSettings.opacity}
+                                    drawWithFinger={drawSettings.drawWithFinger}
+                                    palmRejection={drawSettings.palmRejection}
+                                    editorScrollRef={editorAreaRef}
+                                    rulerState={rulerActive ? rulerState : null}
                                     onChangeStrokes={onStrokeFinish}
                                     onStrokeObject={handleStrokesToObject}
                                     onOcrText={handleOcrText}
+                                    onTextTap={handleTextToolTap}
                                     processingStatus={autoStatus}
                                 />
+                            )}
+                            {/* LAYER 3.5 — Ruler overlay */}
+                            {inkMode && rulerActive && (
+                                <RulerOverlay ruler={rulerState} onChange={setRulerState} />
                             )}
                         </div>
                         );
                         })()}
-                        {inkMode && (
-                            <>
-                                <InkToolbar
-                                    active={inkMode}
-                                    thickness={strokeWidth}
-                                    onThicknessChange={setStrokeWidth}
-                                    onUndo={() => {
-                                        // Undo logic could be added here or via event
-                                        window.dispatchEvent(new CustomEvent('canvas-undo'));
-                                    }}
-                                    onClear={() => {
-                                        if (inkCanvasRef.current) {
-                                            // Simplest way to clear for now is re-mounting or a ref method
-                                            setInkMode(false);
-                                            setTimeout(() => setInkMode(true), 0);
-                                        }
-                                    }}
-                                    onEraser={() => {
-                                        setToast('Borrador: Usa el botón de limpiar para empezar de nuevo');
-                                        setTimeout(() => setToast(null), 3000);
-                                    }}
-                                    onBeautify={async () => {
-                                        if (!inkCanvasRef.current) return;
-                                        setProcessing(true);
-                                        setIsFlashActive(true);
-                                        setTimeout(() => setIsFlashActive(false), 300);
-                                        
-                                        const base64 = await inkCanvasRef.current.captureCanvas();
-                                        try {
-                                            const result = await postCanvasForOcr(base64);
-                                            if (!result) {
-                                                setToast('Necesitas plan Pro para usar esta función');
-                                                return;
-                                            }
-                                            if (result.type === 'text') {
-                                                handleDrawingToText(result.content);
-                                            } else if (result.type === 'latex') {
-                                                handleInsertAsLatex(result.content);
-                                            } else if (result.type === 'svg') {
-                                                handleInsertDrawingAsImage(result.content);
-                                            }
-                                            setToast('Convertido con éxito');
-                                        } catch (e) {
-                                            setToast('Error procesando dibujo');
-                                        } finally {
-                                            setProcessing(false);
-                                            setInkMode(false);
-                                            setTimeout(() => setToast(null), 3000);
-                                        }
-                                    }}
-                                    processing={processing}
-                                />
-                            </>
-                        )}
 
                         {/* Flash Effect */}
                         {isFlashActive && (
@@ -1287,7 +1279,29 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
                         )}
                     </div>
                 </div>
-            </div>
+              </div>{/* closes inner flex-row */}
+
+              {/* ── Bottom Toolbar ── */}
+              {editor && (
+                <BottomToolbar
+                  editor={editor}
+                  inkMode={inkMode}
+                  setInkMode={setInkMode}
+                  inkCanvasRef={inkCanvasRef}
+                  onAddFloatingObject={handleAddFloatingObject}
+                  onUndo={undo}
+                  onRedo={redo}
+                  canUndo={canUndo}
+                  canRedo={canRedo}
+                  drawSettings={drawSettings}
+                  onDrawSettingsChange={setDrawSettings}
+                  rulerState={rulerState}
+                  onRulerStateChange={setRulerState}
+                  rulerActive={rulerActive}
+                  onRulerActiveChange={setRulerActive}
+                />
+              )}
+            </div>{/* closes outer flex-col */}
 
             <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Eliminar nota">
                 <div className="p-2">

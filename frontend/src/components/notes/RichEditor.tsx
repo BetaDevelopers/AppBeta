@@ -34,6 +34,7 @@ interface RichEditorProps {
     ) => void;
     inkMode?: boolean;
     toggleInk?: () => void;
+    hideToolbar?: boolean;
 }
 
 function BubbleBtn({ onClick, active, children, title }: any) {
@@ -52,7 +53,7 @@ function BubbleBtn({ onClick, active, children, title }: any) {
     );
 }
 
-export default function RichEditor({ content, onChange, isTypingAI, onEditorReady, onEqualsDetected, inkMode, toggleInk }: RichEditorProps) {
+export default function RichEditor({ content, onChange, isTypingAI, onEditorReady, onEqualsDetected, inkMode, toggleInk, hideToolbar = true }: RichEditorProps) {
     const onEqualsDetectedRef = useRef(onEqualsDetected);
     useEffect(() => { onEqualsDetectedRef.current = onEqualsDetected; }, [onEqualsDetected]);
 
@@ -159,8 +160,8 @@ export default function RichEditor({ content, onChange, isTypingAI, onEditorRead
 
     return (
         <div className="flex-1 w-full max-w-4xl mx-auto flex flex-col">
-            {/* Toolbar Permanent — oculta en modo lápiz para no interferir con el stylus */}
-            <div className={`flex items-center gap-1.5 glass border border-[#111] px-3 py-2.5 mb-10 sticky top-[80px] z-[90] backdrop-blur-3xl rounded-xl shadow-xl transition-all duration-200 ${inkMode ? 'opacity-0 pointer-events-none select-none' : 'opacity-100'}`}>
+            {/* Toolbar Permanent — oculta cuando BottomToolbar está activo o en modo lápiz */}
+            <div className={`flex items-center gap-1.5 glass border border-[#111] px-3 py-2.5 mb-10 sticky top-[80px] z-[90] backdrop-blur-3xl rounded-xl shadow-xl transition-all duration-200 ${hideToolbar || inkMode ? 'hidden' : 'opacity-100'}`}>
                 <div className="flex items-center gap-1 px-1">
                     <BubbleBtn onClick={() => editor.chain().focus().toggleBold().run()}
                         active={editor.isActive('bold')} title="Negrita"><Bold size={14} /></BubbleBtn>

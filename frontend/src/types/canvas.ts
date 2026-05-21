@@ -1,4 +1,4 @@
-export type FloatingObjectType = 'stroke' | 'shape' | 'image' | 'ocr-scan' | 'equation' | 'connector';
+export type FloatingObjectType = 'stroke' | 'shape' | 'image' | 'ocr-scan' | 'equation' | 'connector' | 'text' | 'sticker';
 
 export type ResizeHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
 
@@ -38,4 +38,7 @@ export interface FloatingObject {
   stroke?: string;
   strokeWidth?: number;
   fill?: string;
+  stickerEmoji?: string;
+  textContent?: string;
+  fontSize?: number;
 }

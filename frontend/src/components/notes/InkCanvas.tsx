@@ -3,6 +3,10 @@ import { smoothPoints } from './utils/strokeUtils';
 import type { AutoStatus } from '../../hooks/useAutoBeautify';
 import type { FloatingObject } from '../../types/canvas';
 import { postCanvasForOcr, fixHandwritingText } from '../../services/ocrApi';
+import type { DrawTool } from '../toolbar/toolbarTypes';
+import type { RulerState } from '../toolbar/RulerOverlay';
+import { projectPointOnLine } from '../toolbar/RulerOverlay';
+import { useMultiTouch } from '../../hooks/useMultiTouch';
 
 export interface Point {
   x: number;
@@ -29,9 +33,16 @@ type Props = {
   active: boolean;
   strokeWidth?: number;
   strokeColor?: string;
+  drawTool?: DrawTool;
+  drawOpacity?: number;
+  drawWithFinger?: boolean;
+  palmRejection?: boolean;
+  editorScrollRef?: React.RefObject<HTMLDivElement | null>;
+  rulerState?: RulerState | null;
   onChangeStrokes?: (strokes: Stroke[]) => void;
   onStrokeObject?: (obj: FloatingObject) => void;
   onOcrText?: (text: string, cx: number, cy: number) => void;
+  onTextTap?: (x: number, y: number) => void;
   processingStatus?: AutoStatus;
 };
 
@@ -173,6 +184,24 @@ function normalizeSvgData(strokes: Stroke[], offsetX: number, offsetY: number): 
     .join(' ');
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function hexOrRgbaWithOpacity(color: string, opacity: number): string {
+  if (opacity >= 1) return color;
+  if (color.startsWith('rgba')) {
+    return color.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)/, (_, r, g, b) =>
+      `rgba(${r},${g},${b},${opacity})`
+    );
+  }
+  if (color.startsWith('#') && color.length === 7) {
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${opacity})`;
+  }
+  return color;
+}
+
 // ── Status pill ───────────────────────────────────────────────────────────────
 
 function StatusPill({ status }: { status: AutoStatus }) {
@@ -221,14 +250,24 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
   active,
   strokeWidth = 2,
   strokeColor = 'rgba(255,255,255,0.8)',
+  drawTool = 'pencil',
+  drawOpacity = 1,
+  drawWithFinger = false,
+  palmRejection = true,
+  editorScrollRef,
+  rulerState = null,
   onChangeStrokes,
   onStrokeObject,
   onOcrText,
+  onTextTap,
   processingStatus = 'idle',
 }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
+  const { isPanning, onDown: panDown, onMove: panMove, onUp: panUp } = useMultiTouch(
+    editorScrollRef as React.RefObject<HTMLElement | null>
+  );
 
   // Ref so finishStroke always sees latest strokes without stale closure
   const strokesRef = useRef<Stroke[]>([]);
@@ -435,18 +474,46 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     }
   }, [fireBuffer]);
 
+  const shouldIgnoreTouch = (e: React.PointerEvent) =>
+    e.pointerType === 'touch' && !drawWithFinger;
+
   const handlePointerDown = (e: React.PointerEvent) => {
     if (!active) return;
+
+    // panDown returns true synchronously when 2+ fingers are active
+    if (panDown(e)) return;
+
+    if (shouldIgnoreTouch(e)) return;
+
     (e.target as SVGElement).setPointerCapture(e.pointerId);
+
+    // Text tool: report tap position and do not draw
+    if (drawTool === 'text') {
+      const pt = toSvgPoint(e);
+      onTextTap?.(pt.x, pt.y);
+      return;
+    }
+
     if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
-    // Tap while suggestion active → reject suggestion
     if (completionPathRef.current) clearCompletion();
     setCurrentPoints([toSvgPoint(e)]);
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!active || currentPoints.length === 0) return;
-    const pt = toSvgPoint(e);
+    if (!active) return;
+    if (panMove(e)) return; // consumed by multi-touch pan
+
+    if (currentPoints.length === 0) return;
+    if (shouldIgnoreTouch(e)) return;
+
+    let pt = toSvgPoint(e);
+
+    // Ruler snap: project onto ruler line if within 20px
+    if (rulerState && drawTool !== 'eraser') {
+      const { ax, ay, bx, by } = rulerState;
+      const proj = projectPointOnLine(pt.x, pt.y, ax, ay, bx, by);
+      if (proj.dist < 20) pt = { ...pt, x: proj.x, y: proj.y };
+    }
     setCurrentPoints(p => [...p, pt]);
 
     // Clear any previous completion suggestion when user continues drawing
@@ -492,14 +559,35 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     clearCompletion();
 
     if (currentPoints.length < 2) { setCurrentPoints([]); return; }
+
+    // Eraser mode: don't commit strokes as FloatingObjects
+    if (drawTool === 'eraser') { setCurrentPoints([]); return; }
+
     const now = Date.now();
     const dx = currentPoints[0].x - currentPoints[currentPoints.length - 1].x;
     const dy = currentPoints[0].y - currentPoints[currentPoints.length - 1].y;
     const dist = Math.hypot(dx, dy);
     const elapsed = now - (strokesRef.current[strokesRef.current.length - 1]?.timestamp || now - 100);
     const speed = elapsed > 0 ? dist / elapsed : 1;
-    const dynamicWidth = Math.max(1, Math.min(8, strokeWidth / (speed + 0.1)));
-    const newStroke: Stroke = { points: currentPoints, width: dynamicWidth, color: strokeColor, timestamp: now };
+
+    // Tool-specific width calculation
+    let finalWidth: number;
+    if (drawTool === 'fountain') {
+      finalWidth = Math.max(1, Math.min(10, strokeWidth * 2 / (speed * 0.8 + 0.5)));
+    } else if (drawTool === 'pencil') {
+      finalWidth = Math.max(1, Math.min(8, strokeWidth / (speed + 0.1)));
+    } else {
+      finalWidth = strokeWidth;
+    }
+
+    // Tool-specific color/opacity
+    const markerOpacity = drawTool === 'marker' ? Math.min(drawOpacity, 0.45) : drawOpacity;
+    const finalColor = drawTool === 'marker'
+      ? hexOrRgbaWithOpacity(strokeColor, markerOpacity)
+      : hexOrRgbaWithOpacity(strokeColor, drawOpacity);
+
+    const dynamicWidth = finalWidth;
+    const newStroke: Stroke = { points: currentPoints, width: dynamicWidth, color: finalColor, timestamp: now };
 
     // If there was an active suggestion, merge it into the stroke's svgData as a second path
     // by appending the completion to the stroke's points via a synthetic merged stroke
@@ -522,6 +610,8 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
 
   const handlePointerUp = (e: React.PointerEvent) => {
     if (!active) return;
+    panUp(e);
+    if (shouldIgnoreTouch(e)) return;
     (e.target as SVGElement).releasePointerCapture(e.pointerId);
     finishStroke();
   };
@@ -580,6 +670,21 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
         </div>
       ))}
 
+      {/* Pan indicator */}
+      {isPanning && (
+        <div style={{
+          position: 'absolute', bottom: 16, right: 16, zIndex: 20,
+          background: 'rgba(15,15,30,0.7)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 8, padding: '4px 10px',
+          fontSize: 11, color: 'rgba(255,255,255,0.6)',
+          pointerEvents: 'none',
+          backdropFilter: 'blur(8px)',
+        }}>
+          ✋ Desplazando
+        </div>
+      )}
+
       <svg
         ref={svgRef}
         width="100%"
@@ -589,7 +694,7 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
           position: 'absolute', inset: 0, zIndex: 3,
           background: 'transparent',
           pointerEvents: active ? 'all' : 'none',
-          cursor: active ? 'crosshair' : 'default',
+          cursor: drawTool === 'eraser' ? 'cell' : drawTool === 'text' ? 'text' : active ? 'crosshair' : 'default',
           touchAction: 'none',
         }}
         onPointerDown={handlePointerDown}

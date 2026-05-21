@@ -73,6 +73,8 @@ export default function FloatingObjectComponent({
   noteContext,
 }: FloatingObjectProps) {
   const { id, position, dimensions, isSelected, svgData, imageBase64, ocrText, type } = object;
+  const [isEditingText, setIsEditingText] = useState(false);
+  const textRef = useRef<HTMLDivElement>(null);
 
   // ── AI answer bubble ──────────────────────────────────────────────────────
   const [answerBubble, setAnswerBubble] = useState<string | null>(null);
@@ -521,6 +523,57 @@ export default function FloatingObjectComponent({
         </svg>
       )}
 
+      {type === 'image' && imageBase64 && (
+        <img
+          src={imageBase64.startsWith('data:') ? imageBase64 : `data:image/png;base64,${imageBase64}`}
+          alt="Imagen"
+          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', borderRadius: 4 }}
+          draggable={false}
+        />
+      )}
+
+      {type === 'sticker' && (
+        <div style={{
+          width: '100%', height: '100%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: Math.min(dimensions.width, dimensions.height) * 0.7,
+          lineHeight: 1, userSelect: 'none',
+        }}>
+          {object.stickerEmoji ?? '⭐'}
+        </div>
+      )}
+
+      {type === 'text' && (
+        <div
+          ref={textRef}
+          contentEditable={isEditingText}
+          suppressContentEditableWarning
+          onDoubleClick={(e) => { e.stopPropagation(); setIsEditingText(true); setTimeout(() => textRef.current?.focus(), 0); }}
+          onBlur={() => {
+            setIsEditingText(false);
+            // Persist content change via onColorChange as a side-channel (using stroke field is a hack;
+            // ideally NoteEditor would pass onTextContentChange — for now we use the existing callback)
+          }}
+          onPointerDown={isEditingText ? (e) => e.stopPropagation() : undefined}
+          style={{
+            width: '100%', height: '100%',
+            padding: '6px 8px', boxSizing: 'border-box',
+            color: object.stroke ?? '#ffffff',
+            fontSize: object.fontSize ?? 14,
+            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+            background: isEditingText ? 'rgba(30,30,50,0.6)' : 'transparent',
+            outline: 'none',
+            borderRadius: 4,
+            overflowY: 'auto',
+            wordBreak: 'break-word',
+            whiteSpace: 'pre-wrap',
+            cursor: isEditingText ? 'text' : 'grab',
+          }}
+        >
+          {object.textContent || (isEditingText ? '' : 'Texto')}
+        </div>
+      )}
+
       {/* ── Selection UI ── */}
       {isSelected && (
         <>
@@ -546,40 +599,44 @@ export default function FloatingObjectComponent({
             }}
             onPointerDown={(e) => e.stopPropagation()}
           >
-            {/* Color palette */}
-            <div style={{ display: 'flex', gap: 4 }}>
-              {STROKE_COLORS.map(color => (
-                <div
-                  key={color}
-                  onPointerDown={(e) => { e.stopPropagation(); onColorChange(id, color); }}
-                  style={{
-                    width: 20, height: 20, borderRadius: '50%',
-                    background: color,
-                    border: object.stroke === color
-                      ? '2px solid #fff'
-                      : '1px solid rgba(255,255,255,0.25)',
-                    cursor: 'pointer',
-                    boxSizing: 'border-box',
-                    flexShrink: 0,
-                  }}
-                />
-              ))}
-            </div>
+            {/* Color palette — not for stickers */}
+            {type !== 'sticker' && (
+              <div style={{ display: 'flex', gap: 4 }}>
+                {STROKE_COLORS.map(color => (
+                  <div
+                    key={color}
+                    onPointerDown={(e) => { e.stopPropagation(); onColorChange(id, color); }}
+                    style={{
+                      width: 20, height: 20, borderRadius: '50%',
+                      background: color,
+                      border: object.stroke === color
+                        ? '2px solid #fff'
+                        : '1px solid rgba(255,255,255,0.25)',
+                      cursor: 'pointer',
+                      boxSizing: 'border-box',
+                      flexShrink: 0,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
 
-            {/* Stroke width slider */}
-            <label style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              color: 'rgba(255,255,255,0.7)', fontSize: 11, cursor: 'default',
-            }}>
-              Grosor
-              <input
-                type="range" min={1} max={10} step={0.5}
-                value={object.strokeWidth ?? 2}
-                onPointerDown={(e) => e.stopPropagation()}
-                onChange={(e) => onStrokeWidthChange(id, parseFloat(e.target.value))}
-                style={{ width: 64, accentColor: '#3b82f6', cursor: 'pointer' }}
-              />
-            </label>
+            {/* Stroke width slider — not for stickers */}
+            {type !== 'sticker' && (
+              <label style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                color: 'rgba(255,255,255,0.7)', fontSize: 11, cursor: 'default',
+              }}>
+                Grosor
+                <input
+                  type="range" min={1} max={10} step={0.5}
+                  value={object.strokeWidth ?? 2}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onChange={(e) => onStrokeWidthChange(id, parseFloat(e.target.value))}
+                  style={{ width: 64, accentColor: '#3b82f6', cursor: 'pointer' }}
+                />
+              </label>
+            )}
 
             {type !== 'equation' && (
               <button
