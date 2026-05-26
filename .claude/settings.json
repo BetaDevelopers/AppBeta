@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ipconfig)",
+      "Bash(powershell -Command 'Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '\\\\''127.*'\\\\'' -and $_.IPAddress -notlike '\\\\''169.*'\\\\'' } | Format-Table IPAddress, InterfaceAlias -AutoSize')",
+      "Bash(pkill -f \"node.*backend\")",
+      "Bash(pkill -f \"nodemon\")",
+      "Read(//tmp/**)",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(npm run *)",
+      "Bash(echo \"backend pid=$!\")",
+      "Bash(echo \"frontend pid=$!\")",
+      "Read(//c/c/Users/Nacho/Documents/GitHub/AppBeta/frontend/**)",
+      "Bash(grep -rn \"insertLatex\\\\|insertContent.*latex\\\\|LaTeX\\\\|math-pill\\\\|MathPill\\\\|onEqualsDetected\\\\|\\\\$\\\\$\\\\|latexSource\\\\|equation\" src/ --include=\"*.tsx\" --include=\"*.ts\" --include=\"*.jsx\" -l)",
+      "Bash(grep -n \"\\\\$\\\\$\\\\|insertLatex\\\\|insertContent.*latex\\\\|insertContent.*\\\\$\" src/components/notes/NoteEditor.tsx)",
+      "Bash(grep -n \"\\\\$\\\\$\\\\|insertLatex\\\\|latex\\\\|Latex\" src/components/math/MathToolsModals.tsx)",
+      "Bash(grep -n \"latex\\\\|equation\\\\|\\\\$\\\\$\\\\|\\\\$\\\\$\" src/components/notes/MathPill.tsx)",
+      "Bash(grep -n \"insertContent\\\\|latex\\\\|\\\\$\\\\$\" src/components/notes/SolvePanel.tsx)",
+      "Bash(grep -n \"insertContent\\\\|latex\\\\|\\\\$\" src/components/notes/SelectionMenu.tsx)",
+      "Bash(grep -n \"insertContent\\\\|\\\\$\\\\$\\\\|latex\\\\|equation\\\\|LaTeX\" src/components/notes/NoteEditor.tsx)",
+      "Bash(grep -n \"markdownToHtml\\\\|\\\\$\\\\$\\\\|\\\\$\" src/utils/editorUtils.ts)"
+    ]
+  }
+}

@@ -35,12 +35,26 @@ export default function MathToolsModals() {
 
     const insertMarkdown = (md: string) => {
         if (!editor || !md) return;
-        insertHtml(markdownToHtml(md));
+        // Split on $$...$$ and $...$ so math segments get proper Tiptap nodes
+        const parts = md.split(/((?:\$\$[\s\S]*?\$\$|\$[^$\n]+?\$))/g);
+        const chain = editor.chain().focus();
+        parts.forEach(part => {
+            if (part.startsWith('$$') && part.endsWith('$$') && part.length > 4) {
+                const latex = part.slice(2, -2).trim();
+                if (latex) chain.insertBlockMath({ latex });
+            } else if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
+                const latex = part.slice(1, -1).trim();
+                if (latex) chain.insertInlineMath({ latex });
+            } else if (part.trim()) {
+                chain.insertContent(markdownToHtml(part));
+            }
+        });
+        chain.run();
     };
 
     const insertLatex = (latex: string) => {
         if (!editor || !latex) return;
-        editor.chain().focus().insertContent(`$$${latex}$$`).run();
+        editor.chain().focus().insertBlockMath({ latex }).run();
     };
 
     const insertAndClose = (type: 'html' | 'md' | 'latex' | 'image', content: string) => {
@@ -192,7 +206,7 @@ export default function MathToolsModals() {
                             attrs: {
                                 src: imageBase64,
                                 alt: `CHART:${configEncoded}`,
-                                width: 600,
+                                width: 380,
                             },
                         }).run();
                         closeTool();

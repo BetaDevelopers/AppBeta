@@ -6,7 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
 import { SubjectModal } from '../subjects/SubjectModal';
 import type { Subject } from '../../types';
-import { PenLine, ScanLine, Sigma, BarChart2, TrendingDown, Triangle, GitBranch, Crosshair, Wrench } from 'lucide-react';
+import { PenLine, ScanLine, Sigma, BarChart2, TrendingDown, Triangle, GitBranch, Wrench } from 'lucide-react';
 
 interface SidebarLeftProps {
     open: boolean;
@@ -24,7 +24,6 @@ const EINES: { tool: string; icon: React.ReactNode; label: string }[] = [
     { tool: 'chartToTable', icon: <TrendingDown size={18} />, label: 'Gráfico → tabla' },
     { tool: 'geometry',     icon: <Triangle size={18} />,    label: 'Geometría' },
     { tool: 'diagram',      icon: <GitBranch size={18} />,   label: 'Diagrama' },
-    { tool: 'calibrate',    icon: <Crosshair size={18} />,   label: 'Calibrar escritura' },
 ];
 
 interface ContextMenu {

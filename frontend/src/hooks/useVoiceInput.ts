@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 
-export function useVoiceInput(onResult: (text: string, isFinal: boolean) => void) {
+export function useVoiceInput(onResult: (text: string, isFinal: boolean) => void, lang?: string) {
   const recognition = useRef<any>(null);
   const [isListening, setIsListening] = useState(false);
   const [isSupported] = useState(
@@ -19,7 +19,7 @@ export function useVoiceInput(onResult: (text: string, isFinal: boolean) => void
     recognition.current = new SR();
     recognition.current.continuous = true;
     recognition.current.interimResults = true;
-    recognition.current.lang = navigator.language || 'es-ES';
+    recognition.current.lang = lang || navigator.language || 'es-ES';
 
     recognition.current.onresult = (e: any) => {
       let interim = '';

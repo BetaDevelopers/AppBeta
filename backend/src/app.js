@@ -30,6 +30,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(` Beta 3M API corrent a http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(` Beta 3M API corrent a http://0.0.0.0:${PORT}`);
 });

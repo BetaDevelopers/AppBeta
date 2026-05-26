@@ -149,6 +149,34 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
             `}
             style={{ width: 'var(--sidebar-right)' }}
         >
+            {/* Collapse tab — left edge, desktop mode */}
+            {!isOverlay && onClose && (
+                <button
+                    onClick={onClose}
+                    aria-label="Colapsar panel"
+                    style={{
+                        position: 'absolute',
+                        left: -16,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: 16,
+                        height: 48,
+                        background: 'rgba(20,20,28,0.95)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRight: 'none',
+                        borderRadius: '6px 0 0 6px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'rgba(255,255,255,0.4)',
+                        fontSize: 12,
+                        zIndex: 10,
+                        padding: 0,
+                    }}
+                >›</button>
+            )}
+
             {/* Close button — shown when overlay */}
             {isOverlay && onClose && (
                 <div className="flex items-center justify-between px-5 pt-4 pb-2">

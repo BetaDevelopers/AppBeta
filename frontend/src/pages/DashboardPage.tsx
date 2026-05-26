@@ -155,8 +155,8 @@ export default function DashboardPage() {
                     />
                 )}
 
-                {/* Right sidebar toggle button — visible on tablet/mobile */}
-                {!rightOpen && isRightOverlay && (
+                {/* Right sidebar toggle button — visible whenever sidebar is closed */}
+                {!rightOpen && (
                     <button
                         className="toolbar absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center bg-[#1e293b] border border-white/10 border-r-0 rounded-l-xl text-[#555] hover:text-white transition-colors shadow-xl"
                         style={{ width: '28px', height: '52px' }}
@@ -169,7 +169,7 @@ export default function DashboardPage() {
                     </button>
                 )}
 
-                {(bp === 'desktop' || rightOpen) && (
+                {rightOpen && (
                     <SidebarRight
                         isOverlay={isRightOverlay}
                         onClose={() => setRightOpen(false)}

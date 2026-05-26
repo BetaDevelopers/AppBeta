@@ -212,6 +212,8 @@ export default function MathOCR({ onResult } = {}) {
     const [autoRecognizing, setAutoRecognizing] = useState(false);
     const autoRecognizeRef = useRef(null);
     const allStrokesRef = useRef([]);
+    const isPanningRef = useRef(false);
+    const panStartY = useRef(0);
 
     const getPos = (e) => {
         const rect = canvasRef.current.getBoundingClientRect();
@@ -254,9 +256,32 @@ export default function MathOCR({ onResult } = {}) {
         }
     }, [result]);
 
-    const onStart = (e) => { e.preventDefault(); setIsDrawing(true); setCurrentStroke([getPos(e)]); };
-    const onMove  = (e) => { if (isDrawing) { e.preventDefault(); setCurrentStroke(p => [...p, getPos(e)]); } };
+    const onStart = (e) => {
+        if (e.touches && e.touches.length >= 2) {
+            isPanningRef.current = true;
+            panStartY.current = e.touches[0].clientY;
+            setIsDrawing(false);
+            setCurrentStroke(null);
+            return;
+        }
+        e.preventDefault();
+        setIsDrawing(true);
+        setCurrentStroke([getPos(e)]);
+    };
+    const onMove = (e) => {
+        if (isPanningRef.current && e.touches && e.touches.length >= 2) {
+            const dy = panStartY.current - e.touches[0].clientY;
+            const scrollEl = canvasRef.current?.closest('[class*="overflow-y"]') ||
+                             canvasRef.current?.closest('.overflow-y-auto') ||
+                             document.querySelector('.overflow-y-auto');
+            if (scrollEl) scrollEl.scrollTop += dy;
+            panStartY.current = e.touches[0].clientY;
+            return;
+        }
+        if (isDrawing) { e.preventDefault(); setCurrentStroke(p => [...p, getPos(e)]); }
+    };
     const onEnd   = () => {
+        if (isPanningRef.current) { isPanningRef.current = false; return; }
         if (!isDrawing) return;
         setIsDrawing(false);
         const pts = currentStroke;
