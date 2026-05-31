@@ -7,6 +7,7 @@ import { useUIStore } from '../../store/uiStore';
 import { BetaLogo } from '../ui/BetaLogo';
 import { SubjectModal } from '../subjects/SubjectModal';
 import type { Subject } from '../../types';
+<<<<<<< HEAD
 import { ConfirmModal } from '../ui/ConfirmModal';
 import {
     PenLine, ScanLine, Sigma, BarChart2, TrendingDown, Triangle, GitBranch, Wrench, MoreHorizontal, Trash2, Pencil, Folder,
@@ -18,6 +19,9 @@ const SUBJECT_ICON_MAP: Record<string, React.ElementType> = {
     Palette, Monitor, Landmark, Music, Globe, Lightbulb,
     Calculator, FlaskConical, BarChart2,
 };
+=======
+import { PenLine, ScanLine, Sigma, BarChart2, TrendingDown, Triangle, GitBranch, Crosshair, Wrench } from 'lucide-react';
+>>>>>>> parent of 7d49d8a0 (push 2)
 
 interface SidebarLeftProps {
     open: boolean;
@@ -33,8 +37,14 @@ const EINES: { tool: string; icon: React.ReactNode; label: string }[] = [
     { tool: 'mathEditor', icon: <Sigma size={18} />, label: 'TeXificar' },
     { tool: 'tableToChart', icon: <BarChart2 size={18} />, label: 'Tabla → gráfico' },
     { tool: 'chartToTable', icon: <TrendingDown size={18} />, label: 'Gráfico → tabla' },
+<<<<<<< HEAD
     { tool: 'geometry', icon: <Triangle size={18} />, label: 'Geometría' },
     { tool: 'diagram', icon: <GitBranch size={18} />, label: 'Diagrama' },
+=======
+    { tool: 'geometry',     icon: <Triangle size={18} />,    label: 'Geometría' },
+    { tool: 'diagram',      icon: <GitBranch size={18} />,   label: 'Diagrama' },
+    { tool: 'calibrate',    icon: <Crosshair size={18} />,   label: 'Calibrar escritura' },
+>>>>>>> parent of 7d49d8a0 (push 2)
 ];
 
 interface ContextMenu {

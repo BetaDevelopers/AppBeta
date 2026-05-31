@@ -7,7 +7,6 @@ import TextModeToolbar from './TextModeToolbar';
 import DrawModeToolbar from './DrawModeToolbar';
 import StickerPicker from './StickerPicker';
 import SignatureModal from './SignatureModal';
-import FormulaInput from './FormulaInput';
 import { useVoiceInput } from '../../hooks/useVoiceInput';
 
 export type { DrawTool, DrawSettings } from './toolbarTypes';
@@ -111,16 +110,7 @@ export default function BottomToolbar({
   const [isMinimized, setIsMinimized] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
-  const [showFormula, setShowFormula] = useState(false);
   const [voiceInterim, setVoiceInterim] = useState('');
-  const [lang, setLang] = useState<string>(
-    () => localStorage.getItem('beta3m_lang') || 'es-ES'
-  );
-
-  const handleLangChange = useCallback((l: string) => {
-    setLang(l);
-    localStorage.setItem('beta3m_lang', l);
-  }, []);
 
   // Voice input: insert final results in Tiptap, show interim only in the indicator
   const handleVoiceResult = useCallback((text: string, isFinal: boolean) => {
@@ -133,7 +123,7 @@ export default function BottomToolbar({
     }
   }, [editor]);
 
-  const { isListening, isSupported, toggle: toggleVoice } = useVoiceInput(handleVoiceResult, lang);
+  const { isListening, isSupported, toggle: toggleVoice } = useVoiceInput(handleVoiceResult);
 
   const handleAddImage = () => {
     const input = document.createElement('input');
@@ -216,14 +206,6 @@ export default function BottomToolbar({
         />
       )}
 
-      {/* Formula input overlay */}
-      {showFormula && (
-        <FormulaInput
-          onInsert={onAddFloatingObject}
-          onClose={() => setShowFormula(false)}
-        />
-      )}
-
       {/* Voice interim text indicator */}
       {isListening && voiceInterim && (
         <div style={{
@@ -244,6 +226,7 @@ export default function BottomToolbar({
       {/* Main toolbar */}
       <div
         style={{
+<<<<<<< HEAD
           width: '100%',
           boxSizing: 'border-box',
           minHeight: 48,
@@ -251,6 +234,13 @@ export default function BottomToolbar({
           backdropFilter: 'blur(24px) saturate(200%)',
           WebkitBackdropFilter: 'blur(24px) saturate(200%)',
           borderTop: '1px solid rgba(255,255,255,0.10)',
+=======
+          height: 56,
+          background: 'rgba(12,12,18,0.96)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+>>>>>>> parent of 7d49d8a0 (push 2)
           paddingLeft: 8,
           paddingRight: 8,
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
@@ -286,15 +276,12 @@ export default function BottomToolbar({
         ) : (
           <TextModeToolbar
             editor={editor}
-            lang={lang}
-            onLangChange={handleLangChange}
             onEnterDrawMode={() => setInkMode(true)}
             onAddImage={handleAddImage}
             onAddTable={handleAddTable}
             onAddSticker={() => setShowStickers(true)}
             onAddSignature={() => setShowSignature(true)}
             onScanDocument={() => window.dispatchEvent(new CustomEvent('open-math-vision'))}
-            onOpenFormula={() => setShowFormula(true)}
             isVoiceListening={isListening}
             onToggleVoice={toggleVoice}
             isVoiceSupported={isSupported}

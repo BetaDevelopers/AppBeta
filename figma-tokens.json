@@ -1,0 +1,134 @@
+{
+  "global": {
+    "background": {
+      "primary": {
+        "value": "#030714",
+        "type": "color"
+      },
+      "dashboard": {
+        "value": "#0A0F1E",
+        "type": "color"
+      },
+      "surface": {
+        "value": "#0B1120",
+        "type": "color"
+      },
+      "card": {
+        "value": "#161B22",
+        "type": "color"
+      },
+      "muted": {
+        "value": "#1E293B",
+        "type": "color"
+      },
+      "elevated": {
+        "value": "#21262D",
+        "type": "color"
+      },
+      "hover": {
+        "value": "#2D333B",
+        "type": "color"
+      }
+    },
+    "text": {
+      "primary": {
+        "value": "#F8FAFC",
+        "type": "color"
+      },
+      "secondary": {
+        "value": "#94A3B8",
+        "type": "color"
+      },
+      "muted": {
+        "value": "#475569",
+        "type": "color"
+      }
+    },
+    "accent": {
+      "blue": {
+        "value": "#3B82F6",
+        "type": "color"
+      },
+      "purple": {
+        "value": "#A78BFA",
+        "type": "color"
+      },
+      "green": {
+        "value": "#22C55E",
+        "type": "color"
+      },
+      "red": {
+        "value": "#F87171",
+        "type": "color"
+      }
+    },
+    "spacing": {
+      "1": {
+        "value": "4",
+        "type": "spacing"
+      },
+      "2": {
+        "value": "8",
+        "type": "spacing"
+      },
+      "3": {
+        "value": "12",
+        "type": "spacing"
+      },
+      "4": {
+        "value": "16",
+        "type": "spacing"
+      },
+      "5": {
+        "value": "20",
+        "type": "spacing"
+      },
+      "6": {
+        "value": "24",
+        "type": "spacing"
+      }
+    },
+    "radius": {
+      "sm": {
+        "value": "6",
+        "type": "borderRadius"
+      },
+      "md": {
+        "value": "10",
+        "type": "borderRadius"
+      },
+      "lg": {
+        "value": "14",
+        "type": "borderRadius"
+      },
+      "full": {
+        "value": "9999",
+        "type": "borderRadius"
+      }
+    },
+    "fontSize": {
+      "sm": {
+        "value": "13",
+        "type": "fontSizes"
+      },
+      "md": {
+        "value": "15",
+        "type": "fontSizes"
+      },
+      "lg": {
+        "value": "17",
+        "type": "fontSizes"
+      },
+      "xl": {
+        "value": "20",
+        "type": "fontSizes"
+      }
+    },
+    "lineHeight": {
+      "normal": {
+        "value": "1.6",
+        "type": "lineHeights"
+      }
+    }
+  }
+}

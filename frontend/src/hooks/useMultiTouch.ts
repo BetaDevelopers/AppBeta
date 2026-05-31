@@ -21,8 +21,7 @@ export function useMultiTouch(scrollRef?: React.RefObject<HTMLElement | null>) {
     if (!isPanningRef.current || activePointers.current.size < 2) return false;
     const prev = activePointers.current.get(e.pointerId);
     if (prev && scrollRef?.current) {
-      // scrollTop is more reliable than scrollBy on iOS Safari
-      scrollRef.current.scrollTop += prev.y - e.clientY;
+      scrollRef.current.scrollBy(0, prev.y - e.clientY);
     }
     activePointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     return true;

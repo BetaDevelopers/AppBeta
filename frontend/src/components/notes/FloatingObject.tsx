@@ -24,7 +24,6 @@ interface FloatingObjectProps {
   onArrowChange?: (id: string, arrowStart: boolean, arrowEnd: boolean) => void;
   onResizeEnd?: (id: string) => void;
   noteContext?: string;
-  inkModeActive?: boolean;
 }
 
 const STROKE_COLORS = ['#FFFFFF', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#000000'];
@@ -72,7 +71,6 @@ export default function FloatingObjectComponent({
   onArrowChange,
   onResizeEnd,
   noteContext,
-  inkModeActive = false,
 }: FloatingObjectProps) {
   const { id, position, dimensions, isSelected, svgData, imageBase64, ocrText, type } = object;
   const [isEditingText, setIsEditingText] = useState(false);
@@ -370,11 +368,11 @@ export default function FloatingObjectComponent({
     width: dimensions.width,
     height: dimensions.height,
     boxSizing: 'border-box',
-    cursor: inkModeActive ? 'crosshair' : 'grab',
+    cursor: 'grab',
     userSelect: 'none',
     touchAction: 'none',
-    pointerEvents: inkModeActive ? 'none' : 'auto',
-    outline: isSelected && !inkModeActive ? '1.5px dashed #3b82f6' : 'none',
+    pointerEvents: 'auto',
+    outline: isSelected ? '1.5px dashed #3b82f6' : 'none',
     borderRadius: 4,
   };
 
@@ -410,22 +408,15 @@ export default function FloatingObjectComponent({
         <div style={{
           width: '100%', height: '100%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '16px 20px', boxSizing: 'border-box', overflow: 'hidden',
-          background: 'rgba(20,20,30,0.6)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 12,
+          padding: 8, boxSizing: 'border-box', overflow: 'hidden',
         }}>
           {object.latexSource
             ? <div dangerouslySetInnerHTML={{
                 __html: katex.renderToString(object.latexSource, {
-                  throwOnError: false,
-                  displayMode: dimensions.width >= 200,
-                  output: 'html',
+                  throwOnError: false, displayMode: true, output: 'html',
                 })
               }} />
-            : <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
-                Doble toque para editar ecuación
-              </span>
+            : <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12 }}>∅</span>
           }
           {isEditingEq && (
             <svg
@@ -592,45 +583,38 @@ export default function FloatingObjectComponent({
               position: 'absolute',
               bottom: position.y < 80 ? 'auto' : '100%',
               top: position.y < 80 ? '100%' : 'auto',
-              marginBottom: position.y < 80 ? 0 : 8,
-              marginTop: position.y < 80 ? 8 : 0,
+              marginBottom: position.y < 80 ? 0 : 6,
+              marginTop: position.y < 80 ? 6 : 0,
               left: 0,
-              right: 'auto',
-              background: 'rgba(12,12,18,0.97)',
-              border: '1px solid rgba(255,255,255,0.14)',
-              borderRadius: 14,
-              padding: '10px 14px',
+              background: 'rgba(15,15,20,0.95)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 10,
+              padding: '8px 12px',
               display: 'flex',
-              gap: 10,
+              gap: 12,
               alignItems: 'center',
               pointerEvents: 'auto',
               zIndex: 3,
               whiteSpace: 'nowrap',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
             }}
             onPointerDown={(e) => e.stopPropagation()}
           >
             {/* Color palette — not for stickers */}
             {type !== 'sticker' && (
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div style={{ display: 'flex', gap: 4 }}>
                 {STROKE_COLORS.map(color => (
                   <div
                     key={color}
                     onPointerDown={(e) => { e.stopPropagation(); onColorChange(id, color); }}
                     style={{
-                      width: 28, height: 28, borderRadius: '50%',
+                      width: 20, height: 20, borderRadius: '50%',
                       background: color,
                       border: object.stroke === color
-                        ? '2.5px solid #fff'
-                        : '1.5px solid rgba(255,255,255,0.2)',
+                        ? '2px solid #fff'
+                        : '1px solid rgba(255,255,255,0.25)',
                       cursor: 'pointer',
                       boxSizing: 'border-box',
                       flexShrink: 0,
-                      transform: object.stroke === color ? 'scale(1.18)' : 'scale(1)',
-                      transition: 'transform 120ms ease',
-                      boxShadow: object.stroke === color ? `0 0 0 2px ${color}40` : 'none',
                     }}
                   />
                 ))}
@@ -641,8 +625,7 @@ export default function FloatingObjectComponent({
             {type !== 'sticker' && (
               <label style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                color: 'rgba(255,255,255,0.6)', fontSize: 11, cursor: 'default',
-                flexShrink: 0,
+                color: 'rgba(255,255,255,0.7)', fontSize: 11, cursor: 'default',
               }}>
                 Grosor
                 <input
@@ -650,7 +633,7 @@ export default function FloatingObjectComponent({
                   value={object.strokeWidth ?? 2}
                   onPointerDown={(e) => e.stopPropagation()}
                   onChange={(e) => onStrokeWidthChange(id, parseFloat(e.target.value))}
-                  style={{ width: 80, accentColor: '#3b82f6', cursor: 'pointer' }}
+                  style={{ width: 64, accentColor: '#3b82f6', cursor: 'pointer' }}
                 />
               </label>
             )}
@@ -663,18 +646,17 @@ export default function FloatingObjectComponent({
                   const newFill = hasFill
                     ? 'none'
                     : (object.stroke?.startsWith('#')
-                        ? object.stroke + '55'
-                        : 'rgba(255,255,255,0.25)');
+                        ? object.stroke + '33'
+                        : 'rgba(255,255,255,0.2)');
                   onFillChange(id, newFill);
                 }}
                 style={{
-                  padding: '5px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer',
+                  padding: '2px 8px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
                   background: object.fill && object.fill !== 'none'
                     ? 'rgba(59,130,246,0.35)'
-                    : 'rgba(255,255,255,0.07)',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  color: 'rgba(255,255,255,0.9)',
+                    : 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: 'rgba(255,255,255,0.85)',
                   flexShrink: 0,
                 }}
               >

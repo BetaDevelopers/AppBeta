@@ -277,67 +277,37 @@ button, [role="button"], a {
   transform: scale(1.005);
 }
 
-.tiptap .tableWrapper {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin: 16px 0;
-}
-
 .tiptap table {
-  border-collapse: collapse;
-  width: 100%;
-  font-size: 13px;
-  border-radius: 0;
-  background: transparent;
+  border-collapse: separate; 
+  border-spacing: 0;
+  width: 100%; 
+  margin: 2.5rem 0;
+  border-radius: 1rem; 
+  overflow: hidden; 
+  border: 1px solid var(--beta-border-rich);
+  background: rgba(255,255,255,0.01);
 }
 
-.tiptap table td,
-.tiptap table th {
-  border: 1px solid rgba(255,255,255,0.18);
-  padding: 8px 12px;
-  min-width: 80px;
+.tiptap th {
+  background: rgba(59,130,246,0.08); 
+  color: var(--beta-accent);
+  font-weight: 700; 
+  font-size: 0.85rem; 
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1rem 1.25rem;
   text-align: left;
-  vertical-align: middle;
-  color: rgba(255,255,255,0.85);
-  position: relative;
 }
 
-.tiptap table th {
-  background: rgba(59,130,246,0.22);
-  color: rgba(255,255,255,0.95);
-  font-weight: 600;
-  font-size: 12px;
-  text-transform: none;
-  letter-spacing: normal;
-  border-color: rgba(59,130,246,0.45);
+.tiptap td {
+  padding: 1rem 1.25rem; 
+  color: #94a3b8; 
+  font-size: 0.95rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
 }
 
-.tiptap table tr:nth-child(even) td {
-  background: rgba(255,255,255,0.03);
-}
-
-.tiptap table tr:hover td {
-  background: rgba(255,255,255,0.07);
-}
-
-.tiptap .column-resize-handle {
-  background: rgba(59,130,246,0.5);
-  width: 3px;
-  position: absolute;
-  right: -1px;
-  top: 0;
-  bottom: 0;
-  pointer-events: none;
-}
-
-.tiptap table .selectedCell::after {
-  background: rgba(59,130,246,0.15);
-  content: '';
-  left: 0; right: 0; top: 0; bottom: 0;
-  pointer-events: none;
-  position: absolute;
-  z-index: 2;
-}
+.tiptap tr:last-child td { border-bottom: none; }
+.tiptap tr:hover td { background: rgba(255,255,255,0.02); }
 
 /* Placeholder */
 .tiptap p.is-editor-empty:first-child::before {
@@ -414,24 +384,6 @@ button, [role="button"], a {
   from { opacity: 0; transform: translateX(14px); }
   to   { opacity: 1; transform: translateX(0); }
 }
-
-@keyframes beautify-in {
-  from { opacity: 0; transform: translateX(-50%) scale(0.85); }
-  to   { opacity: 1; transform: translateX(-50%) scale(1); }
-}
-
-/* ─── KaTeX dark mode ───────────────────────────────────── */
-.katex { color: rgba(255,255,255,0.92) !important; }
-.katex .mord,
-.katex .mop,
-.katex .mbin,
-.katex .mrel,
-.katex .mpunct,
-.katex .mopen,
-.katex .mclose,
-.katex .minner { color: rgba(255,255,255,0.92) !important; }
-.katex-display { margin: 0 !important; }
-.katex .base { color: rgba(255,255,255,0.92) !important; }
 
 /* ─── Respect user motion preferences ───────────────────── */
 @media (prefers-reduced-motion: reduce) {

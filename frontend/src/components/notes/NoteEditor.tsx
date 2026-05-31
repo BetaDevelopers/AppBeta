@@ -278,20 +278,10 @@ export const NoteEditor: React.FC = () => {
     } | null>(null);
     const [lassoPoints, setLassoPoints] = useState<{ x: number; y: number }[]>([]);
     const handleStrokesToObject = useCallback((newObj: FloatingObject) => {
-        setFloatingObjects(prev => {
-            // If the new object is auto-selected (e.g. beautified shape),
-            // deselect all existing objects first
-            const base = newObj.isSelected
-                ? prev.map(o => ({ ...o, isSelected: false }))
-                : prev;
-            return [...base, newObj];
-        });
+        setFloatingObjects(prev => [...prev, newObj]);
         setTimeout(() => pushSnapshot(), 0);
     }, [pushSnapshot]);
-
-    const { status: autoStatus, onStrokeFinish } = useAutoBeautify(
-        editor, inkCanvasRef, inkMode, handleStrokesToObject
-    );
+    const { status: autoStatus, onStrokeFinish } = useAutoBeautify(editor, inkCanvasRef, inkMode, handleStrokesToObject);
     const { status: voiceStatus, errorMsg: voiceError, toggle: toggleVoice } = useVoiceTranscription(
         (text) => editor?.chain().focus().insertContent(text).run()
     );
@@ -503,9 +493,14 @@ export const NoteEditor: React.FC = () => {
             .run();
     };
 
+    // Insereix una equació LaTeX reconeguda com a fórmula inline ($...$)
+    // L'extensió Mathematics de Tiptap detecta automàticament el delimitador $
     const handleInsertAsLatex = (latex: string) => {
         if (!editor || !latex) return;
-        editor.chain().focus().insertInlineMath({ latex }).run();
+        editor.chain()
+            .focus()
+            .insertContent(`$${latex}$`)
+            .run();
     };
 
     const handleInsertMathVisionRegions = (regions: MathRegion[]) => {
@@ -514,8 +509,8 @@ export const NoteEditor: React.FC = () => {
         const chain = editor.chain().focus().insertContent('<hr />');
 
         regions.forEach(region => {
-            if (region.type === 'equation' && region.latex) {
-                chain.insertContent('<p>').insertInlineMath({ latex: region.latex }).insertContent('</p>');
+            if (region.type === 'equation') {
+                chain.insertContent(`<p>$${region.latex}$</p>`);
             } else {
                 chain.insertContent(`<p>${region.content}</p>`);
             }
@@ -656,7 +651,7 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
     const handleRecognized = (result: RecognitionResult) => {
         if (!editor) return;
         if (result.type === 'latex') {
-            editor.chain().focus().insertInlineMath({ latex: result.content }).run();
+            editor.chain().focus().insertContent(`$${result.content}$`).run();
         } else if (result.type === 'text') {
             editor.chain().focus().insertContent(result.content).run();
         } else {
@@ -1185,10 +1180,8 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
                                         onConnectMove={handleFloatConnectMove}
                                         onConnectEnd={handleFloatConnectEnd}
                                         onArrowChange={handleFloatArrowChange}
-                                        inkModeActive={inkMode}
                                     />
                                 ))}
-
                             </div>
 
                             {/* LAYER 2.5 — SVG overlay: lasso + snap lines + connectors */}

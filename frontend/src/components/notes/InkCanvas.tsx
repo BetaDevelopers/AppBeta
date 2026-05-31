@@ -121,53 +121,35 @@ function looksLikeMath(strokes: Stroke[]): boolean {
   const totalW = Math.max(...xs) - Math.min(...xs) + 0.1;
   const totalH = Math.max(...ys) - Math.min(...ys) + 0.1;
 
-  // SIGNAL 1: two or more short horizontal strokes → =, ≡, fraction bar, +, -
-  let horizontalShort = 0;
+  let horizontalCount = 0;
+  let smallCircleCount = 0;
+  let verticalCount = 0;
+
   for (const s of strokes) {
     const sxs = s.points.map(p => p.x);
     const sys = s.points.map(p => p.y);
     const sw = Math.max(...sxs) - Math.min(...sxs);
     const sh = Math.max(...sys) - Math.min(...sys) + 0.1;
-    if (sw / sh > 4 && sh < 18) horizontalShort++;
-  }
-  if (horizontalShort >= 2) return true;
+    const aspect = sw / sh;
 
-  // SIGNAL 2: single stroke with horizontal back-and-forth (= sign)
+    if (aspect > 5 && sh < 20) horizontalCount++;
+    if (aspect > 0.5 && aspect < 2 && sw < totalW * 0.3 && sh < totalH * 0.5) smallCircleCount++;
+    if (aspect < 0.3 && sh > 20) verticalCount++;
+  }
+
+  if (horizontalCount >= 2) return true;
+  if (strokes.length >= 4 && smallCircleCount >= 2) return true;
+  if (totalH / totalW > 1.5 && strokes.length >= 3) return true;
+
   if (strokes.length === 1) {
     const pts = strokes[0].points;
-    let dirChanges = 0;
-    for (let i = 3; i < pts.length - 3; i++) {
-      const dx1 = pts[i].x - pts[i - 3].x;
-      const dx2 = pts[i + 3].x - pts[i].x;
-      if (Math.sign(dx1) !== Math.sign(dx2) && Math.abs(dx1) > 5 && Math.abs(dx2) > 5) dirChanges++;
+    let equalSignPattern = 0;
+    for (let i = 5; i < pts.length - 5; i++) {
+      const dy = Math.abs(pts[i].y - pts[i - 5].y);
+      const dx = Math.abs(pts[i].x - pts[i - 5].x);
+      if (dx > dy * 3) equalSignPattern++;
     }
-    if (dirChanges >= 1 && totalW > 20 && totalH < 40) return true;
-  }
-
-  // SIGNAL 3: many small strokes in a compact area → complex expression
-  if (strokes.length >= 5) {
-    const avgLen = strokes.reduce((s, st) => {
-      const sxs = st.points.map(p => p.x), sys = st.points.map(p => p.y);
-      return s + Math.hypot(
-        Math.max(...sxs) - Math.min(...sxs),
-        Math.max(...sys) - Math.min(...sys)
-      );
-    }, 0) / strokes.length;
-    if (avgLen < totalW * 0.4) return true;
-  }
-
-  // SIGNAL 4: tall narrow bbox → fraction or integral
-  if (totalH / totalW > 1.4 && strokes.length >= 3 && totalH > 40) return true;
-
-  // SIGNAL 5: small strokes positioned above main body → superscripts/exponents
-  if (strokes.length >= 3) {
-    const mainY = Math.min(...ys) + totalH * 0.7;
-    const smallAbove = strokes.filter(s => {
-      const sMaxY = Math.max(...s.points.map(p => p.y));
-      const sH = sMaxY - Math.min(...s.points.map(p => p.y));
-      return sMaxY < mainY && sH < totalH * 0.35;
-    }).length;
-    if (smallAbove >= 1) return true;
+    if (equalSignPattern > pts.length * 0.6) return true;
   }
 
   return false;
@@ -499,20 +481,11 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     if (!active) return;
 
     // panDown returns true synchronously when 2+ fingers are active
-    if (panDown(e)) {
-      // Cancel any in-progress stroke so it doesn't get committed
-      setCurrentPoints([]);
-      return;
-    }
+    if (panDown(e)) return;
 
     if (shouldIgnoreTouch(e)) return;
 
-    // Only capture pointer for stylus or explicit finger-draw mode.
-    // Skipping capture for undrawn fingers lets a second finger fire its own
-    // pointerdown so useMultiTouch can detect the 2-finger pan on iOS.
-    if (e.pointerType === 'pen' || drawWithFinger) {
-      (e.target as SVGElement).setPointerCapture(e.pointerId);
-    }
+    (e.target as SVGElement).setPointerCapture(e.pointerId);
 
     // Text tool: report tap position and do not draw
     if (drawTool === 'text') {
@@ -663,51 +636,39 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
       <style>{`
         @keyframes ocr-fill { from { width: 0% } to { width: 100% } }
         @keyframes completion-draw { from { opacity: 0 } to { opacity: 0.4 } }
-        @keyframes ocr-pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(1.2); } }
       `}</style>
 
       {/* ── LineBuffer overlays ── */}
-      {lineBuffers.map(buf => {
-        const isMathBuf = looksLikeMath(buf.strokes);
-        return (
+      {lineBuffers.map(buf => (
+        <div
+          key={buf.id}
+          style={{
+            position: 'absolute',
+            left: buf.boundingBox.minX,
+            top: buf.boundingBox.minY,
+            width: Math.max(buf.boundingBox.width, 4),
+            height: Math.max(buf.boundingBox.height, 4),
+            background: `${strokeColor}0D`,
+            borderRadius: 4,
+            pointerEvents: 'none',
+            zIndex: 3,
+            overflow: 'hidden',
+          }}
+        >
           <div
-            key={buf.id}
+            key={buf.lastStrokeTime}
             style={{
               position: 'absolute',
-              left: buf.boundingBox.minX - 4,
-              top: buf.boundingBox.minY - 4,
-              width: Math.max(buf.boundingBox.width + 8, 4),
-              height: Math.max(buf.boundingBox.height + 8, 4),
-              background: isMathBuf ? 'rgba(139,92,246,0.06)' : `${strokeColor}0D`,
-              border: isMathBuf ? '1px dashed rgba(139,92,246,0.3)' : 'none',
-              borderRadius: 8,
-              pointerEvents: 'none',
-              zIndex: 3,
-              overflow: 'visible',
+              bottom: 0,
+              left: 0,
+              height: 2,
+              background: strokeColor,
+              opacity: 0.7,
+              animation: `ocr-fill 1800ms linear forwards`,
             }}
-          >
-            {isMathBuf && (
-              <div style={{
-                position: 'absolute', top: -20, right: 0,
-                fontSize: 15, color: '#8B5CF6',
-                animation: 'ocr-pulse 1s ease-in-out infinite',
-                lineHeight: 1,
-              }}>∑</div>
-            )}
-            <div
-              key={buf.lastStrokeTime}
-              style={{
-                position: 'absolute',
-                bottom: 0, left: 0,
-                height: 2,
-                background: isMathBuf ? '#8B5CF6' : strokeColor,
-                opacity: 0.7,
-                animation: `ocr-fill 1800ms linear forwards`,
-              }}
-            />
-          </div>
-        );
-      })}
+          />
+        </div>
+      ))}
 
       {/* Pan indicator */}
       {isPanning && (
@@ -728,12 +689,13 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
         ref={svgRef}
         width="100%"
         height="100%"
+        className="touch-none"
         style={{
           position: 'absolute', inset: 0, zIndex: 3,
           background: 'transparent',
           pointerEvents: active ? 'all' : 'none',
           cursor: drawTool === 'eraser' ? 'cell' : drawTool === 'text' ? 'text' : active ? 'crosshair' : 'default',
-          touchAction: isPanning ? 'pan-y' : 'none',
+          touchAction: 'none',
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
