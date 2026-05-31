@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useNotesStore } from '../../store/notesStore';
 import { useUIStore } from '../../store/uiStore';
-import { Crown, Sparkles } from 'lucide-react';
+import { Crown, Sparkles, Settings, LogOut, User } from 'lucide-react';
+import { BetaLogo } from '../ui/BetaLogo';
 
 interface ToolbarProps {
     onToggleChat?: () => void;
@@ -24,6 +25,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchExpanded, setSearchExpanded] = useState(false);
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const [isOnline, setIsOnline] = useState(() => navigator.onLine);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -36,6 +39,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             searchInputRef.current.focus();
         }
     }, [searchExpanded]);
+
+    useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
 
     const handleLogout = () => {
         logout();
@@ -64,7 +78,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     };
 
     const planLabel: React.ReactNode =
-        user?.plan === 'premium' ? <><Crown size={14}/> Premium</>
+        user?.plan === 'premium' ? <><Crown size={14} /> Premium</>
             : user?.plan === 'pro' ? '⭐ Pro'
                 : 'Free';
 
@@ -147,19 +161,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"
-                            d={leftSidebarOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+                            d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
 
                 <div
-                    className="flex items-center gap-2.5 cursor-pointer flex-shrink-0"
+                    className="flex items-center cursor-pointer flex-shrink-0"
                     onClick={() => navigate('/dashboard')}
                 >
-                    <div className="w-8 h-8 btn-premium rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 flex-shrink-0">
-                        <span className="text-white font-bold text-xs tracking-tighter">3M</span>
-                    </div>
-                    <span className="text-base font-bold text-white tracking-tight font-display hidden sm:block">
-                        BETA 3M
+                    <span className="text-xl font-bold tracking-tight font-display flex items-center gap-2">
+                        <BetaLogo className="w-6 h-6 rounded-md shadow-sm" />
+                        <span className="text-white">Beta3M</span>
                     </span>
                 </div>
             </div>
@@ -213,11 +225,21 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                     </svg>
                 </button>
 
-                {/* Saving indicator */}
-                {isSaving && (
-                    <div className="flex items-center gap-2 bg-[#3b82f6]/10 px-2.5 py-1 rounded-full border border-[#3b82f6]/20">
-                        <div className="w-1.5 h-1.5 bg-[#3b82f6] rounded-full animate-pulse" />
-                        <span className="text-[#3b82f6] text-xs font-medium hidden sm:block">Guardando</span>
+                {/* Connection / sync indicator */}
+                {!isOnline ? (
+                    <div className="flex items-center gap-1.5 bg-red-500/10 px-2.5 py-1 rounded-full border border-red-500/20">
+                        <div className="w-1.5 h-1.5 bg-red-400 rounded-full" />
+                        <span className="text-red-400 text-xs font-medium hidden sm:block">Desconectado</span>
+                    </div>
+                ) : isSaving ? (
+                    <div className="flex items-center gap-1.5 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
+                        <div className="w-3 h-3 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+                        <span className="text-amber-400 text-xs font-medium hidden sm:block">Sincronizando</span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                        <span className="text-emerald-400 text-xs font-medium hidden sm:block">Conectado</span>
                     </div>
                 )}
 
@@ -232,7 +254,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                     style={{ height: '44px', minWidth: '44px' }}
                     title="Asistente IA"
                 >
-                    <Sparkles size={14}/>
+                    <Sparkles size={14} />
                     {/* Show "IA" text on tablet and desktop */}
                     <span className="hidden tablet:inline desktop:inline text-sm">IA</span>
                 </button>
@@ -248,46 +270,53 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                     </button>
                 )}
 
-                {/* Avatar */}
-                <div
-                    className="flex items-center gap-2 cursor-pointer group"
-                    onClick={() => navigate('/perfil')}
-                >
-                    <div className="hidden lg:flex flex-col items-end">
-                        <span className="text-sm font-semibold text-[#fafafa] leading-none group-hover:text-[#3b82f6] transition-colors">
-                            {isGuest ? 'Modo Invitado' : (user?.display_name || user?.email?.split('@')[0])}
-                        </span>
-                        <span className="text-[11px] text-[#444] mt-0.5">{isGuest ? 'Sin cuenta' : 'Estudiante'}</span>
-                    </div>
-                    {/* Avatar size: 40px on mobile, 44px on tablet+ */}
-                    <div
-                        className="rounded-xl bg-gradient-to-br from-[#111] to-[#1a1a1a] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#fafafa] font-bold flex-shrink-0 overflow-hidden group-hover:border-[#3b82f6]/30 transition-all mobile:w-10 mobile:h-10 tablet:w-11 tablet:h-11 w-9 h-9"
+                {/* Avatar + User dropdown */}
+                <div className="relative">
+                    <button
+                        onClick={isGuest ? () => openAuthModal('login') : () => setShowUserMenu(v => !v)}
+                        className="flex items-center gap-2 cursor-pointer group rounded-xl hover:bg-white/5 px-2 transition-all"
+                        style={{ height: '44px' }}
                     >
-                        {user?.avatar_url ? (
-                            <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                        ) : (
-                            <span className="text-sm">{user?.email?.[0]?.toUpperCase()}</span>
-                        )}
-                    </div>
-                </div>
+                        <div className="hidden lg:flex flex-col items-end">
+                            <span className="text-sm font-semibold text-[#fafafa] leading-none group-hover:text-[#3b82f6] transition-colors">
+                                {isGuest ? 'Modo Invitado' : (user?.display_name || user?.email?.split('@')[0])}
+                            </span>
+                            <span className="text-[11px] text-[#444] mt-0.5">{isGuest ? 'Sin cuenta' : user?.email}</span>
+                        </div>
+                        <div className="rounded-xl bg-gradient-to-br from-[#111] to-[#1a1a1a] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#fafafa] font-bold flex-shrink-0 overflow-hidden group-hover:border-[#3b82f6]/30 transition-all w-9 h-9">
+                            {user?.avatar_url ? (
+                                <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-sm">{isGuest ? '?' : (user?.email?.[0]?.toUpperCase() ?? '?')}</span>
+                            )}
+                        </div>
+                    </button>
 
-                {/* Logout / Login */}
-                <button
-                    onClick={isGuest ? () => openAuthModal('login') : handleLogout}
-                    className="flex items-center justify-center rounded-xl text-[#444] hover:text-[#F78166] hover:bg-[rgba(247,129,102,0.1)] transition-all border border-transparent hover:border-[rgba(247,129,102,0.15)]"
-                    style={{ width: '44px', height: '44px' }}
-                    title={isGuest ? 'Iniciar sesión' : 'Cerrar sesión'}
-                >
-                    {isGuest ? (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 16l4-4m0 0l-4-4m4 4H4m13 4h1a2 2 0 002-2V7a2 2 0 00-2-2h-1" />
-                        </svg>
-                    ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
+                    {showUserMenu && !isGuest && (
+                        <>
+                            <div className="fixed inset-0 z-[190]" onClick={() => setShowUserMenu(false)} />
+                            <div className="absolute right-0 top-full mt-2 z-[191] bg-[#111] border border-[#1a1a1a] rounded-xl shadow-2xl py-1 min-w-[200px]">
+                                <div className="px-4 py-3 border-b border-[#1a1a1a]">
+                                    <p className="text-[13px] font-semibold text-[#fafafa] truncate">{user?.display_name || user?.email?.split('@')[0]}</p>
+                                    <p className="text-[11px] text-[#444] truncate mt-0.5">{user?.email}</p>
+                                </div>
+                                <button
+                                    onClick={() => { navigate('/perfil'); setShowUserMenu(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-[#fafafa] hover:bg-[#1a1a1a] transition-colors text-left"
+                                >
+                                    <Settings size={14} className="text-[#555]" /> Configuración
+                                </button>
+                                <div className="h-px bg-[#1a1a1a] my-1" />
+                                <button
+                                    onClick={() => { handleLogout(); setShowUserMenu(false); }}
+                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors text-left"
+                                >
+                                    <LogOut size={14} /> Cerrar sesión
+                                </button>
+                            </div>
+                        </>
                     )}
-                </button>
+                </div>
             </div>
         </header>
     );

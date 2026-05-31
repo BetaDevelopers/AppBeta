@@ -93,7 +93,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
         if (isGuest) {
             note = {
                 id: Math.floor(Math.random() * -1000000), // ID temporal negativo para notas locales
-                title: 'Sense títol',
+                title: 'Sin título',
                 content: '',
                 content_plain: '',
                 subject_id: get().activeSubjectId || null,
@@ -104,7 +104,7 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
             } as Note;
         } else {
             note = await apiClient.post<Note>('/notes', {
-                title: 'Sense títol',
+                title: 'Sin título',
                 content: '',
                 subject_id: get().activeSubjectId,
                 ...data,
@@ -240,7 +240,6 @@ export const useNotesStore = create<NotesStore>((set, get) => ({
         const guestNotes = await db.notes.filter(n => n.id < 0).toArray();
         if (guestNotes.length === 0) return;
 
-        console.log(`[Sync] Found ${guestNotes.length} guest notes to sync...`);
 
         for (const guestNote of guestNotes) {
             try {

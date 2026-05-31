@@ -31,6 +31,7 @@ interface ActionBtnProps {
     loading?: boolean;
     active?: boolean;
     disabled?: boolean;
+    error?: boolean;
 }
 
 interface ColorDotProps {
@@ -81,14 +82,16 @@ const LANG_NAMES: Record<string, string> = {
 
 // ─── Internal sub-components ──────────────────────────────────────────────────
 
-function ActionBtn({ icon: Icon, label, onClick, danger = false, loading = false, active = false }: ActionBtnProps) {
+function ActionBtn({ icon: Icon, label, onClick, danger = false, loading = false, active = false, error = false }: ActionBtnProps) {
     return (
         <button
             onClick={onClick}
             title={label}
             disabled={loading}
             className={`flex flex-col items-center justify-center gap-0.5 w-[52px] min-h-[52px] rounded-xl transition-all duration-150 active:scale-[0.92] select-none disabled:opacity-40 disabled:pointer-events-none
-                ${danger
+                ${error
+                    ? 'bg-red-500/15 text-red-400'
+                    : danger
                     ? 'hover:bg-red-500/15 text-red-400'
                     : active
                     ? 'bg-blue-500/20 text-blue-300'
@@ -101,7 +104,7 @@ function ActionBtn({ icon: Icon, label, onClick, danger = false, loading = false
                 <Icon size={18} strokeWidth={1.75} />
             )}
             <span className="text-[9px] uppercase tracking-widest font-semibold leading-none">
-                {label}
+                {error ? 'Error' : label}
             </span>
         </button>
     );
@@ -176,6 +179,14 @@ function TranslateDropdown({ onSelect, style }: TranslateDropdownProps) {
 export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMenuProps) {
     const [showTranslate, setShowTranslate] = useState(false);
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
+    const [errorAction, setErrorAction] = useState<string | null>(null);
+    const errorTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const showError = (key: string) => {
+        if (errorTimeout.current) clearTimeout(errorTimeout.current);
+        setErrorAction(key);
+        errorTimeout.current = setTimeout(() => setErrorAction(null), 3000);
+    };
 
     useEffect(() => {
         if (!editor) return;
@@ -234,10 +245,11 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
         try {
             const res = await mathFix(text, 'beautify');
             if (res.latex) {
-                editor.chain().focus().deleteSelection().insertContent(`$${res.latex}$`).run();
+                editor.chain().focus().deleteSelection().insertInlineMath({ latex: res.latex }).run();
             }
         } catch (err) {
             console.error('Embellecer error:', err);
+            showError('beautify');
         } finally {
             setLoadingAction(null);
         }
@@ -268,6 +280,7 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
             }
         } catch (err) {
             console.error('Traducir error:', err);
+            showError('translate');
         } finally {
             setLoadingAction(null);
         }
@@ -298,6 +311,7 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
             }
         } catch (err) {
             console.error('Explicar error:', err);
+            showError('explain');
         } finally {
             setLoadingAction(null);
         }
@@ -314,6 +328,7 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
             }
         } catch (err) {
             console.error('Enderezar error:', err);
+            showError('enderezar');
         } finally {
             setLoadingAction(null);
         }
@@ -371,6 +386,7 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
                         label="Embellecer"
                         onClick={handleBeautify}
                         loading={loadingAction === 'beautify'}
+                        error={errorAction === 'beautify'}
                     />
                     <ActionBtn
                         icon={Calculator}
@@ -382,6 +398,7 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
                         label="Explicar"
                         onClick={handleExplain}
                         loading={loadingAction === 'explain'}
+                        error={errorAction === 'explain'}
                     />
                     <div className="relative">
                         <ActionBtn
@@ -390,6 +407,7 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
                             onClick={() => setShowTranslate((v) => !v)}
                             loading={loadingAction === 'translate'}
                             active={showTranslate}
+                            error={errorAction === 'translate'}
                         />
                         {showTranslate && <TranslateDropdown onSelect={handleTranslate} style={dropdownContainerStyle} />}
                     </div>
@@ -398,6 +416,7 @@ export default function SelectionMenu({ editor, onOpenSolvePanel }: SelectionMen
                         label="Enderezar"
                         onClick={handleEnderezar}
                         loading={loadingAction === 'enderezar'}
+                        error={errorAction === 'enderezar'}
                     />
                 </div>
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNotesStore } from '../store/notesStore';
 import { useSubjectsStore } from '../store/subjectsStore';
+import { useAuthStore } from '../store/authStore';
 import { Toolbar } from '../components/layout/Toolbar';
 import { SidebarLeft } from '../components/layout/SidebarLeft';
 import { NotePaper } from '../components/notes/NotePaper';
@@ -36,8 +37,9 @@ function useBreakpoint(): Breakpoint {
 }
 
 export default function DashboardPage() {
-    const { fetchNotes } = useNotesStore();
+    const { fetchNotes, notes } = useNotesStore();
     const { fetchSubjects } = useSubjectsStore();
+    const isGuest = useAuthStore(s => s.isGuest);
     const bp = useBreakpoint();
 
     // Sidebar visibility & collapse state
@@ -106,6 +108,17 @@ export default function DashboardPage() {
         fetchNotes();
     }, []);
 
+    useEffect(() => {
+        const handler = (e: BeforeUnloadEvent) => {
+            if (isGuest && notes.some(n => n.id < 0)) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [isGuest, notes]);
+
     const handleLeftToggle = () => {
         if (isLeftOverlay) {
             setLeftOpen(v => !v);
@@ -155,8 +168,8 @@ export default function DashboardPage() {
                     />
                 )}
 
-                {/* Right sidebar toggle button — visible whenever sidebar is closed */}
-                {!rightOpen && (
+                {/* Right sidebar toggle button — only on desktop/tablet-landscape */}
+                {(bp === 'desktop' || bp === 'tablet-landscape') && !rightOpen && (
                     <button
                         className="toolbar absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center bg-[#1e293b] border border-white/10 border-r-0 rounded-l-xl text-[#555] hover:text-white transition-colors shadow-xl"
                         style={{ width: '28px', height: '52px' }}

@@ -54,7 +54,26 @@
       "Bash(npm start *)",
       "mcp__plugin_playwright_playwright__browser_fill_form",
       "mcp__plugin_playwright_playwright__browser_snapshot",
-      "mcp__plugin_playwright_playwright__browser_press_key"
+      "mcp__plugin_playwright_playwright__browser_press_key",
+      "Skill(code-review:code-review)",
+      "Bash(dir /b \"C:\\\\Users\\\\Nacho\\\\Documents\\\\GitHub\\\\AppBeta\")",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('Scripts:', list\\(d.get\\('scripts',{}\\).keys\\(\\)\\)\\); print\\('Build tool:', d.get\\('devDependencies',{}\\).get\\('vite',''\\) or d.get\\('dependencies',{}\\).get\\('vite',''\\)\\)\")",
+      "Bash(Start-Sleep -Seconds 7)",
+      "Bash(Invoke-WebRequest -Uri \"http://localhost:3000/health\" -UseBasicParsing)",
+      "Bash(Select-Object -ExpandProperty Content)",
+      "Bash(curl -s http://localhost:3000/health)",
+      "mcp__plugin_playwright_playwright__browser_network_request",
+      "Bash(Start-Sleep -Seconds 3)",
+      "Bash(curl *)",
+      "Bash(echo \"Started PID $!\")",
+      "mcp__plugin_playwright_playwright__browser_run_code_unsafe",
+      "Bash(pkill -f \"node src/app.js\")",
+      "mcp__plugin_playwright_playwright__browser_handle_dialog",
+      "Bash(findstr /i \"IPv4\")",
+      "Bash(Select-String \"IPv4\")",
+      "Bash(set VITE_API_URL=http://192.168.1.95:3000/api)",
+      "Bash(VITE_API_URL=http://192.168.1.95:3000/api npx vite --host)",
+      "Bash(disown)"
     ]
   }
 }

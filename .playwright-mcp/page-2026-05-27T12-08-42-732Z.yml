@@ -1,0 +1,70 @@
+- generic [ref=e3]:
+  - banner [ref=e9]:
+    - generic [ref=e10]:
+      - button "Abrir menú" [ref=e11]:
+        - img [ref=e12]
+      - generic [ref=e14] [cursor=pointer]:
+        - generic [ref=e16]: 3M
+        - generic [ref=e17]: BETA 3M
+    - generic [ref=e18]:
+      - button "Asistente IA" [ref=e19]:
+        - img [ref=e20]
+      - button "Free" [ref=e148]
+      - generic [ref=e23] [cursor=pointer]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: test_playwright
+          - generic [ref=e26]: Estudiante
+        - generic [ref=e149]: T
+      - button "Cerrar sesión" [ref=e150]:
+        - img [ref=e29]
+  - generic [ref=e31]:
+    - complementary [ref=e32]:
+      - button "Expandir" [ref=e34]:
+        - img [ref=e35]
+      - generic [ref=e37]:
+        - button "Crear nueva nota" [ref=e38]:
+          - img [ref=e42]
+        - button "Todas mis notas" [ref=e45]
+        - generic [ref=e48]:
+          - button "Lápiz inteligente" [ref=e49]:
+            - img [ref=e51]
+            - generic: Lápiz inteligente
+          - button "OCR imagen" [ref=e53]:
+            - img [ref=e55]
+            - generic: OCR imagen
+          - button "TeXificar" [ref=e60]:
+            - img [ref=e62]
+            - generic: TeXificar
+          - button "Tabla → gráfico" [ref=e64]:
+            - img [ref=e66]
+            - generic: Tabla → gráfico
+          - button "Gráfico → tabla" [ref=e67]:
+            - img [ref=e69]
+            - generic: Gráfico → tabla
+          - button "Geometría" [ref=e72]:
+            - img [ref=e74]
+            - generic: Geometría
+          - button "Diagrama" [ref=e76]:
+            - img [ref=e78]
+            - generic: Diagrama
+    - main [ref=e82]:
+      - generic [ref=e83]:
+        - img [ref=e85]
+        - generic [ref=e87]:
+          - heading "Escribe tu primera nota" [level=2] [ref=e88]
+          - paragraph [ref=e89]: Digitaliza tus apuntes con IA y organiza tu conocimiento de forma profesional.
+        - button "Nueva nota inteligente" [ref=e90]:
+          - img [ref=e92]
+          - generic [ref=e94]: Nueva nota inteligente
+        - generic [ref=e95]:
+          - generic [ref=e96]:
+            - img [ref=e97]
+            - generic [ref=e100]: IA integrada
+          - generic [ref=e101]:
+            - img [ref=e102]
+            - generic [ref=e105]: Escaneo OCR
+          - generic [ref=e106]:
+            - img [ref=e107]
+            - generic [ref=e109]: Matemáticas
+    - button "Abrir panel derecho" [ref=e110]:
+      - img [ref=e111]

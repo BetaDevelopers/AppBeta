@@ -1,11 +1,22 @@
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[UNHANDLED REJECTION]', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]', err);
+});
 const { globalLimiter, authLimiter, aiLimiter } = require('./middleware/rateLimiters');
 
 const app = express();
 
-app.use(cors({ origin: '*' }));
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL
+    : '*',
+}));
 app.use(express.json({ limit: '10mb' }));
 
 // ── Limitador global (primer de tot) ──────────────────────────────────────
@@ -18,9 +29,13 @@ app.use('/api/subjects',              require('./routes/subjects.routes'));
 app.use('/api/notes',                 require('./routes/notes.routes'));
 app.use('/api/ai',       aiLimiter,   require('./routes/ai.routes'));
 
-// Health check
+// Health check endpoints
 app.get('/', (req, res) => {
   res.json({ status: 'ok', app: 'Beta 3M API', version: '1.0.0' });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Gestió d'errors global

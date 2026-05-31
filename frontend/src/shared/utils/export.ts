@@ -15,7 +15,5 @@ export const exportToMarkdown = (note: NoteDocument) => {
 };
 
 export const exportToPDF = (note: NoteDocument) => {
-    // Placeholder: In a real app, use jspdf or a specialized library
-    console.log('Exporting to PDF:', note.title);
     window.print();
 };

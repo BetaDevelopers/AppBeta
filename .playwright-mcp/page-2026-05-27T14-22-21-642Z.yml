@@ -1,0 +1,19 @@
+- generic [ref=e1223]:
+  - generic [ref=e1225]:
+    - generic [ref=e1226]:
+      - img [ref=e1228]
+      - heading "Bienvenido" [level=2] [ref=e1230]
+      - paragraph [ref=e1231]: Accede a tu biblioteca inteligente
+    - generic [ref=e1232]:
+      - generic [ref=e1233]:
+        - generic [ref=e1234]:
+          - generic [ref=e1235]: CORREO ELECTRÓNICO
+          - textbox "nombre@correo.com" [ref=e1237]
+        - generic [ref=e1238]:
+          - generic [ref=e1239]: CONTRASEÑA
+          - textbox "••••••••" [ref=e1241]
+      - button "Entrar" [ref=e1243]
+    - paragraph [ref=e1245]:
+      - text: ¿No tienes cuenta?
+      - button "Regístrate gratis" [ref=e1246]
+  - generic [ref=e1247]: Notas Digitales Beta 3M

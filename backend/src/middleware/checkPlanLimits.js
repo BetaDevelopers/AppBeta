@@ -54,15 +54,12 @@ const checkPlanLimits = async (req, res, next) => {
   }
 };
 
-// Middleware per incrementar el comptador DESPRÉS de l'ús exitós
-const incrementAiUsage = async (req, res, next) => {
-  const userId = req.user.id;
+const incrementAiUsage = async (userId) => {
   try {
     await pool.query(
       'UPDATE users SET ai_uses_this_month = ai_uses_this_month + 1 WHERE id = $1',
       [userId]
     );
-    if (next) next();
   } catch (err) {
     console.error('Error incrementing AI usage:', err);
   }

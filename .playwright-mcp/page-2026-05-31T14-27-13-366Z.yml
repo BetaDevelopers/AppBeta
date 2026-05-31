@@ -1,0 +1,22 @@
+- generic [ref=e4]:
+  - generic [ref=e6]:
+    - generic [ref=e7]:
+      - img [ref=e9]
+      - heading "Crea tu cuenta" [level=2] [ref=e34]
+      - paragraph [ref=e12]: Guarda tus apuntes en la nube y usa la IA
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]: CORREO ELECTRÓNICO
+          - textbox "nombre@correo.com" [ref=e18]: fake@test.com
+        - generic [ref=e19]:
+          - generic [ref=e20]: CONTRASEÑA
+          - textbox "••••••••" [ref=e22]: wrongpass123
+        - generic [ref=e35]:
+          - generic [ref=e36]: CONFIRMAR CONTRASEÑA
+          - textbox "••••••••" [ref=e38]
+      - button "Unirse ahora" [ref=e39]
+    - paragraph [ref=e26]:
+      - text: ¿Ya eres miembro?
+      - button "Inicia sesión" [active] [ref=e40]
+  - generic [ref=e28]: Notas Digitales Beta 3M

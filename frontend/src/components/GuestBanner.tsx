@@ -13,7 +13,7 @@ export const GuestBanner: React.FC = () => {
         <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-2 flex items-center justify-center gap-4 text-sm font-medium shadow-lg animate-in fade-in slide-in-from-top duration-500">
             <div className="flex items-center gap-2">
                 <span className="flex h-2 w-2 rounded-full bg-blue-300 animate-pulse" />
-                <span>Modo invitado · Tus notas no se guardan en la nube</span>
+                <span>Modo invitado<span className="hidden sm:inline"> · Tus notas no se guardan en la nube</span></span>
             </div>
             <button
                 onClick={() => openAuthModal('register')}

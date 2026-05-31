@@ -411,7 +411,6 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     if (!rendered) return;
 
     const isMath = looksLikeMath(consumed);
-    console.log('[InkCanvas] isMath:', isMath, 'strokes:', consumed.length);
     const mode = isMath ? 'math' : 'handwriting';
 
     setInternalStatus('processing');

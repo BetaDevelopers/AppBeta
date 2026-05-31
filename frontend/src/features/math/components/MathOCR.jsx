@@ -2,6 +2,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
 import { mathOCR, mathSolve } from "../../../api/mathApi";
+import { Pencil, Undo, Trash2, Zap } from 'lucide-react';
 
 const CANVAS_W = 720;
 const CANVAS_H = 320;
@@ -272,15 +273,15 @@ export default function MathOCR({ onResult } = {}) {
         if (isPanningRef.current && e.touches && e.touches.length >= 2) {
             const dy = panStartY.current - e.touches[0].clientY;
             const scrollEl = canvasRef.current?.closest('[class*="overflow-y"]') ||
-                             canvasRef.current?.closest('.overflow-y-auto') ||
-                             document.querySelector('.overflow-y-auto');
+                canvasRef.current?.closest('.overflow-y-auto') ||
+                document.querySelector('.overflow-y-auto');
             if (scrollEl) scrollEl.scrollTop += dy;
             panStartY.current = e.touches[0].clientY;
             return;
         }
         if (isDrawing) { e.preventDefault(); setCurrentStroke(p => [...p, getPos(e)]); }
     };
-    const onEnd   = () => {
+    const onEnd = () => {
         if (isPanningRef.current) { isPanningRef.current = false; return; }
         if (!isDrawing) return;
         setIsDrawing(false);
@@ -371,29 +372,29 @@ export default function MathOCR({ onResult } = {}) {
     const showResultPanel = loading || autoRecognizing || result;
 
     return (
-        <div className="bg-[#030712]/60 p-8 rounded-[3rem] border border-white/5 backdrop-blur-3xl shadow-2xl max-w-5xl mx-auto font-sans">
+        <div className="bg-[#030712]/60 p-4 rounded-2xl border border-white/5 backdrop-blur-3xl shadow-2xl max-w-5xl mx-auto font-sans">
 
             {/* Header */}
-            <div className="flex items-center gap-6 mb-8">
-                <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-500/10 flex items-center justify-center text-4xl border border-indigo-500/20 shadow-2xl shadow-indigo-500/10 relative">
+            <div className="flex items-center gap-4 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-xl border border-indigo-500/20 relative flex-shrink-0">
                     ∑
-                    {loading && <div className="absolute inset-[-4px] border-2 border-indigo-500/40 border-t-transparent rounded-full animate-spin" />}
+                    {loading && <div className="absolute inset-[-3px] border-2 border-indigo-500/40 border-t-transparent rounded-full animate-spin" />}
                 </div>
-                <div className="flex-1">
-                    <h2 className="text-2xl font-black text-white tracking-tight leading-7">Lápiz Inteligente</h2>
-                    <p className="text-sm text-slate-500 font-medium">Escribe números, fórmulas o dibuja figuras</p>
+                <div className="flex-1 min-w-0">
+                    <h2 className="text-base font-black text-white tracking-tight uppercase">Lápiz inteligente — Matemática</h2>
+                    <p className="text-xs text-slate-500 font-medium">Escribe fórmulas, cálculos, ecuaciones</p>
                 </div>
                 <button
                     onClick={() => setAutoMode(!autoMode)}
-                    className={`px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${autoMode ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-400 shadow-lg shadow-indigo-600/10' : 'bg-white/5 border-white/10 text-slate-500 grayscale'}`}
+                    className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all flex-shrink-0 ${autoMode ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-400' : 'bg-white/5 border-white/10 text-slate-500 grayscale'}`}
                 >
-                    {autoMode ? '✦ Shape Snap ON' : 'Shape Snap OFF'}
+                    {autoMode ? '✦ Snap ON' : 'Snap OFF'}
                 </button>
             </div>
 
             {/* Canvas */}
             <div className="relative group">
-                <div className="bg-black/60 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-inner aspect-[16/7]">
+                <div className="bg-black/60 rounded-2xl border border-white/5 overflow-hidden shadow-inner" style={{ height: '220px' }}>
                     <canvas
                         ref={canvasRef} width={CANVAS_W} height={CANVAS_H}
                         className="w-full h-full cursor-crosshair touch-none"
@@ -401,9 +402,9 @@ export default function MathOCR({ onResult } = {}) {
                         onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd}
                     />
                     {!hasContent && !loading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-10">
-                            <span className="text-8xl mb-4 font-black">✏️</span>
-                            <p className="text-sm font-black uppercase tracking-[0.5em] text-slate-400">Escribe aquí</p>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-10 text-slate-100">
+                            <Pencil size={80} strokeWidth={1} className="mb-4" />
+                            <p className="text-sm font-black uppercase tracking-[0.5em]">Escribe aquí</p>
                         </div>
                     )}
                 </div>
@@ -513,23 +514,23 @@ export default function MathOCR({ onResult } = {}) {
                 <button
                     onClick={undoLast}
                     disabled={!hasContent}
-                    className="h-14 px-8 rounded-2xl bg-white/5 border border-white/10 text-slate-500 text-xs font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all disabled:opacity-20"
+                    className="flex items-center gap-2 h-14 px-8 rounded-2xl bg-white/5 border border-white/10 text-slate-500 text-xs font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all disabled:opacity-20"
                 >
-                    ↩ Deshacer
+                    <Undo size={16} /> Deshacer
                 </button>
                 <button
                     onClick={clearAll}
                     disabled={!hasContent}
-                    className="h-14 px-8 rounded-2xl bg-white/5 border border-white/10 text-slate-500 text-xs font-black uppercase tracking-widest hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/20 transition-all disabled:opacity-20"
+                    className="flex items-center gap-2 h-14 px-8 rounded-2xl bg-white/5 border border-white/10 text-slate-500 text-xs font-black uppercase tracking-widest hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/20 transition-all disabled:opacity-20"
                 >
-                    🗑 Limpiar
+                    <Trash2 size={16} /> Limpiar
                 </button>
                 <button
                     onClick={handleRecognize}
                     disabled={!hasContent || loading}
-                    className="flex-1 h-14 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 text-white font-black text-sm uppercase tracking-widest shadow-2xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transition-all disabled:opacity-20 active:scale-[0.98]"
+                    className="flex items-center justify-center gap-2 flex-1 h-14 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 text-white font-black text-sm uppercase tracking-widest shadow-2xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transition-all disabled:opacity-20 active:scale-[0.98]"
                 >
-                    {loading ? "Reconociendo…" : "⚡ Digitalizar ahora"}
+                    <Zap size={16} /> {loading ? "Reconociendo…" : "Digitalizar ahora"}
                 </button>
             </div>
 

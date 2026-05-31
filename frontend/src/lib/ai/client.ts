@@ -21,7 +21,6 @@ export interface AIClient {
 export const aiClient: AIClient = {
     generateSummary: async (content, options) => {
         // Placeholder for LLM integration (Claude/OpenAI)
-        console.log(`Generating ${options.mode} summary...`);
         await new Promise(r => setTimeout(r, 1500));
         return `Esto es un resumen [${options.mode}] de tus notas sobre ${content.substring(0, 50)}...`;
     },

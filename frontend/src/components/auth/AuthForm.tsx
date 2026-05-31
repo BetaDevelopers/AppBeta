@@ -188,6 +188,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ isRegisterInitial = false, o
                         label="CONTRASEÑA"
                         type="password"
                         required
+                        autoComplete={isRegister ? 'new-password' : 'current-password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
@@ -198,6 +199,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ isRegisterInitial = false, o
                             label="CONFIRMAR CONTRASEÑA"
                             type="password"
                             required
+                            autoComplete="new-password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="••••••••"

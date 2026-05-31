@@ -244,7 +244,9 @@ export default function BottomToolbar({
       {/* Main toolbar */}
       <div
         style={{
-          height: 48,
+          width: '100%',
+          boxSizing: 'border-box',
+          minHeight: 48,
           background: 'rgba(10,10,16,0.98)',
           backdropFilter: 'blur(24px) saturate(200%)',
           WebkitBackdropFilter: 'blur(24px) saturate(200%)',
@@ -255,6 +257,8 @@ export default function BottomToolbar({
           display: 'flex',
           alignItems: 'center',
           gap: 4,
+          overflowX: 'hidden',
+          overflowY: 'visible',
           position: 'relative',
         }}
       >

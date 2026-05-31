@@ -1,0 +1,152 @@
+- generic [ref=e3]:
+  - banner [ref=e9]:
+    - generic [ref=e10]:
+      - button "Abrir menú" [ref=e11]:
+        - img [ref=e12]
+      - generic [ref=e14] [cursor=pointer]:
+        - generic [ref=e16]: 3M
+        - generic [ref=e17]: BETA 3M
+    - generic [ref=e18]:
+      - button "Asistente IA" [ref=e19]:
+        - img [ref=e20]
+      - button "Free" [ref=e148]
+      - generic [ref=e23] [cursor=pointer]:
+        - generic [ref=e24]:
+          - generic [ref=e25]: test_playwright
+          - generic [ref=e26]: Estudiante
+        - generic [ref=e149]: T
+      - button "Cerrar sesión" [ref=e150]:
+        - img [ref=e29]
+  - generic [ref=e31]:
+    - complementary [ref=e32]:
+      - generic [ref=e33]:
+        - generic [ref=e151]: Navegación
+        - button "Colapsar" [ref=e152]:
+          - img [ref=e35]
+      - generic [ref=e37]:
+        - button "Crear nueva nota" [ref=e38]:
+          - generic [ref=e41]:
+            - img [ref=e42]
+            - generic [ref=e153]: Crear nueva nota
+        - button "Todas mis notas 1" [active] [ref=e280]:
+          - generic [ref=e154]: Todas mis notas
+          - generic [ref=e281]: "1"
+        - generic [ref=e155]:
+          - generic [ref=e156]:
+            - generic [ref=e157]: Asignaturas
+            - button "Nueva asignatura" [ref=e158]:
+              - img [ref=e159]
+          - generic [ref=e271] [cursor=pointer]:
+            - generic [ref=e273]: Matemáticas
+            - button "Editar asignatura" [ref=e274]:
+              - img [ref=e275]
+            - button "Eliminar asignatura" [ref=e277]:
+              - img [ref=e278]
+        - button "Herramientas" [ref=e164]:
+          - generic [ref=e165]:
+            - img [ref=e166]
+            - text: Herramientas
+          - img [ref=e168]
+      - generic [ref=e171]:
+        - generic [ref=e172]: Beta Access
+        - generic [ref=e173]: v24.4.09
+    - main [ref=e82]:
+      - generic [ref=e283]:
+        - generic [ref=e284]:
+          - generic [ref=e285]:
+            - button [ref=e286]:
+              - img [ref=e287]
+            - generic [ref=e292]:
+              - combobox [ref=e293] [cursor=pointer]:
+                - option "Sin asignatura"
+                - option "Matemáticas" [selected]
+              - generic:
+                - img
+          - generic [ref=e294]:
+            - generic [ref=e564]: Sincronizado
+            - button [ref=e300]:
+              - img [ref=e301]
+        - generic [ref=e303]:
+          - generic [ref=e304]:
+            - generic [ref=e305]:
+              - generic [ref=e306]:
+                - button "Deshacer (Ctrl+Z)" [disabled] [ref=e307]:
+                  - img [ref=e308]
+                - button "Rehacer (Ctrl+Y)" [disabled] [ref=e311]:
+                  - img [ref=e312]
+              - button "Elegante" [ref=e316]:
+                - img [ref=e317]
+                - generic [ref=e320]: Elegante
+              - button "Resumir" [ref=e321]:
+                - img [ref=e322]
+                - generic [ref=e325]: Resumir
+              - button "Tareas" [ref=e326]:
+                - img [ref=e327]
+                - generic [ref=e330]: Tareas
+              - button "Estudio" [ref=e331]:
+                - img [ref=e332]
+                - generic [ref=e334]: Estudio
+              - button "Voz" [ref=e335]:
+                - img [ref=e336]
+                - generic [ref=e339]: Voz
+            - generic [ref=e341]:
+              - textbox "Sin título..." [ref=e342]: Nota de Prueba
+              - generic [ref=e343]:
+                - generic [ref=e346]:
+                  - paragraph [ref=e518]:
+                    - text: Esta es mi
+                    - strong [ref=e531]: primera nota
+                    - text: de prueba con Beta3M
+                  - heading "Conceptos importantes" [level=2] [ref=e539]
+                  - list [ref=e548]:
+                    - listitem [ref=e549]:
+                      - paragraph [ref=e550]: Álgebra lineal
+                    - listitem [ref=e551]:
+                      - paragraph [ref=e552]: Cálculo diferencial
+                    - listitem [ref=e553]:
+                      - paragraph [ref=e554]: Estadística y probabilidad
+                  - paragraph [ref=e540]
+                - img
+          - generic [ref=e349]:
+            - button "🌐 ES" [ref=e351] [cursor=pointer]:
+              - generic [ref=e352]: 🌐
+              - generic [ref=e353]: ES
+            - generic [ref=e355]:
+              - button "Aa" [ref=e357] [cursor=pointer]
+              - button "Negrita" [ref=e359] [cursor=pointer]:
+                - img [ref=e360]
+              - button "Cursiva" [ref=e362] [cursor=pointer]:
+                - img [ref=e363]
+              - button "Subrayado" [ref=e365] [cursor=pointer]:
+                - img [ref=e366]
+              - button "A" [ref=e369] [cursor=pointer]:
+                - generic [ref=e370]: A
+              - button "Título 1" [ref=e373] [cursor=pointer]:
+                - img [ref=e374]
+              - button "Título 2" [ref=e376] [cursor=pointer]:
+                - img [ref=e377]
+              - button "Título 3" [ref=e379] [cursor=pointer]:
+                - img [ref=e380]
+              - button "Lista" [ref=e384] [cursor=pointer]:
+                - img [ref=e385]
+              - button "Lista numerada" [ref=e386] [cursor=pointer]:
+                - img [ref=e387]
+              - button "Izquierda" [ref=e391] [cursor=pointer]:
+                - img [ref=e392]
+              - button "Centro" [ref=e393] [cursor=pointer]:
+                - img [ref=e394]
+              - button "Derecha" [ref=e395] [cursor=pointer]:
+                - img [ref=e396]
+            - generic [ref=e398]:
+              - button "Dictado por voz" [ref=e400] [cursor=pointer]:
+                - img [ref=e401]
+              - button "😊" [ref=e405] [cursor=pointer]:
+                - generic [ref=e406]: 😊
+              - button "Abrir teclado" [ref=e407] [cursor=pointer]:
+                - img [ref=e408]
+              - button "Modo dibujo" [ref=e410] [cursor=pointer]:
+                - img [ref=e411]
+              - button "Más opciones" [ref=e415] [cursor=pointer]:
+                - img [ref=e416]
+    - button "Abrir panel derecho" [ref=e110]:
+      - img [ref=e111]

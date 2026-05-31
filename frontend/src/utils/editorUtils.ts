@@ -63,6 +63,6 @@ export const insertLatexIntoEditor = (editor: any, latex: string) => {
 
     editor.chain()
         .focus()
-        .insertContent(`$$${latex}$$`)
+        .insertInlineMath({ latex })
         .run();
 };

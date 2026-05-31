@@ -4,9 +4,20 @@ import { useNotesStore } from '../../store/notesStore';
 import { useMathToolsStore } from '../../store/mathToolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
+import { BetaLogo } from '../ui/BetaLogo';
 import { SubjectModal } from '../subjects/SubjectModal';
 import type { Subject } from '../../types';
-import { PenLine, ScanLine, Sigma, BarChart2, TrendingDown, Triangle, GitBranch, Wrench } from 'lucide-react';
+import { ConfirmModal } from '../ui/ConfirmModal';
+import {
+    PenLine, ScanLine, Sigma, BarChart2, TrendingDown, Triangle, GitBranch, Wrench, MoreHorizontal, Trash2, Pencil, Folder,
+    FileText, Ruler, Leaf, Zap, BookOpen, Microscope, Palette, Monitor, Landmark, Music, Globe, Lightbulb, Calculator, FlaskConical
+} from 'lucide-react';
+
+const SUBJECT_ICON_MAP: Record<string, React.ElementType> = {
+    FileText, Ruler, Leaf, Zap, BookOpen, Microscope,
+    Palette, Monitor, Landmark, Music, Globe, Lightbulb,
+    Calculator, FlaskConical, BarChart2,
+};
 
 interface SidebarLeftProps {
     open: boolean;
@@ -17,13 +28,13 @@ interface SidebarLeftProps {
 }
 
 const EINES: { tool: string; icon: React.ReactNode; label: string }[] = [
-    { tool: 'mathOCR',      icon: <PenLine size={18} />,     label: 'Lápiz inteligente' },
-    { tool: 'mathOCRImage', icon: <ScanLine size={18} />,    label: 'OCR imagen' },
-    { tool: 'mathEditor',   icon: <Sigma size={18} />,       label: 'TeXificar' },
-    { tool: 'tableToChart', icon: <BarChart2 size={18} />,   label: 'Tabla → gráfico' },
+    { tool: 'mathOCR', icon: <PenLine size={18} />, label: 'Lápiz inteligente' },
+    { tool: 'mathOCRImage', icon: <ScanLine size={18} />, label: 'OCR imagen' },
+    { tool: 'mathEditor', icon: <Sigma size={18} />, label: 'TeXificar' },
+    { tool: 'tableToChart', icon: <BarChart2 size={18} />, label: 'Tabla → gráfico' },
     { tool: 'chartToTable', icon: <TrendingDown size={18} />, label: 'Gráfico → tabla' },
-    { tool: 'geometry',     icon: <Triangle size={18} />,    label: 'Geometría' },
-    { tool: 'diagram',      icon: <GitBranch size={18} />,   label: 'Diagrama' },
+    { tool: 'geometry', icon: <Triangle size={18} />, label: 'Geometría' },
+    { tool: 'diagram', icon: <GitBranch size={18} />, label: 'Diagrama' },
 ];
 
 interface ContextMenu {
@@ -49,6 +60,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
     const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
     const [einesOpen, setEinesOpen] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
+    const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
 
     const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const longPressActive = useRef(false);
@@ -72,14 +84,10 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
         setContextMenu(null);
     }, []);
 
-    const handleDeleteSubject = useCallback(async (s: Subject) => {
+    const handleDeleteSubject = useCallback((s: Subject) => {
         setContextMenu(null);
-        const confirmed = window.confirm(
-            `¿Eliminar "${s.name}"? Las notas quedarán sin asignatura.`
-        );
-        if (!confirmed) return;
-        await deleteSubject(s.id);
-    }, [deleteSubject]);
+        setSubjectToDelete(s);
+    }, []);
 
     const handleOpenTool = (tool: any) => {
         if (isGuest) { openAuthModal('selection'); return; }
@@ -142,29 +150,33 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                 style={{ width: isOverlay ? (open ? '240px' : '0px') : sidebarWidth }}
             >
                 {/* ── Header ─────────────────────────────────────── */}
-                <div className={`flex items-center pt-5 pb-4 ${isIconOnly ? 'justify-center px-2' : 'justify-between px-5'}`}>
+                <div className={`flex items-center pt-4 pb-3 ${isIconOnly ? 'justify-center px-2' : 'justify-between px-4'}`}>
                     {!isIconOnly && (
-                        <span className="text-[11px] font-semibold text-[#444] uppercase tracking-widest">
-                            Navegación
+                        <span className="font-bold tracking-tight flex items-center gap-2">
+                            <BetaLogo className="w-6 h-6 rounded-md shadow-sm" />
+                            <span className="text-[#fafafa] text-[15px]">Beta3M</span>
                         </span>
                     )}
-                    <button
-                        onClick={isOverlay ? onClose : onToggle}
-                        className="flex items-center justify-center rounded-lg text-[#444] hover:text-[#fafafa] hover:bg-[#111] transition-colors"
-                        style={{ width: '44px', height: '44px' }}
-                        aria-label={isOverlay ? 'Cerrar sidebar' : (collapsed ? 'Expandir' : 'Colapsar')}
-                        title={isOverlay ? 'Cerrar' : (collapsed ? 'Expandir sidebar' : 'Colapsar sidebar')}
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            {isOverlay || !collapsed ? (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"
-                                    d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
-                            ) : (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"
-                                    d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                            )}
-                        </svg>
-                    </button>
+                    {/* Only show collapse/expand button in non-overlay (desktop) mode */}
+                    {!isOverlay && (
+                        <button
+                            onClick={onToggle}
+                            className="flex items-center justify-center rounded-lg text-[#444] hover:text-[#fafafa] hover:bg-[#111] transition-colors flex-shrink-0"
+                            style={{ width: '40px', height: '40px' }}
+                            aria-label={collapsed ? 'Expandir' : 'Colapsar'}
+                            title={collapsed ? 'Expandir sidebar' : 'Colapsar sidebar'}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {!collapsed ? (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"
+                                        d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
+                                ) : (
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"
+                                        d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                                )}
+                            </svg>
+                        </button>
+                    )}
                 </div>
 
                 <div className={`pb-4 flex-1 overflow-y-auto scrollbar-hide flex flex-col gap-4 ${isIconOnly ? 'px-2' : 'px-4'}`}>
@@ -247,40 +259,51 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                                         onMouseUp={cancelLongPress}
                                         onTouchEnd={cancelLongPress}
                                     >
-                                        {s.icon ? (
-                                            <span className="text-base leading-none flex-shrink-0 w-5 text-center">{s.icon}</span>
+                                        {s.icon && SUBJECT_ICON_MAP[s.icon] ? (
+                                            <span
+                                                className="flex-shrink-0 w-6 text-center text-[#555] opacity-80"
+                                                style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    color: s.color,
+                                                }}
+                                            >
+                                                {React.createElement(SUBJECT_ICON_MAP[s.icon], { size: 18 })}
+                                            </span>
                                         ) : (
                                             <div
-                                                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                                className="w-2.5 h-2.5 rounded-full flex-shrink-0 ml-1.5 mr-0.5"
                                                 style={{
                                                     backgroundColor: s.color,
                                                     boxShadow: activeSubjectId === s.id ? `0 0 10px ${s.color}` : 'none',
                                                 }}
                                             />
                                         )}
-                                        <span className="truncate flex-1 text-left">{s.name}</span>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleOpenEdit(s); }}
-                                            className="flex-shrink-0 flex items-center justify-center rounded-lg text-[#444] hover:text-[#555] hover:bg-[#111] transition-colors"
-                                            style={{ width: '32px', height: '32px' }}
-                                            aria-label="Editar asignatura"
-                                            title="Editar"
-                                        >
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); handleDeleteSubject(s); }}
-                                            className="flex-shrink-0 flex items-center justify-center rounded-lg text-[#444] hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                                            style={{ width: '32px', height: '32px' }}
-                                            aria-label="Eliminar asignatura"
-                                            title="Eliminar"
-                                        >
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                            </svg>
-                                        </button>
+                                        <span className="truncate flex-1 text-left min-w-0 leading-none">{s.name}</span>
+                                        {/* Three-dots context menu */}
+                                        <div className="relative flex-shrink-0">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (contextMenu?.subjectId === s.id) {
+                                                        setContextMenu(null);
+                                                    } else {
+                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                        setContextMenu({
+                                                            subjectId: s.id,
+                                                            x: rect.right + 10,
+                                                            y: rect.bottom,
+                                                        });
+                                                    }
+                                                }}
+                                                className="flex items-center justify-center rounded-lg text-[#444] hover:text-[#aaa] hover:bg-[#111] transition-colors opacity-0 group-hover:opacity-100"
+                                                style={{ width: '28px', height: '28px' }}
+                                                aria-label="Opciones"
+                                            >
+                                                <MoreHorizontal size={14} />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                                 {subjects.length === 0 && (
@@ -355,7 +378,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                     <div className="px-5 py-4 border-t border-[#1a1a1a] safe-area-bottom">
                         <div className="flex items-center justify-between">
                             <span className="text-[11px] text-[#444]">Beta Access</span>
-                            <span className="text-[11px] text-[#444]">v24.4.09</span>
+                            <span className="text-[11px] text-[#444]">v1.0.0-beta</span>
                         </div>
                     </div>
                 )}
@@ -369,28 +392,34 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                     <>
                         <div className="fixed inset-0 z-[300]" onClick={closeContextMenu} />
                         <div
-                            className="fixed z-[301] bg-[#111] border border-[#1a1a1a] rounded-xl shadow-2xl py-1 min-w-[140px]"
+                            className="fixed z-[301] bg-[#111] border border-[#1a1a1a] rounded-xl shadow-2xl py-1 min-w-[160px]"
                             style={{ left: contextMenu.x, top: contextMenu.y }}
                         >
                             <button
-                                className="w-full flex items-center gap-3 px-4 py-3 text-[14px] text-[#fafafa] hover:bg-[#111] transition-colors text-left"
+                                className="w-full flex items-center gap-3 px-4 py-3 text-[14px] text-[#fafafa] hover:bg-[#1a1a1a] transition-colors text-left"
                                 style={{ minHeight: '48px' }}
-                                onClick={() => handleOpenEdit(s)}
+                                onClick={() => { handleOpenEdit(s); closeContextMenu(); }}
                             >
-                                <svg className="w-4 h-4 text-[#555]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                Editar
+                                <Pencil size={15} className="text-[#555]" />
+                                Renombrar
                             </button>
+                            <button
+                                disabled
+                                title="Próximamente"
+                                className="w-full flex items-center gap-3 px-4 py-3 text-[14px] text-[#333] cursor-not-allowed text-left"
+                                style={{ minHeight: '48px' }}
+                            >
+                                <Folder size={15} />
+                                Mover a...
+                            </button>
+                            <div className="h-px bg-[#1a1a1a] mx-2" />
                             <button
                                 className="w-full flex items-center gap-3 px-4 py-3 text-[14px] text-red-400 hover:bg-red-500/10 transition-colors text-left"
                                 style={{ minHeight: '48px' }}
-                                onClick={() => handleDeleteSubject(s)}
+                                onClick={() => { handleDeleteSubject(s); closeContextMenu(); }}
                             >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                                Eliminar
+                                <Trash2 size={15} />
+                                Borrar
                             </button>
                         </div>
                     </>
@@ -405,6 +434,15 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                     setEditingSubject(null);
                 }}
             />
+
+            {subjectToDelete && (
+                <ConfirmModal
+                    title="Borrar asignatura"
+                    description={`¿Eliminar "${subjectToDelete.name}"? Las notas quedarán sin asignatura.`}
+                    onConfirm={async () => { await deleteSubject(subjectToDelete.id); setSubjectToDelete(null); }}
+                    onCancel={() => setSubjectToDelete(null)}
+                />
+            )}
         </>
     );
 };
