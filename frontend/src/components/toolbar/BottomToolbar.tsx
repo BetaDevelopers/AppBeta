@@ -111,6 +111,7 @@ export default function BottomToolbar({
   const [showStickers, setShowStickers] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
   const [voiceInterim, setVoiceInterim] = useState('');
+  const [voiceLang, setVoiceLang] = useState('auto');
 
   // Voice input: insert final results in Tiptap, show interim only in the indicator
   const handleVoiceResult = useCallback((text: string, isFinal: boolean) => {
@@ -123,7 +124,7 @@ export default function BottomToolbar({
     }
   }, [editor]);
 
-  const { isListening, isSupported, toggle: toggleVoice } = useVoiceInput(handleVoiceResult);
+  const { isListening, isSupported, toggle: toggleVoice } = useVoiceInput(handleVoiceResult, voiceLang);
 
   const handleAddImage = () => {
     const input = document.createElement('input');
@@ -226,24 +227,16 @@ export default function BottomToolbar({
       {/* Main toolbar */}
       <div
         style={{
-<<<<<<< HEAD
           width: '100%',
           boxSizing: 'border-box',
-          minHeight: 48,
+          minHeight: 56,
           background: 'rgba(10,10,16,0.98)',
           backdropFilter: 'blur(24px) saturate(200%)',
           WebkitBackdropFilter: 'blur(24px) saturate(200%)',
           borderTop: '1px solid rgba(255,255,255,0.10)',
-=======
-          height: 56,
-          background: 'rgba(12,12,18,0.96)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
->>>>>>> parent of 7d49d8a0 (push 2)
           paddingLeft: 8,
           paddingRight: 8,
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 44px)',
           display: 'flex',
           alignItems: 'center',
           gap: 4,
@@ -285,6 +278,8 @@ export default function BottomToolbar({
             isVoiceListening={isListening}
             onToggleVoice={toggleVoice}
             isVoiceSupported={isSupported}
+            voiceLang={voiceLang}
+            onVoiceLangChange={setVoiceLang}
           />
         )}
       </div>

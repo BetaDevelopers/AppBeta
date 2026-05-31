@@ -168,13 +168,8 @@ export default function DashboardPage() {
                     />
                 )}
 
-<<<<<<< HEAD
-                {/* Right sidebar toggle button — only on desktop/tablet-landscape */}
-                {(bp === 'desktop' || bp === 'tablet-landscape') && !rightOpen && (
-=======
-                {/* Right sidebar toggle button — visible on tablet/mobile */}
-                {!rightOpen && isRightOverlay && (
->>>>>>> parent of 7d49d8a0 (push 2)
+                {/* Right sidebar toggle button — visible on all breakpoints when closed */}
+                {!rightOpen && (
                     <button
                         className="toolbar absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center bg-[#1e293b] border border-white/10 border-r-0 rounded-l-xl text-[#555] hover:text-white transition-colors shadow-xl"
                         style={{ width: '28px', height: '52px' }}

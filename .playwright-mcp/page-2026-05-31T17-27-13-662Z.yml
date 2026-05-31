@@ -1,0 +1,98 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e7]: Modo invitado · Tus notas no se guardan en la nube
+    - button "Crear cuenta gratuita" [ref=e8]
+  - banner [ref=e9]:
+    - generic [ref=e10]:
+      - button "Abrir menú" [ref=e11]:
+        - img [ref=e12]
+      - generic [ref=e15] [cursor=pointer]:
+        - img [ref=e16]:
+          - generic [ref=e18]: Β
+        - generic [ref=e19]: Beta3M
+    - generic [ref=e20]:
+      - generic [ref=e23]: Conectado
+      - button "Asistente IA" [ref=e24]:
+        - img [ref=e25]
+      - button "Modo Invitado Sin cuenta ?" [ref=e29] [cursor=pointer]:
+        - generic [ref=e30]:
+          - generic [ref=e31]: Modo Invitado
+          - generic [ref=e32]: Sin cuenta
+        - generic [ref=e34]: "?"
+  - generic [ref=e35]:
+    - complementary [ref=e36]:
+      - generic [ref=e37]:
+        - generic [ref=e38]:
+          - img [ref=e39]:
+            - generic [ref=e41]: Β
+          - generic [ref=e42]: Beta3M
+        - button "Colapsar" [ref=e43]:
+          - img [ref=e44]
+      - generic [ref=e46]:
+        - button "Crear nueva nota" [ref=e47]:
+          - generic [ref=e50]:
+            - img [ref=e51]
+            - generic [ref=e53]: Crear nueva nota
+        - button "Todas mis notas 1" [ref=e55]:
+          - generic [ref=e57]: Todas mis notas
+          - generic [ref=e58]: "1"
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - generic [ref=e61]: Asignaturas
+            - button "Nueva asignatura" [ref=e62]:
+              - img [ref=e63]
+          - paragraph [ref=e67]: Sin asignaturas
+        - button "Herramientas" [ref=e69]:
+          - generic [ref=e70]:
+            - img [ref=e71]
+            - text: Herramientas
+          - img [ref=e73]
+      - generic [ref=e76]:
+        - generic [ref=e77]: Beta Access
+        - generic [ref=e78]: v1.0.0-beta
+    - main [ref=e79]:
+      - generic [ref=e535]:
+        - generic [ref=e536]:
+          - generic [ref=e537]:
+            - heading "Mis notas" [level=2] [ref=e538]
+            - paragraph [ref=e539]: 1 nota
+          - button "Nueva nota" [ref=e540]:
+            - img [ref=e541]
+            - generic [ref=e543]: Nueva nota
+        - generic [ref=e544]:
+          - generic [ref=e545]:
+            - img [ref=e546]
+            - textbox "Buscar notas..." [ref=e549]
+          - button "IA" [disabled] [ref=e550]:
+            - img [ref=e551]
+            - generic [ref=e554]: IA
+        - button "Sin título Sin contenido... hace 4 días" [ref=e557] [cursor=pointer]:
+          - generic [ref=e558]:
+            - generic [ref=e559]:
+              - heading "Sin título" [level=4] [ref=e560]
+              - button [ref=e562]:
+                - img [ref=e563]
+            - paragraph [ref=e567]: Sin contenido...
+            - generic [ref=e569]:
+              - img [ref=e570]
+              - generic [ref=e572]: hace 4 días
+    - complementary [ref=e119]:
+      - generic [ref=e120]:
+        - generic [ref=e121]:
+          - generic [ref=e122]:
+            - img [ref=e124]
+            - generic [ref=e126]: Recursos
+          - paragraph [ref=e127]: Archivos adjuntos
+        - generic [ref=e128]:
+          - button "OCR Express" [ref=e129]:
+            - img [ref=e130]
+            - generic [ref=e135]: OCR Express
+            - img [ref=e136]
+          - button "Insertar imagen" [disabled]:
+            - generic:
+              - img
+            - generic: Insertar imagen
+        - generic [ref=e140]:
+          - img [ref=e142]
+          - generic [ref=e145]: Exportar
+        - paragraph [ref=e574]: Abre una nota para exportar

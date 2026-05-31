@@ -73,7 +73,10 @@
       "Bash(Select-String \"IPv4\")",
       "Bash(set VITE_API_URL=http://192.168.1.95:3000/api)",
       "Bash(VITE_API_URL=http://192.168.1.95:3000/api npx vite --host)",
-      "Bash(disown)"
+      "Bash(disown)",
+      "Bash(Start-Process cmd *)",
+      "mcp__plugin_playwright_playwright__browser_close",
+      "Bash(dir \"C:\\\\Users\\\\Nacho\\\\Documents\\\\GitHub\\\\AppBeta\\\\.playwright-mcp\")"
     ]
   }
 }

@@ -18,27 +18,32 @@ export function useFloatingHistory(
 
   useEffect(() => { floatingRef.current = floatingObjects; }, [floatingObjects]);
 
-  // Load from Dexie when note changes
+  // Load from Dexie when note changes — also restores the current floating objects
   useEffect(() => {
     if (!noteId) {
       stackRef.current = [];
       indexRef.current = -1;
       setCanUndo(false);
       setCanRedo(false);
+      setFloatingObjects([]);
       return;
     }
     db.noteHistory.get(noteId).then(record => {
       if (record?.stack?.length) {
-        stackRef.current = record.stack.slice(-MAX_HISTORY);
-        indexRef.current = stackRef.current.length - 1;
+        const stack = record.stack.slice(-MAX_HISTORY);
+        stackRef.current = stack;
+        indexRef.current = stack.length - 1;
+        // Restore the most recent snapshot
+        setFloatingObjects(JSON.parse(JSON.stringify(stack[stack.length - 1])));
       } else {
         stackRef.current = [];
         indexRef.current = -1;
+        setFloatingObjects([]);
       }
       setCanUndo(indexRef.current > 0);
       setCanRedo(false);
     }).catch(() => {});
-  }, [noteId]);
+  }, [noteId, setFloatingObjects]);
 
   const syncUi = () => {
     setCanUndo(indexRef.current > 0);
@@ -50,7 +55,7 @@ export function useFloatingHistory(
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       const stack = stackRef.current;
-      if (stack.length > 1) {
+      if (stack.length > 0) {
         db.noteHistory.put({ noteId, stack }).catch(() => {});
       }
     }, 1000);

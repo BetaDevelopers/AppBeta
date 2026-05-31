@@ -33,6 +33,7 @@ import { useAutoBeautify } from '../../hooks/useAutoBeautify';
 import FloatingObjectComponent from './FloatingObject';
 import type { FloatingObject } from '../../types/canvas';
 import FlashcardsMode from './FlashcardsMode';
+import ShapeDrawOverlay from './ShapeDrawOverlay';
 
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -298,6 +299,8 @@ export const NoteEditor: React.FC = () => {
         opacity: 1,
         drawWithFinger: false,
         palmRejection: true,
+        shapeType: 'rect',
+        shapeFill: false,
     });
     const [rulerActive, setRulerActive] = useState(false);
     const [rulerState, setRulerState] = useState<RulerState>({ ax: 80, ay: 200, bx: 420, by: 200 });
@@ -916,13 +919,17 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
     }, [drawSettings.color, pushSnapshot]);
 
     const handleAddFloatingObject = useCallback((obj: Omit<FloatingObject, 'id' | 'isSelected' | 'rotation'>) => {
+        const autoSelect = obj.type === 'shape';
         const full: FloatingObject = {
             ...obj,
             id: crypto.randomUUID(),
-            isSelected: false,
+            isSelected: autoSelect,
             rotation: 0,
         };
-        setFloatingObjects(prev => [...prev, full]);
+        setFloatingObjects(prev => [
+            ...(autoSelect ? prev.map(o => ({ ...o, isSelected: false })) : prev),
+            full,
+        ]);
         setTimeout(() => pushSnapshot(), 0);
     }, [pushSnapshot]);
 
@@ -1268,6 +1275,17 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
                             {/* LAYER 3.5 — Ruler overlay */}
                             {inkMode && rulerActive && (
                                 <RulerOverlay ruler={rulerState} onChange={setRulerState} />
+                            )}
+
+                            {/* LAYER 4 — Shape draw overlay (active when shape tool selected) */}
+                            {inkMode && drawSettings.tool === 'shape' && (
+                                <ShapeDrawOverlay
+                                    shapeType={drawSettings.shapeType}
+                                    color={drawSettings.color}
+                                    strokeWidth={drawSettings.width}
+                                    fill={drawSettings.shapeFill}
+                                    onShapeCreated={handleAddFloatingObject}
+                                />
                             )}
                         </div>
                         );

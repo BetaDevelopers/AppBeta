@@ -14,6 +14,21 @@ const EMOJI_GRID = [
   '📚','📖','✏️','📝','💡','🔬','🧠','🎨','🚀','⚡','🔥','💎',
 ];
 
+const VOICE_LANGS = [
+  { code: 'auto', flag: '🌐', label: 'Auto',     bcp: 'auto' },
+  { code: 'es',   flag: '🇪🇸', label: 'Español',  bcp: 'es-ES' },
+  { code: 'en',   flag: '🇬🇧', label: 'English',  bcp: 'en-US' },
+  { code: 'fr',   flag: '🇫🇷', label: 'Français', bcp: 'fr-FR' },
+  { code: 'de',   flag: '🇩🇪', label: 'Deutsch',  bcp: 'de-DE' },
+  { code: 'it',   flag: '🇮🇹', label: 'Italiano', bcp: 'it-IT' },
+  { code: 'pt',   flag: '🇵🇹', label: 'Português',bcp: 'pt-PT' },
+  { code: 'ca',   flag: '🏴',  label: 'Català',   bcp: 'ca-ES' },
+  { code: 'zh',   flag: '🇨🇳', label: '中文',     bcp: 'zh-CN' },
+  { code: 'ja',   flag: '🇯🇵', label: '日本語',   bcp: 'ja-JP' },
+  { code: 'ko',   flag: '🇰🇷', label: '한국어',   bcp: 'ko-KR' },
+  { code: 'ar',   flag: '🇸🇦', label: 'العربية',  bcp: 'ar-SA' },
+];
+
 interface Props {
   editor: any;
   onEnterDrawMode: () => void;
@@ -25,6 +40,8 @@ interface Props {
   isVoiceListening: boolean;
   onToggleVoice: () => void;
   isVoiceSupported: boolean;
+  voiceLang: string;
+  onVoiceLangChange: (lang: string) => void;
 }
 
 function TBtn({
@@ -68,11 +85,14 @@ export default function TextModeToolbar({
   isVoiceListening,
   onToggleVoice,
   isVoiceSupported,
+  voiceLang,
+  onVoiceLangChange,
 }: Props) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFontPicker, setShowFontPicker] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showLangPicker, setShowLangPicker] = useState(false);
 
   const colorBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -259,22 +279,82 @@ export default function TextModeToolbar({
       {/* ── Right fixed zone ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
 
-        {/* Voice */}
+        {/* Voice + Language picker */}
         {isVoiceSupported && (
-          <div style={{ position: 'relative' }}>
-            <TBtn onClick={onToggleVoice} active={isVoiceListening} title={isVoiceListening ? 'Parar dictado' : 'Dictado por voz'}>
-              {isVoiceListening ? <MicOff size={16} /> : <Mic size={16} />}
-            </TBtn>
-            {isVoiceListening && (
-              <span style={{
-                position: 'absolute', inset: -2,
-                borderRadius: 11,
-                border: '2px solid #EF4444',
-                animation: 'voice-ring 1s ease infinite',
-                pointerEvents: 'none',
-              }} />
-            )}
-          </div>
+          <>
+            {/* Language dropdown */}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => { setShowLangPicker(p => !p); }}
+                title="Idioma del dictado"
+                style={{
+                  height: 40, padding: '0 8px',
+                  borderRadius: 9, border: showLangPicker ? '1px solid rgba(59,130,246,0.55)' : '1px solid transparent',
+                  background: showLangPicker ? 'rgba(59,130,246,0.22)' : 'transparent',
+                  color: 'rgba(255,255,255,0.7)',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  cursor: 'pointer', fontSize: 15, flexShrink: 0,
+                }}
+              >
+                <span>{VOICE_LANGS.find(l => l.code === voiceLang)?.flag ?? '🌐'}</span>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.5 }}>
+                  <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              {showLangPicker && (
+                <div
+                  onPointerDown={e => e.stopPropagation()}
+                  style={{
+                    position: 'absolute', bottom: 'calc(100% + 8px)', left: 0,
+                    background: 'rgba(14,14,22,0.98)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 12, padding: 4,
+                    backdropFilter: 'blur(20px)',
+                    zIndex: 300, minWidth: 160,
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.7)',
+                    maxHeight: 320, overflowY: 'auto',
+                  }}
+                >
+                  {VOICE_LANGS.map(lang => (
+                    <button
+                      key={lang.code}
+                      onClick={() => { onVoiceLangChange(lang.bcp === 'auto' ? 'auto' : lang.bcp); setShowLangPicker(false); }}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '8px 10px', borderRadius: 8,
+                        background: (lang.bcp === 'auto' ? 'auto' : lang.bcp) === voiceLang
+                          ? 'rgba(59,130,246,0.2)' : 'transparent',
+                        border: 'none', color: '#e2e8f0',
+                        fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'left',
+                      }}
+                      onPointerEnter={e => { if ((lang.bcp === 'auto' ? 'auto' : lang.bcp) !== voiceLang) e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                      onPointerLeave={e => { if ((lang.bcp === 'auto' ? 'auto' : lang.bcp) !== voiceLang) e.currentTarget.style.background = 'transparent'; }}
+                    >
+                      <span style={{ fontSize: 16 }}>{lang.flag}</span>
+                      <span>{lang.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Mic button */}
+            <div style={{ position: 'relative' }}>
+              <TBtn onClick={onToggleVoice} active={isVoiceListening} title={isVoiceListening ? 'Parar dictado' : 'Dictado por voz'}>
+                {isVoiceListening ? <MicOff size={16} /> : <Mic size={16} />}
+              </TBtn>
+              {isVoiceListening && (
+                <span style={{
+                  position: 'absolute', inset: -2,
+                  borderRadius: 11,
+                  border: '2px solid #EF4444',
+                  animation: 'voice-ring 1s ease infinite',
+                  pointerEvents: 'none',
+                }} />
+              )}
+            </div>
+          </>
         )}
 
         {/* Emoji */}

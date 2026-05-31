@@ -27,6 +27,11 @@ export const ChartBlock = Node.create({
                 parseHTML: el => parseInt((el as HTMLElement).dataset.chartTy || '0') || 0,
                 renderHTML: attrs => ({ 'data-chart-ty': String(attrs.ty ?? 0) }),
             },
+            locked: {
+                default: false,
+                parseHTML: el => (el as HTMLElement).dataset.chartLocked === 'true',
+                renderHTML: attrs => attrs.locked ? { 'data-chart-locked': 'true' } : {},
+            },
         };
     },
 
