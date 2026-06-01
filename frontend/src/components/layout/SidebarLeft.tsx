@@ -4,7 +4,6 @@ import { useNotesStore } from '../../store/notesStore';
 import { useMathToolsStore } from '../../store/mathToolsStore';
 import { useAuthStore } from '../../store/authStore';
 import { useUIStore } from '../../store/uiStore';
-import { BetaLogo } from '../ui/BetaLogo';
 import { SubjectModal } from '../subjects/SubjectModal';
 import type { Subject } from '../../types';
 import { ConfirmModal } from '../ui/ConfirmModal';
@@ -149,13 +148,7 @@ export const SidebarLeft: React.FC<SidebarLeftProps> = ({
                 style={{ width: isOverlay ? (open ? '240px' : '0px') : sidebarWidth }}
             >
                 {/* ── Header ─────────────────────────────────────── */}
-                <div className={`flex items-center pt-4 pb-3 ${isIconOnly ? 'justify-center px-2' : 'justify-between px-4'}`}>
-                    {!isIconOnly && (
-                        <span className="font-bold tracking-tight flex items-center gap-2">
-                            <BetaLogo className="w-6 h-6 rounded-md shadow-sm" />
-                            <span className="text-[#fafafa] text-[15px]">Beta3M</span>
-                        </span>
-                    )}
+                <div className={`flex items-center pt-4 pb-3 ${isIconOnly ? 'justify-center px-2' : 'justify-end px-4'}`}>
                     {/* Only show collapse/expand button in non-overlay (desktop) mode */}
                     {!isOverlay && (
                         <button

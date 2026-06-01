@@ -148,18 +148,19 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
             `}
             style={{ width: 'var(--sidebar-right)' }}
         >
-            {/* Close button — shown when overlay */}
-            {isOverlay && onClose && (
-                <div className="flex items-center justify-between px-5 pt-4 pb-2">
+            {/* Header with collapse button — always shown when onClose is available */}
+            {onClose && (
+                <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-[#1a1a1a]">
                     <span className="text-[11px] font-semibold text-[#444] uppercase tracking-widest">Panel</span>
                     <button
                         onClick={onClose}
                         className="flex items-center justify-center rounded-xl text-[#444] hover:text-[#fafafa] hover:bg-[#111] transition-colors"
-                        style={{ width: '44px', height: '44px' }}
-                        aria-label="Cerrar panel"
+                        style={{ width: '40px', height: '40px' }}
+                        aria-label="Ocultar panel"
+                        title="Ocultar panel"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 18l6-6-6-6" />
                         </svg>
                     </button>
                 </div>

@@ -3,7 +3,7 @@ import { smoothPoints } from './utils/strokeUtils';
 import type { AutoStatus } from '../../hooks/useAutoBeautify';
 import type { FloatingObject } from '../../types/canvas';
 import { postCanvasForOcr, fixHandwritingText } from '../../services/ocrApi';
-import type { DrawTool } from '../toolbar/toolbarTypes';
+import type { DrawTool, ShapeType } from '../toolbar/toolbarTypes';
 import type { RulerState } from '../toolbar/RulerOverlay';
 import { projectPointOnLine } from '../toolbar/RulerOverlay';
 import { useMultiTouch } from '../../hooks/useMultiTouch';
@@ -44,6 +44,7 @@ type Props = {
   onOcrText?: (text: string, cx: number, cy: number) => void;
   onTextTap?: (x: number, y: number) => void;
   processingStatus?: AutoStatus;
+  onShapeSnap?: (type: ShapeType, bbox: { x: number; y: number; w: number; h: number }) => void;
 };
 
 export type InkCanvasRef = {
@@ -202,6 +203,67 @@ function hexOrRgbaWithOpacity(color: string, opacity: number): string {
   return color;
 }
 
+// ── Shape snap detection ──────────────────────────────────────────────────────
+
+function countShapeCorners(pts: { x: number; y: number }[]): number {
+  const step = Math.max(1, Math.floor(pts.length / 30));
+  const s: { x: number; y: number }[] = [];
+  for (let i = 0; i < pts.length; i += step) s.push(pts[i]);
+  let corners = 0, k = 3;
+  for (let i = k; i < s.length - k; i++) {
+    const p = s[i - k], c = s[i], n = s[Math.min(i + k, s.length - 1)];
+    const v1x = c.x - p.x, v1y = c.y - p.y;
+    const v2x = n.x - c.x, v2y = n.y - c.y;
+    const l1 = Math.hypot(v1x, v1y), l2 = Math.hypot(v2x, v2y);
+    if (l1 < 8 || l2 < 8) continue;
+    const dot = (v1x * v2x + v1y * v2y) / (l1 * l2);
+    const angle = Math.acos(Math.max(-1, Math.min(1, dot)));
+    if (angle > Math.PI * 0.42) { corners++; i += k; }
+  }
+  return corners;
+}
+
+function detectShapeFromPoints(
+  pts: { x: number; y: number }[]
+): { type: ShapeType; bbox: { x: number; y: number; w: number; h: number } } | null {
+  if (pts.length < 12) return null;
+  const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const w = maxX - minX, h = maxY - minY;
+  if (Math.max(w, h) < 55 || Math.min(w, h) < 18) return null;
+
+  const first = pts[0], last = pts[pts.length - 1];
+  const diag = Math.hypot(w, h);
+  const closureGap = Math.hypot(last.x - first.x, last.y - first.y);
+  const isClosed = closureGap / Math.max(diag, 1) < 0.3;
+
+  let len = 0;
+  for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
+
+  if (!isClosed) {
+    const straightness = Math.hypot(last.x - first.x, last.y - first.y) / Math.max(len, 1);
+    if (len > 55 && straightness > 0.88) return { type: 'line', bbox: { x: minX, y: minY, w: Math.max(w, 4), h: Math.max(h, 4) } };
+    return null;
+  }
+
+  // Circle: all points roughly equidistant from center
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  const radii = pts.map(p => Math.hypot(p.x - cx, p.y - cy));
+  const avgR = radii.reduce((a, b) => a + b, 0) / radii.length;
+  const maxDev = radii.reduce((m, r) => Math.max(m, Math.abs(r - avgR)), 0) / Math.max(avgR, 1);
+  const ar = w / Math.max(h, 1);
+  if (maxDev < 0.32 && ar > 0.4 && ar < 2.5 && (1 - maxDev * 2.5) > 0.68) {
+    return { type: 'circle', bbox: { x: minX, y: minY, w, h } };
+  }
+
+  const corners = countShapeCorners(pts);
+  if (corners === 4) return { type: 'rect', bbox: { x: minX, y: minY, w, h } };
+  if (corners === 3) return { type: 'triangle', bbox: { x: minX, y: minY, w, h } };
+
+  return null;
+}
+
 // ── Status pill ───────────────────────────────────────────────────────────────
 
 function StatusPill({ status }: { status: AutoStatus }) {
@@ -261,6 +323,7 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
   onOcrText,
   onTextTap,
   processingStatus = 'idle',
+  onShapeSnap,
 }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
@@ -272,6 +335,9 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
   // Ref so finishStroke always sees latest strokes without stale closure
   const strokesRef = useRef<Stroke[]>([]);
   const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shapeSnapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shapeSnapRef = useRef(onShapeSnap);
+  useEffect(() => { shapeSnapRef.current = onShapeSnap; }, [onShapeSnap]);
 
   // ── Sketch autocomplete state ─────────────────────────────────────────────
   const [completionPath, setCompletionPath] = useState<string | null>(null);
@@ -495,6 +561,7 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     }
 
     if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
+    if (shapeSnapTimerRef.current) { clearTimeout(shapeSnapTimerRef.current); shapeSnapTimerRef.current = null; }
     if (completionPathRef.current) clearCompletion();
     setCurrentPoints([toSvgPoint(e)]);
   };
@@ -563,6 +630,9 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     // Eraser mode: don't commit strokes as FloatingObjects
     if (drawTool === 'eraser') { setCurrentPoints([]); return; }
 
+    // Save points for shape detection before they're cleared
+    const pointsForSnap = currentPoints.map(p => ({ x: p.x, y: p.y }));
+
     const now = Date.now();
     const dx = currentPoints[0].x - currentPoints[currentPoints.length - 1].x;
     const dy = currentPoints[0].y - currentPoints[currentPoints.length - 1].y;
@@ -600,6 +670,24 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     setStrokes(updated);
     onChangeStrokes?.(updated);
     setCurrentPoints([]);
+
+    // Shape snap: after 650ms with no new stroke, auto-convert if it looks like a shape
+    if (shapeSnapRef.current && drawTool !== 'text' && drawTool !== 'shape' && drawTool !== 'ruler') {
+      if (shapeSnapTimerRef.current) clearTimeout(shapeSnapTimerRef.current);
+      const strokeCountNow = updated.length;
+      shapeSnapTimerRef.current = setTimeout(() => {
+        shapeSnapTimerRef.current = null;
+        if (strokesRef.current.length !== strokeCountNow) return; // user drew more
+        const det = detectShapeFromPoints(pointsForSnap);
+        if (det) {
+          const newStrokes = strokesRef.current.slice(0, -1);
+          strokesRef.current = newStrokes;
+          setStrokes([...newStrokes]);
+          onChangeStrokes?.(newStrokes);
+          shapeSnapRef.current?.(det.type, det.bbox);
+        }
+      }, 650);
+    }
 
     if (onOcrText) {
       addStrokeToBuffer(mergedStroke);

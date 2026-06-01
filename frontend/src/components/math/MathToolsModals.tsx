@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import katex from 'katex';
 import { useMathToolsStore } from '../../store/mathToolsStore';
 import { markdownToHtml } from '../../utils/editorUtils';
 import MathToolModal from '../notes/MathToolModal';
@@ -40,7 +41,17 @@ export default function MathToolsModals() {
 
     const insertLatex = (latex: string) => {
         if (!editor || !latex) return;
-        editor.chain().focus().insertContent(`$$${latex}$$`).run();
+        // Clean trailing = or whitespace that OCR sometimes adds
+        const clean = latex.replace(/[=\s]+$/, '').trim();
+        if (!clean) return;
+        try {
+            const rendered = katex.renderToString(clean, { throwOnError: false, displayMode: true });
+            editor.chain().focus().insertContent(
+                `<div style="text-align:center;padding:6px 4px;margin:2px 0;overflow-x:auto;">${rendered}</div>`
+            ).run();
+        } catch {
+            editor.chain().focus().insertContent(`$$${clean}$$`).run();
+        }
     };
 
     const insertAndClose = (type: 'html' | 'md' | 'latex' | 'image', content: string) => {

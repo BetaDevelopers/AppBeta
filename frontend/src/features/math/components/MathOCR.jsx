@@ -213,6 +213,8 @@ export default function MathOCR({ onResult } = {}) {
     const [autoRecognizing, setAutoRecognizing] = useState(false);
     const autoRecognizeRef = useRef(null);
     const allStrokesRef = useRef([]);
+    const isPanningRef = useRef(false);
+    const panStartY = useRef(0);
 
     const getPos = (e) => {
         const rect = canvasRef.current.getBoundingClientRect();

@@ -1,0 +1,169 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e7]: Modo invitado · Tus notas no se guardan en la nube
+    - button "Crear cuenta gratuita" [ref=e8]
+  - banner [ref=e9]:
+    - generic [ref=e10]:
+      - button "Abrir menú" [ref=e11]:
+        - img [ref=e12]
+      - generic [ref=e15] [cursor=pointer]:
+        - img [ref=e16]:
+          - generic [ref=e18]: Β
+        - generic [ref=e19]: Beta3M
+    - generic [ref=e20]:
+      - generic [ref=e23]: Conectado
+      - button "Asistente IA" [ref=e24]:
+        - img [ref=e25]
+      - button "Modo Invitado Sin cuenta ?" [ref=e29] [cursor=pointer]:
+        - generic [ref=e30]:
+          - generic [ref=e31]: Modo Invitado
+          - generic [ref=e32]: Sin cuenta
+        - generic [ref=e34]: "?"
+  - generic [ref=e35]:
+    - complementary [ref=e36]:
+      - generic [ref=e37]:
+        - generic [ref=e38]:
+          - img [ref=e39]:
+            - generic [ref=e41]: Β
+          - generic [ref=e42]: Beta3M
+        - button "Colapsar" [ref=e43]:
+          - img [ref=e44]
+      - generic [ref=e46]:
+        - button "Crear nueva nota" [ref=e47]:
+          - generic [ref=e50]:
+            - img [ref=e51]
+            - generic [ref=e53]: Crear nueva nota
+        - button "Todas mis notas 1" [ref=e55]:
+          - generic [ref=e57]: Todas mis notas
+          - generic [ref=e58]: "1"
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - generic [ref=e61]: Asignaturas
+            - button "Nueva asignatura" [ref=e62]:
+              - img [ref=e63]
+          - paragraph [ref=e67]: Sin asignaturas
+        - button "Herramientas" [ref=e69]:
+          - generic [ref=e70]:
+            - img [ref=e71]
+            - text: Herramientas
+          - img [ref=e73]
+      - generic [ref=e76]:
+        - generic [ref=e77]: Beta Access
+        - generic [ref=e78]: v1.0.0-beta
+    - main [ref=e79]:
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - button [ref=e84]:
+              - img [ref=e85]
+            - generic [ref=e90]:
+              - combobox [ref=e91] [cursor=pointer]:
+                - option "Sin asignatura" [selected]
+              - generic:
+                - img
+          - generic [ref=e92]:
+            - generic [ref=e480]: Local
+            - button [ref=e98]:
+              - img [ref=e99]
+        - generic [ref=e101]:
+          - generic [ref=e102]:
+            - generic [ref=e103]:
+              - generic [ref=e104]:
+                - button "Deshacer (Ctrl+Z)" [ref=e105]:
+                  - img [ref=e106]
+                - button "Rehacer (Ctrl+Y)" [disabled] [ref=e109]:
+                  - img [ref=e110]
+              - button "Elegante" [disabled] [ref=e114]:
+                - img [ref=e115]
+                - generic [ref=e118]: Elegante
+              - button "Resumir" [disabled] [ref=e119]:
+                - img [ref=e120]
+                - generic [ref=e123]: Resumir
+              - button "Tareas" [disabled] [ref=e124]:
+                - img [ref=e125]
+                - generic [ref=e128]: Tareas
+              - button "Estudio" [disabled] [ref=e129]:
+                - img [ref=e130]
+                - generic [ref=e132]: Estudio
+              - button "Voz" [ref=e133]:
+                - img [ref=e134]
+                - generic [ref=e137]: Voz
+            - generic [ref=e139]:
+              - textbox "Sin título..." [ref=e140]: Sin título
+              - generic [ref=e141]:
+                - paragraph [ref=e145]: 🎉
+                - generic:
+                  - img [ref=e147]
+                  - generic [ref=e149]:
+                    - img [ref=e150]
+                    - generic [ref=e152]:
+                      - generic [ref=e162]:
+                        - text: Grosor
+                        - slider "Grosor" [ref=e163] [cursor=pointer]: "2"
+                      - button "Relleno" [ref=e164] [cursor=pointer]
+                    - generic [ref=e165] [cursor=pointer]: ✕
+                    - generic [ref=e166] [cursor=pointer]: "?"
+                  - img [ref=e176]
+                  - img [ref=e179]
+                  - img [ref=e182]
+                - img
+                - img [ref=e481]
+          - generic [ref=e483]:
+            - button "Deshacer" [ref=e484] [cursor=pointer]:
+              - img [ref=e485]
+            - button "Rehacer" [disabled] [ref=e488]:
+              - img [ref=e489]
+            - generic [ref=e494]:
+              - button "Lápiz" [ref=e495] [cursor=pointer]:
+                - img [ref=e496]
+              - button "Bolígrafo" [ref=e500] [cursor=pointer]:
+                - img [ref=e501]
+              - button "Marcador" [ref=e503] [cursor=pointer]:
+                - img [ref=e504]
+              - button "Pluma" [ref=e508] [cursor=pointer]:
+                - img [ref=e509]
+              - button "Goma" [ref=e511] [cursor=pointer]:
+                - img [ref=e512]
+              - button "Figuras" [ref=e515] [cursor=pointer]:
+                - img [ref=e516]
+              - button "Regla" [ref=e520] [cursor=pointer]:
+                - img [ref=e521]
+              - button "Texto" [ref=e523] [cursor=pointer]:
+                - img [ref=e524]
+            - button "Color y grosor" [ref=e527] [cursor=pointer]
+            - button "Dibujar con dedo" [ref=e530] [cursor=pointer]:
+              - img [ref=e531]
+            - button "Ajustes lápiz" [ref=e537] [cursor=pointer]:
+              - img [ref=e538]
+            - button "Más opciones" [ref=e542] [cursor=pointer]:
+              - img [ref=e543]
+            - button "Listo" [ref=e547] [cursor=pointer]:
+              - img [ref=e548]
+              - text: Listo
+    - complementary [ref=e257]:
+      - generic [ref=e258]:
+        - generic [ref=e259]:
+          - generic [ref=e260]:
+            - img [ref=e262]
+            - generic [ref=e264]: Recursos
+          - paragraph [ref=e265]: Archivos adjuntos
+        - generic [ref=e266]:
+          - button "OCR Express" [ref=e267]:
+            - img [ref=e268]
+            - generic [ref=e273]: OCR Express
+            - img [ref=e274]
+          - button "Insertar imagen" [ref=e276]:
+            - img [ref=e278]
+            - generic [ref=e282]: Insertar imagen
+        - generic [ref=e284]:
+          - generic [ref=e285]:
+            - img [ref=e287]
+            - generic [ref=e290]: Exportar
+          - paragraph [ref=e291]: Sin título
+        - generic [ref=e292]:
+          - button "Exportar PDF" [ref=e293]:
+            - img [ref=e295]
+            - generic [ref=e299]: Exportar PDF
+          - button "Exportar texto" [ref=e300]:
+            - img [ref=e302]
+            - generic [ref=e305]: Exportar texto

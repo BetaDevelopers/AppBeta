@@ -933,6 +933,30 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
         setTimeout(() => pushSnapshot(), 0);
     }, [pushSnapshot]);
 
+    const handleShapeSnap = useCallback((
+        type: 'line' | 'arrow' | 'rect' | 'circle' | 'triangle',
+        bbox: { x: number; y: number; w: number; h: number }
+    ) => {
+        const { x, y, w, h } = bbox;
+        let svgData = '';
+        switch (type) {
+            case 'rect':     svgData = `M 0,0 H ${w} V ${h} H 0 Z`; break;
+            case 'circle': { const rx = w/2, ry = h/2; svgData = `M ${rx},0 A ${rx},${ry} 0 0,1 ${w},${ry} A ${rx},${ry} 0 0,1 ${rx},${h} A ${rx},${ry} 0 0,1 0,${ry} A ${rx},${ry} 0 0,1 ${rx},0 Z`; break; }
+            case 'triangle': svgData = `M ${w/2},0 L ${w},${h} L 0,${h} Z`; break;
+            case 'line':     svgData = `M 0,0 L ${w},${h}`; break;
+            default:         svgData = `M 0,0 H ${w} V ${h} H 0 Z`;
+        }
+        handleAddFloatingObject({
+            type: 'shape',
+            position: { x, y },
+            dimensions: { width: Math.max(w, 10), height: Math.max(h, 10) },
+            svgData,
+            stroke: drawSettings.color,
+            strokeWidth: drawSettings.width,
+            fill: 'none',
+        });
+    }, [handleAddFloatingObject, drawSettings.color, drawSettings.width]);
+
     const handleFloatLatexChange = useCallback((id: string, latex: string) => {
         setFloatingObjects(prev => prev.map(o => o.id === id ? { ...o, latexSource: latex } : o));
         setTimeout(() => pushSnapshot(), 0);
@@ -1270,6 +1294,7 @@ Máximo 8 tareas. Texto:\n${plainText.substring(0, 3000)}`,
                                     onOcrText={handleOcrText}
                                     onTextTap={handleTextToolTap}
                                     processingStatus={autoStatus}
+                                    onShapeSnap={handleShapeSnap}
                                 />
                             )}
                             {/* LAYER 3.5 — Ruler overlay */}

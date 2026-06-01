@@ -229,20 +229,23 @@ export default function BottomToolbar({
         style={{
           width: '100%',
           boxSizing: 'border-box',
-          minHeight: 56,
+          minHeight: 64,
           background: 'rgba(10,10,16,0.98)',
           backdropFilter: 'blur(24px) saturate(200%)',
           WebkitBackdropFilter: 'blur(24px) saturate(200%)',
           borderTop: '1px solid rgba(255,255,255,0.10)',
           paddingLeft: 8,
           paddingRight: 8,
-          paddingBottom: 'max(env(safe-area-inset-bottom), 44px)',
+          paddingTop: 6,
+          paddingBottom: 'max(env(safe-area-inset-bottom), 28px)',
           display: 'flex',
           alignItems: 'center',
           gap: 4,
-          overflowX: 'hidden',
+          overflowX: 'clip',
           overflowY: 'visible',
           position: 'relative',
+          zIndex: 50,
+          touchAction: 'manipulation',
         }}
       >
         {inkMode ? (

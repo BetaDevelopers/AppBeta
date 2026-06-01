@@ -87,7 +87,7 @@ export default function PlansPage() {
     const [yearly, setYearly] = useState(false);
 
     return (
-        <div className="relative min-h-[100vh] bg-[#030712] text-white overflow-x-hidden selection:bg-blue-500/30 overflow-y-auto">
+        <div className="relative h-full bg-[#030712] text-white overflow-x-hidden selection:bg-blue-500/30 overflow-y-auto">
             {/* Background elements (Glassmorphism beams) */}
             <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
                 <div className="absolute top-[-10%] right-[10%] w-[600px] h-[600px] bg-blue-600/10 blur-[130px] rounded-full" />

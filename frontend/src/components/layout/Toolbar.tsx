@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useNotesStore } from '../../store/notesStore';
 import { useUIStore } from '../../store/uiStore';
-import { Crown, Sparkles, Settings, LogOut, User } from 'lucide-react';
+import { Crown, Sparkles } from 'lucide-react';
 import { BetaLogo } from '../ui/BetaLogo';
 
 interface ToolbarProps {
@@ -19,13 +19,12 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     onToggleLeftSidebar,
     leftSidebarOpen,
 }) => {
-    const { user, logout, isGuest } = useAuthStore();
+    const { user, isGuest } = useAuthStore();
     const { isSaving } = useNotesStore();
     const openAuthModal = useUIStore((s) => s.openAuthModal);
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchExpanded, setSearchExpanded] = useState(false);
-    const [showUserMenu, setShowUserMenu] = useState(false);
     const [isOnline, setIsOnline] = useState(() => navigator.onLine);
     const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -51,11 +50,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         };
     }, []);
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
         const q = e.target.value;
         setSearchQuery(q);
@@ -79,15 +73,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
     const planLabel: React.ReactNode =
         user?.plan === 'premium' ? <><Crown size={14} /> Premium</>
-            : user?.plan === 'pro' ? '⭐ Pro'
-                : 'Free';
+            : user?.plan === 'pro' ? <><Crown size={13} /> Pro</>
+                : <>Gratis &rarr;</>;
 
     const planClass =
         user?.plan === 'premium'
-            ? 'bg-gradient-to-r from-amber-500 to-amber-600 border-amber-400/30 text-white'
+            ? 'bg-gradient-to-r from-amber-500 to-amber-600 border-amber-400/30 text-white shadow-[0_0_16px_rgba(245,158,11,0.35)]'
             : user?.plan === 'pro'
-                ? 'bg-gradient-to-r from-[#8957E5] to-[#A371F7] border-purple-400/30 text-white'
-                : 'bg-white/5 border-white/10 text-[#555] hover:text-white hover:bg-white/10';
+                ? 'bg-gradient-to-r from-[#8957E5] to-[#A371F7] border-purple-400/30 text-white shadow-[0_0_16px_rgba(163,113,247,0.35)]'
+                : 'bg-gradient-to-r from-[rgba(59,130,246,0.12)] to-[rgba(99,102,241,0.12)] border-[rgba(99,102,241,0.35)] text-[#818CF8] hover:text-white hover:from-[rgba(59,130,246,0.25)] hover:to-[rgba(99,102,241,0.25)] hover:shadow-[0_0_14px_rgba(99,102,241,0.3)]';
 
     const handleIAToggle = () => {
         if (isGuest) {
@@ -150,9 +144,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             className="toolbar glass border-b border-[rgba(255,255,255,0.08)] px-3 sm:px-4 flex items-center justify-between sticky top-0 z-[100] shadow-2xl backdrop-blur-3xl"
             style={{ height: '60px' }}
         >
-            {/* Left: hamburger (mobile/tablet) + logo */}
+            {/* Left: hamburger (mobile/tablet) + logo + name */}
             <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Hamburger — shown on mobile & tablet when sidebar is not always visible */}
                 <button
                     onClick={onToggleLeftSidebar}
                     className="desktop:hidden flex items-center justify-center rounded-xl text-[#555] hover:text-white hover:bg-white/10 transition-all"
@@ -164,16 +157,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                             d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
-
-                <div
-                    className="flex items-center cursor-pointer flex-shrink-0"
-                    onClick={() => navigate('/dashboard')}
-                >
-                    <span className="text-xl font-bold tracking-tight font-display flex items-center gap-2">
-                        <BetaLogo className="w-6 h-6 rounded-md shadow-sm" />
-                        <span className="text-white">Beta3M</span>
-                    </span>
-                </div>
+                <BetaLogo className="w-7 h-7 rounded-lg flex-shrink-0" />
+                <span className="text-[15px] font-bold text-[#fafafa] tracking-tight hidden sm:block">Beta3M</span>
             </div>
 
             {/* Center: search */}
@@ -225,98 +210,66 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                     </svg>
                 </button>
 
-                {/* Connection / sync indicator */}
-                {!isOnline ? (
+                {/* Connection / sync indicator — only show on problem states */}
+                {!isOnline && (
                     <div className="flex items-center gap-1.5 bg-red-500/10 px-2.5 py-1 rounded-full border border-red-500/20">
                         <div className="w-1.5 h-1.5 bg-red-400 rounded-full" />
                         <span className="text-red-400 text-xs font-medium hidden sm:block">Desconectado</span>
                     </div>
-                ) : isSaving ? (
+                )}
+                {isOnline && isSaving && (
                     <div className="flex items-center gap-1.5 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
                         <div className="w-3 h-3 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
                         <span className="text-amber-400 text-xs font-medium hidden sm:block">Sincronizando</span>
                     </div>
-                ) : (
-                    <div className="flex items-center gap-1.5 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
-                        <span className="text-emerald-400 text-xs font-medium hidden sm:block">Conectado</span>
-                    </div>
                 )}
 
-                {/* IA button — tablet: icon + "IA" text / desktop: icon + "IA" text */}
+                {/* IA button */}
                 <button
                     onClick={handleIAToggle}
-                    className={`flex items-center gap-1.5 px-3 rounded-xl border text-[13px] font-semibold transition-all duration-200
+                    className={`flex items-center gap-2 px-4 rounded-xl border text-[14px] font-bold transition-all duration-200
                         ${chatOpen
-                            ? 'bg-[#A371F7] text-white border-[#A371F7] shadow-[0_0_16px_rgba(163,113,247,0.4)]'
-                            : 'bg-[rgba(163,113,247,0.1)] border-[rgba(163,113,247,0.2)] text-[#A371F7] hover:bg-[rgba(163,113,247,0.2)]'
+                            ? 'bg-gradient-to-r from-[#7C3AED] to-[#A371F7] text-white border-[#A371F7]/40 shadow-[0_0_22px_rgba(163,113,247,0.55)]'
+                            : 'bg-gradient-to-br from-[rgba(124,58,237,0.18)] to-[rgba(163,113,247,0.22)] border-[rgba(163,113,247,0.45)] text-[#C084FC] hover:text-white hover:from-[rgba(124,58,237,0.38)] hover:to-[rgba(163,113,247,0.42)] hover:shadow-[0_0_20px_rgba(163,113,247,0.4)] shadow-[0_0_12px_rgba(163,113,247,0.18)]'
                         }`}
                     style={{ height: '44px', minWidth: '44px' }}
                     title="Asistente IA"
                 >
-                    <Sparkles size={14} />
-                    {/* Show "IA" text on tablet and desktop */}
-                    <span className="hidden tablet:inline desktop:inline text-sm">IA</span>
+                    <Sparkles size={16} className={chatOpen ? '' : 'animate-pulse'} />
+                    <span className="text-sm font-bold">IA</span>
                 </button>
 
                 {/* Plan badge */}
                 {!isGuest && (
                     <button
                         onClick={() => navigate('/plans')}
-                        className={`hidden sm:flex px-2.5 rounded-full text-[12px] font-semibold transition-all border shadow-sm items-center ${planClass}`}
+                        className={`flex items-center gap-1.5 px-3 rounded-full text-[12px] font-bold transition-all border ${planClass}`}
                         style={{ height: '36px' }}
                     >
                         {planLabel}
                     </button>
                 )}
 
-                {/* Avatar + User dropdown */}
-                <div className="relative">
-                    <button
-                        onClick={isGuest ? () => openAuthModal('login') : () => setShowUserMenu(v => !v)}
-                        className="flex items-center gap-2 cursor-pointer group rounded-xl hover:bg-white/5 px-2 transition-all"
-                        style={{ height: '44px' }}
-                    >
-                        <div className="hidden lg:flex flex-col items-end">
-                            <span className="text-sm font-semibold text-[#fafafa] leading-none group-hover:text-[#3b82f6] transition-colors">
-                                {isGuest ? 'Modo Invitado' : (user?.display_name || user?.email?.split('@')[0])}
-                            </span>
-                            <span className="text-[11px] text-[#444] mt-0.5">{isGuest ? 'Sin cuenta' : user?.email}</span>
-                        </div>
-                        <div className="rounded-xl bg-gradient-to-br from-[#111] to-[#1a1a1a] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#fafafa] font-bold flex-shrink-0 overflow-hidden group-hover:border-[#3b82f6]/30 transition-all w-9 h-9">
-                            {user?.avatar_url ? (
-                                <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                            ) : (
-                                <span className="text-sm">{isGuest ? '?' : (user?.email?.[0]?.toUpperCase() ?? '?')}</span>
-                            )}
-                        </div>
-                    </button>
-
-                    {showUserMenu && !isGuest && (
-                        <>
-                            <div className="fixed inset-0 z-[190]" onClick={() => setShowUserMenu(false)} />
-                            <div className="absolute right-0 top-full mt-2 z-[191] bg-[#111] border border-[#1a1a1a] rounded-xl shadow-2xl py-1 min-w-[200px]">
-                                <div className="px-4 py-3 border-b border-[#1a1a1a]">
-                                    <p className="text-[13px] font-semibold text-[#fafafa] truncate">{user?.display_name || user?.email?.split('@')[0]}</p>
-                                    <p className="text-[11px] text-[#444] truncate mt-0.5">{user?.email}</p>
-                                </div>
-                                <button
-                                    onClick={() => { navigate('/perfil'); setShowUserMenu(false); }}
-                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-[#fafafa] hover:bg-[#1a1a1a] transition-colors text-left"
-                                >
-                                    <Settings size={14} className="text-[#555]" /> Configuración
-                                </button>
-                                <div className="h-px bg-[#1a1a1a] my-1" />
-                                <button
-                                    onClick={() => { handleLogout(); setShowUserMenu(false); }}
-                                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors text-left"
-                                >
-                                    <LogOut size={14} /> Cerrar sesión
-                                </button>
-                            </div>
-                        </>
-                    )}
-                </div>
+                {/* Avatar — click navigates to settings */}
+                <button
+                    onClick={isGuest ? () => openAuthModal('login') : () => navigate('/perfil')}
+                    className="flex items-center gap-2 cursor-pointer group rounded-xl hover:bg-white/5 px-2 transition-all"
+                    style={{ height: '44px' }}
+                >
+                    <div className="hidden lg:flex flex-col items-end">
+                        <span className="text-sm font-semibold text-[#fafafa] leading-none group-hover:text-[#3b82f6] transition-colors">
+                            {isGuest ? 'Modo Invitado' : (user?.display_name || user?.email?.split('@')[0])}
+                        </span>
+                        <span className="text-[11px] text-[#444] mt-0.5">{isGuest ? 'Sin cuenta' : user?.email}</span>
+                    </div>
+                    <div className="rounded-xl bg-gradient-to-br from-[#111] to-[#1a1a1a] border border-[rgba(255,255,255,0.08)] flex items-center justify-center text-[#fafafa] font-bold flex-shrink-0 overflow-hidden group-hover:border-[#3b82f6]/30 transition-all w-9 h-9">
+                        {user?.avatar_url ? (
+                            <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="text-sm">{isGuest ? '?' : (user?.email?.[0]?.toUpperCase() ?? '?')}</span>
+                        )}
+                    </div>
+                </button>
             </div>
         </header>
     );

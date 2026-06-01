@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Bold, Italic, Underline, Heading1, Heading2, Heading3,
   List, ListOrdered, AlignLeft, AlignCenter, AlignRight,
@@ -54,8 +54,8 @@ function TBtn({
       onClick={onClick}
       title={title}
       style={{
-        width: 40, height: 40,
-        borderRadius: 9,
+        width: 48, height: 48,
+        borderRadius: 11,
         border: active ? '1px solid rgba(59,130,246,0.55)' : '1px solid transparent',
         background: active ? 'rgba(59,130,246,0.22)' : 'transparent',
         color: active ? '#93C5FD' : 'rgba(255,255,255,0.55)',
@@ -94,7 +94,27 @@ export default function TextModeToolbar({
   const [showMenu, setShowMenu] = useState(false);
   const [showLangPicker, setShowLangPicker] = useState(false);
 
-  const colorBtnRef = useRef<HTMLButtonElement>(null);
+  const closeAll = () => {
+    setShowColorPicker(false); setShowFontPicker(false);
+    setShowEmojiPicker(false); setShowMenu(false); setShowLangPicker(false);
+  };
+  const anyOpen = showColorPicker || showFontPicker || showEmojiPicker || showMenu || showLangPicker;
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!anyOpen) return;
+    const handleOutside = (e: PointerEvent) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
+        closeAll();
+      }
+    };
+    document.addEventListener('pointerdown', handleOutside, true);
+    return () => document.removeEventListener('pointerdown', handleOutside, true);
+  }, [anyOpen]);
+
+  // Helper: find display info for current voiceLang
+  const activeLang = VOICE_LANGS.find(l => (l.bcp === 'auto' ? 'auto' : l.bcp) === voiceLang) ?? VOICE_LANGS[0];
+
 
   if (!editor) return null;
 
@@ -108,14 +128,14 @@ export default function TextModeToolbar({
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%', position: 'relative' }}>
+    <div ref={toolbarRef} style={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%', position: 'relative' }}>
       {/* ── Left scrollable zone ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflowX: 'auto', scrollbarWidth: 'none' }}>
 
         {/* Font picker */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <button
-            onClick={() => { setShowFontPicker(p => !p); setShowColorPicker(false); setShowEmojiPicker(false); }}
+            onClick={() => { const next = !showFontPicker; closeAll(); setShowFontPicker(next); }}
             style={{
               height: 40, padding: '0 10px',
               borderRadius: 9, border: '1px solid transparent',
@@ -191,8 +211,7 @@ export default function TextModeToolbar({
         {/* Text color */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <button
-            ref={colorBtnRef}
-            onClick={() => { setShowColorPicker(p => !p); setShowFontPicker(false); setShowEmojiPicker(false); }}
+            onClick={() => { const next = !showColorPicker; closeAll(); setShowColorPicker(next); }}
             title="Color de texto"
             style={{
               width: 40, height: 40,
@@ -285,7 +304,7 @@ export default function TextModeToolbar({
             {/* Language dropdown */}
             <div style={{ position: 'relative' }}>
               <button
-                onClick={() => { setShowLangPicker(p => !p); }}
+                onClick={() => { const next = !showLangPicker; closeAll(); setShowLangPicker(next); }}
                 title="Idioma del dictado"
                 style={{
                   height: 40, padding: '0 8px',
@@ -296,7 +315,8 @@ export default function TextModeToolbar({
                   cursor: 'pointer', fontSize: 15, flexShrink: 0,
                 }}
               >
-                <span>{VOICE_LANGS.find(l => l.code === voiceLang)?.flag ?? '🌐'}</span>
+                <span style={{ fontSize: 16 }}>{activeLang.flag}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.55)' }}>{activeLang.label}</span>
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.5 }}>
                   <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -359,7 +379,7 @@ export default function TextModeToolbar({
 
         {/* Emoji */}
         <div style={{ position: 'relative' }}>
-          <TBtn onClick={() => { setShowEmojiPicker(p => !p); setShowFontPicker(false); setShowColorPicker(false); }} title="Emoji">
+          <TBtn onClick={() => { const next = !showEmojiPicker; closeAll(); setShowEmojiPicker(next); }} title="Emoji">
             <span style={{ fontSize: 18, lineHeight: 1 }}>😊</span>
           </TBtn>
           {showEmojiPicker && (
@@ -410,7 +430,7 @@ export default function TextModeToolbar({
 
         {/* More menu */}
         <div style={{ position: 'relative' }}>
-          <TBtn onClick={() => setShowMenu(p => !p)} active={showMenu} title="Más opciones">
+          <TBtn onClick={() => { const next = !showMenu; closeAll(); setShowMenu(next); }} active={showMenu} title="Más opciones">
             <MoreHorizontal size={16} />
           </TBtn>
           {showMenu && (

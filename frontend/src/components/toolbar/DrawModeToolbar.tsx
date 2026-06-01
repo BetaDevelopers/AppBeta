@@ -22,7 +22,7 @@ const SHAPE_TYPES: { id: ShapeType; label: string; icon: React.ReactNode }[] = [
     id: 'line',
     label: 'Línea',
     icon: (
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
         <line x1="4" y1="20" x2="20" y2="4" />
       </svg>
     ),
@@ -31,7 +31,7 @@ const SHAPE_TYPES: { id: ShapeType; label: string; icon: React.ReactNode }[] = [
     id: 'arrow',
     label: 'Flecha',
     icon: (
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="4" y1="20" x2="20" y2="4" />
         <polyline points="10,4 20,4 20,14" />
       </svg>
@@ -41,7 +41,7 @@ const SHAPE_TYPES: { id: ShapeType; label: string; icon: React.ReactNode }[] = [
     id: 'rect',
     label: 'Rectángulo',
     icon: (
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="5" width="18" height="14" rx="2" />
       </svg>
     ),
@@ -50,7 +50,7 @@ const SHAPE_TYPES: { id: ShapeType; label: string; icon: React.ReactNode }[] = [
     id: 'circle',
     label: 'Círculo / Elipse',
     icon: (
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
         <circle cx="12" cy="12" r="9" />
       </svg>
     ),
@@ -59,7 +59,7 @@ const SHAPE_TYPES: { id: ShapeType; label: string; icon: React.ReactNode }[] = [
     id: 'triangle',
     label: 'Triángulo',
     icon: (
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 3 L21 20 L3 20 Z" />
       </svg>
     ),
@@ -77,8 +77,8 @@ function TBtn({
       disabled={disabled}
       title={title}
       style={{
-        width: 44, height: 44,
-        borderRadius: 10,
+        width: 52, height: 52,
+        borderRadius: 12,
         border: active ? '1px solid rgba(59,130,246,0.55)' : '1px solid transparent',
         background: active ? 'rgba(59,130,246,0.22)' : 'transparent',
         color: active ? '#93C5FD' : disabled ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.55)',
@@ -118,8 +118,8 @@ export default function DrawModeToolbar({
       {isShapeMode && (
         <div
           style={{
-            display: 'flex', alignItems: 'center', gap: 4,
-            padding: '6px 8px',
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 10px',
             background: 'rgba(20,20,36,0.98)',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
             overflowX: 'auto',
@@ -137,8 +137,8 @@ export default function DrawModeToolbar({
                 title={label}
                 onClick={() => setShapeType(id)}
                 style={{
-                  width: 40, height: 36,
-                  borderRadius: 8,
+                  width: 52, height: 48,
+                  borderRadius: 10,
                   border: isActive ? '1px solid rgba(139,92,246,0.7)' : '1px solid rgba(255,255,255,0.08)',
                   background: isActive ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.04)',
                   color: isActive ? '#C4B5FD' : 'rgba(255,255,255,0.5)',
@@ -161,8 +161,8 @@ export default function DrawModeToolbar({
             title={settings.shapeFill ? 'Relleno: activado' : 'Relleno: desactivado'}
             onClick={() => onSettingsChange({ ...settings, shapeFill: !settings.shapeFill })}
             style={{
-              width: 40, height: 36,
-              borderRadius: 8,
+              width: 52, height: 48,
+              borderRadius: 10,
               border: settings.shapeFill ? '1px solid rgba(139,92,246,0.7)' : '1px solid rgba(255,255,255,0.08)',
               background: settings.shapeFill ? 'rgba(139,92,246,0.25)' : 'rgba(255,255,255,0.04)',
               color: settings.shapeFill ? '#C4B5FD' : 'rgba(255,255,255,0.5)',
@@ -171,7 +171,7 @@ export default function DrawModeToolbar({
               transition: 'all 120ms ease',
             }}
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill={settings.shapeFill ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill={settings.shapeFill ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="5" width="18" height="14" rx="2" />
             </svg>
           </button>

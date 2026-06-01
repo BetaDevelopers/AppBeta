@@ -182,7 +182,7 @@ export default function DashboardPage() {
                     </button>
                 )}
 
-                {(bp === 'desktop' || rightOpen) && (
+                {rightOpen && (
                     <SidebarRight
                         isOverlay={isRightOverlay}
                         onClose={() => setRightOpen(false)}
