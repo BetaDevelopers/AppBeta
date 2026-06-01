@@ -148,9 +148,15 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
             `}
             style={{ width: 'var(--sidebar-right)' }}
         >
+<<<<<<< HEAD
             {/* Header with collapse button — always shown when onClose is available */}
             {onClose && (
                 <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-[#1a1a1a]">
+=======
+            {/* Close button — shown when overlay */}
+            {isOverlay && onClose && (
+                <div className="flex items-center justify-between px-5 pt-4 pb-2">
+>>>>>>> parent of 7d49d8a0 (push 2)
                     <span className="text-[11px] font-semibold text-[#444] uppercase tracking-widest">Panel</span>
                     <button
                         onClick={onClose}

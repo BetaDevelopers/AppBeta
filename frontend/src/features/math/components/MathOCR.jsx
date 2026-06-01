@@ -213,8 +213,6 @@ export default function MathOCR({ onResult } = {}) {
     const [autoRecognizing, setAutoRecognizing] = useState(false);
     const autoRecognizeRef = useRef(null);
     const allStrokesRef = useRef([]);
-    const isPanningRef = useRef(false);
-    const panStartY = useRef(0);
 
     const getPos = (e) => {
         const rect = canvasRef.current.getBoundingClientRect();
@@ -257,6 +255,7 @@ export default function MathOCR({ onResult } = {}) {
         }
     }, [result]);
 
+<<<<<<< HEAD
     const onStart = (e) => {
         if (e.touches && e.touches.length >= 2) {
             isPanningRef.current = true;
@@ -283,6 +282,11 @@ export default function MathOCR({ onResult } = {}) {
     };
     const onEnd = () => {
         if (isPanningRef.current) { isPanningRef.current = false; return; }
+=======
+    const onStart = (e) => { e.preventDefault(); setIsDrawing(true); setCurrentStroke([getPos(e)]); };
+    const onMove  = (e) => { if (isDrawing) { e.preventDefault(); setCurrentStroke(p => [...p, getPos(e)]); } };
+    const onEnd   = () => {
+>>>>>>> parent of 7d49d8a0 (push 2)
         if (!isDrawing) return;
         setIsDrawing(false);
         const pts = currentStroke;

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 
+<<<<<<< HEAD
 export function useVoiceInput(
     onResult: (text: string, isFinal: boolean) => void,
     lang = 'auto',
@@ -9,15 +10,33 @@ export function useVoiceInput(
     const [isSupported] = useState(
         () => !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
     );
+=======
+export function useVoiceInput(onResult: (text: string, isFinal: boolean) => void) {
+  const recognition = useRef<any>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [isSupported] = useState(
+    () => !!(
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition
+    )
+  );
+>>>>>>> parent of 7d49d8a0 (push 2)
 
     const start = () => {
         const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SR) return;
 
+<<<<<<< HEAD
         recognition.current = new SR();
         recognition.current.continuous = true;
         recognition.current.interimResults = true;
         recognition.current.lang = lang === 'auto' ? (navigator.language || 'es-ES') : lang;
+=======
+    recognition.current = new SR();
+    recognition.current.continuous = true;
+    recognition.current.interimResults = true;
+    recognition.current.lang = navigator.language || 'es-ES';
+>>>>>>> parent of 7d49d8a0 (push 2)
 
         recognition.current.onresult = (e: any) => {
             let interim = '';

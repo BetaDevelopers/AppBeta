@@ -41,10 +41,14 @@ export default function MathToolsModals() {
 
     const insertLatex = (latex: string) => {
         if (!editor || !latex) return;
+<<<<<<< HEAD
         const clean = latex.replace(/[=\s]+$/, '').trim();
         if (!clean) return;
         // Tiptap has @tiptap/extension-mathematics active — $$...$$ renders as display math
         editor.chain().focus().insertContent(`$$${clean}$$`).run();
+=======
+        editor.chain().focus().insertContent(`$$${latex}$$`).run();
+>>>>>>> parent of 7d49d8a0 (push 2)
     };
 
     const insertAndClose = (type: 'html' | 'md' | 'latex' | 'image', content: string) => {

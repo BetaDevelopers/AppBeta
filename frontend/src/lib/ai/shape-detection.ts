@@ -45,12 +45,20 @@ export function detectShape(points: Point[]): DetectedShape {
 
   const start = points[0], end = points[points.length - 1];
   const diagonal = Math.hypot(w, h);
+<<<<<<< HEAD
   const isClosed = diagonal > 20 && Math.hypot(end.x - start.x, end.y - start.y) < diagonal * 0.4;
+=======
+  const isClosed = diagonal > 20 && Math.hypot(end.x - start.x, end.y - start.y) < diagonal * 0.3;
+>>>>>>> parent of 7d49d8a0 (push 2)
 
   // ── Circle ────────────────────────────────────────────────────────────────
   const r = (w + h) / 4;
   const cirError = points.reduce((acc, p) => acc + Math.abs(Math.hypot(p.x - cx, p.y - cy) - r), 0);
+<<<<<<< HEAD
   if (isClosed && cirError / points.length / (r || 1) < 0.35 && w > 20 && h > 20) {
+=======
+  if (isClosed && cirError / points.length / (r || 1) < 0.25 && w > 20 && h > 20) {
+>>>>>>> parent of 7d49d8a0 (push 2)
     return { type: 'circle', cx, cy, r };
   }
 
