@@ -236,14 +236,14 @@ function detectShapeFromPoints(
   const first = pts[0], last = pts[pts.length - 1];
   const diag = Math.hypot(w, h);
   const closureGap = Math.hypot(last.x - first.x, last.y - first.y);
-  const isClosed = closureGap / Math.max(diag, 1) < 0.3;
+  const isClosed = closureGap / Math.max(diag, 1) < 0.4;
 
   let len = 0;
   for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
 
   if (!isClosed) {
     const straightness = Math.hypot(last.x - first.x, last.y - first.y) / Math.max(len, 1);
-    if (len > 55 && straightness > 0.88) return { type: 'line', bbox: { x: minX, y: minY, w: Math.max(w, 4), h: Math.max(h, 4) } };
+    if (len > 55 && straightness > 0.85) return { type: 'line', bbox: { x: minX, y: minY, w: Math.max(w, 4), h: Math.max(h, 4) } };
     return null;
   }
 
@@ -253,13 +253,15 @@ function detectShapeFromPoints(
   const avgR = radii.reduce((a, b) => a + b, 0) / radii.length;
   const maxDev = radii.reduce((m, r) => Math.max(m, Math.abs(r - avgR)), 0) / Math.max(avgR, 1);
   const ar = w / Math.max(h, 1);
-  if (maxDev < 0.32 && ar > 0.4 && ar < 2.5 && (1 - maxDev * 2.5) > 0.68) {
+  if (maxDev < 0.38 && ar > 0.35 && ar < 2.8) {
     return { type: 'circle', bbox: { x: minX, y: minY, w, h } };
   }
 
+  // countShapeCorners excludes start/end point; actual corners = detected + 1 (the start)
+  // triangle = 3 total → 2 detected; rect/quad = 4 total → 3 detected
   const corners = countShapeCorners(pts);
-  if (corners === 4) return { type: 'rect', bbox: { x: minX, y: minY, w, h } };
-  if (corners === 3) return { type: 'triangle', bbox: { x: minX, y: minY, w, h } };
+  if (corners >= 3 && corners <= 5) return { type: 'rect', bbox: { x: minX, y: minY, w, h } };
+  if (corners <= 2) return { type: 'triangle', bbox: { x: minX, y: minY, w, h } };
 
   return null;
 }
@@ -490,10 +492,46 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
         setInternalStatus('success');
         setTimeout(() => setInternalStatus('idle'), 1000);
       } else {
+        // OCR returned nothing — preserve as a movable drawing FloatingObject
+        if (onStrokeObjectRef.current) {
+          const svgData = normalizeSvgData(consumed, bufBbox.minX, bufBbox.minY);
+          if (svgData) {
+            const first = consumed[0];
+            onStrokeObjectRef.current({
+              id: crypto.randomUUID(),
+              type: 'stroke',
+              position: { x: bufBbox.minX, y: bufBbox.minY },
+              dimensions: { width: Math.max(bufBbox.width, 40), height: Math.max(bufBbox.height, 40) },
+              svgData,
+              stroke: first.color,
+              strokeWidth: first.width,
+              isSelected: false,
+              rotation: 0,
+            });
+          }
+        }
         setInternalStatus('fail');
         setTimeout(() => setInternalStatus('idle'), 2000);
       }
     } catch {
+      // Network/API error — preserve as a movable drawing FloatingObject
+      if (onStrokeObjectRef.current) {
+        const svgData = normalizeSvgData(consumed, bufBbox.minX, bufBbox.minY);
+        if (svgData) {
+          const first = consumed[0];
+          onStrokeObjectRef.current({
+            id: crypto.randomUUID(),
+            type: 'stroke',
+            position: { x: bufBbox.minX, y: bufBbox.minY },
+            dimensions: { width: Math.max(bufBbox.width, 40), height: Math.max(bufBbox.height, 40) },
+            svgData,
+            stroke: first.color,
+            strokeWidth: first.width,
+            isSelected: false,
+            rotation: 0,
+          });
+        }
+      }
       setInternalStatus('fail');
       setTimeout(() => setInternalStatus('idle'), 2000);
     }
@@ -561,7 +599,6 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     }
 
     if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
-    if (shapeSnapTimerRef.current) { clearTimeout(shapeSnapTimerRef.current); shapeSnapTimerRef.current = null; }
     if (completionPathRef.current) clearCompletion();
     setCurrentPoints([toSvgPoint(e)]);
   };
@@ -670,24 +707,6 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     setStrokes(updated);
     onChangeStrokes?.(updated);
     setCurrentPoints([]);
-
-    // Shape snap: after 650ms with no new stroke, auto-convert if it looks like a shape
-    if (shapeSnapRef.current && drawTool !== 'text' && drawTool !== 'shape' && drawTool !== 'ruler') {
-      if (shapeSnapTimerRef.current) clearTimeout(shapeSnapTimerRef.current);
-      const strokeCountNow = updated.length;
-      shapeSnapTimerRef.current = setTimeout(() => {
-        shapeSnapTimerRef.current = null;
-        if (strokesRef.current.length !== strokeCountNow) return; // user drew more
-        const det = detectShapeFromPoints(pointsForSnap);
-        if (det) {
-          const newStrokes = strokesRef.current.slice(0, -1);
-          strokesRef.current = newStrokes;
-          setStrokes([...newStrokes]);
-          onChangeStrokes?.(newStrokes);
-          shapeSnapRef.current?.(det.type, det.bbox);
-        }
-      }, 650);
-    }
 
     if (onOcrText) {
       addStrokeToBuffer(mergedStroke);

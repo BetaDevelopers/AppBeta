@@ -41,17 +41,10 @@ export default function MathToolsModals() {
 
     const insertLatex = (latex: string) => {
         if (!editor || !latex) return;
-        // Clean trailing = or whitespace that OCR sometimes adds
         const clean = latex.replace(/[=\s]+$/, '').trim();
         if (!clean) return;
-        try {
-            const rendered = katex.renderToString(clean, { throwOnError: false, displayMode: true });
-            editor.chain().focus().insertContent(
-                `<div style="text-align:center;padding:6px 4px;margin:2px 0;overflow-x:auto;">${rendered}</div>`
-            ).run();
-        } catch {
-            editor.chain().focus().insertContent(`$$${clean}$$`).run();
-        }
+        // Tiptap has @tiptap/extension-mathematics active — $$...$$ renders as display math
+        editor.chain().focus().insertContent(`$$${clean}$$`).run();
     };
 
     const insertAndClose = (type: 'html' | 'md' | 'latex' | 'image', content: string) => {

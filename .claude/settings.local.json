@@ -76,7 +76,14 @@
       "Bash(disown)",
       "Bash(Start-Process cmd *)",
       "mcp__plugin_playwright_playwright__browser_close",
-      "Bash(dir \"C:\\\\Users\\\\Nacho\\\\Documents\\\\GitHub\\\\AppBeta\\\\.playwright-mcp\")"
+      "Bash(dir \"C:\\\\Users\\\\Nacho\\\\Documents\\\\GitHub\\\\AppBeta\\\\.playwright-mcp\")",
+      "Bash(Get-Content \"C:\\\\Users\\\\Nacho\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-Nacho-Documents-GitHub-AppBeta\\\\21a1883d-f447-4076-a710-d0417f896e69\\\\tasks\\\\bqve41sf5.output\")",
+      "Bash(Select-Object -First 30)",
+      "Bash(Get-Content \"C:\\\\Users\\\\Nacho\\\\Documents\\\\GitHub\\\\AppBeta\\\\frontend\\\\package.json\")",
+      "Bash(Select-String \"tailwind\" -Context 0,0)",
+      "PowerShell(Get-Job *)",
+      "Bash(taskkill /F /IM node.exe)",
+      "PowerShell(Get-Process *)"
     ]
   }
 }

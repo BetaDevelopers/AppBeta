@@ -1,0 +1,124 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e7]: Modo invitado · Tus notas no se guardan en la nube
+    - button "Crear cuenta gratuita" [ref=e8]
+  - banner [ref=e9]:
+    - generic [ref=e10]:
+      - img [ref=e11]:
+        - generic [ref=e13]: Β
+      - generic [ref=e14]: Beta3M
+    - generic [ref=e16]:
+      - img [ref=e17]
+      - textbox "Busca en tus notas..." [ref=e19]
+    - generic [ref=e20]:
+      - button "Asistente IA" [ref=e21]:
+        - img [ref=e22]
+      - button "Modo Invitado Sin cuenta ?" [ref=e25] [cursor=pointer]:
+        - generic [ref=e26]:
+          - generic [ref=e27]: Modo Invitado
+          - generic [ref=e28]: Sin cuenta
+        - generic [ref=e30]: "?"
+  - generic [ref=e31]:
+    - complementary [ref=e32]:
+      - button "Colapsar" [ref=e34]:
+        - img [ref=e35]
+      - generic [ref=e37]:
+        - button "Crear nueva nota" [ref=e38]:
+          - generic [ref=e41]:
+            - img [ref=e42]
+            - generic [ref=e44]: Crear nueva nota
+        - button "Todas mis notas 1" [ref=e135]:
+          - generic [ref=e48]: Todas mis notas
+          - generic [ref=e136]: "1"
+        - generic [ref=e49]:
+          - generic [ref=e50]:
+            - generic [ref=e51]: Asignaturas
+            - button "Nueva asignatura" [ref=e52]:
+              - img [ref=e53]
+          - paragraph [ref=e57]: Sin asignaturas
+        - button "Herramientas" [ref=e59]:
+          - generic [ref=e60]:
+            - img [ref=e61]
+            - text: Herramientas
+          - img [ref=e63]
+      - generic [ref=e66]:
+        - generic [ref=e67]: Beta Access
+        - generic [ref=e68]: v1.0.0-beta
+    - main [ref=e69]:
+      - generic [ref=e138]:
+        - generic [ref=e139]:
+          - generic [ref=e140]:
+            - button [ref=e141]:
+              - img [ref=e142]
+            - generic [ref=e147]:
+              - combobox [ref=e148] [cursor=pointer]:
+                - option "Sin asignatura" [selected]
+              - generic:
+                - img
+          - generic [ref=e149]:
+            - generic [ref=e154]: Sincronizado
+            - button [ref=e155]:
+              - img [ref=e156]
+        - generic [ref=e158]:
+          - generic [ref=e159]:
+            - generic [ref=e160]:
+              - generic [ref=e161]:
+                - button "Deshacer (Ctrl+Z)" [disabled] [ref=e162]:
+                  - img [ref=e163]
+                - button "Rehacer (Ctrl+Y)" [disabled] [ref=e166]:
+                  - img [ref=e167]
+              - button "Elegante" [disabled] [ref=e171]:
+                - img [ref=e172]
+                - generic [ref=e175]: Elegante
+              - button "Resumir" [disabled] [ref=e176]:
+                - img [ref=e177]
+                - generic [ref=e180]: Resumir
+              - button "Tareas" [disabled] [ref=e181]:
+                - img [ref=e182]
+                - generic [ref=e185]: Tareas
+              - button "Estudio" [disabled] [ref=e186]:
+                - img [ref=e187]
+                - generic [ref=e189]: Estudio
+              - button "Voz" [ref=e190]:
+                - img [ref=e191]
+                - generic [ref=e194]: Voz
+            - generic [ref=e196]:
+              - textbox "Sin título..." [ref=e197]: Sin título
+              - generic [ref=e198]:
+                - paragraph [ref=e202]: Escribe tus pensamientos aquí... (escribe / para comandos mágicos)
+                - img
+                - img [ref=e276]
+          - generic [ref=e278]:
+            - button "Deshacer" [disabled] [ref=e279]:
+              - img [ref=e280]
+            - button "Rehacer" [disabled] [ref=e283]:
+              - img [ref=e284]
+            - generic [ref=e289]:
+              - button "Lápiz" [ref=e290] [cursor=pointer]:
+                - img [ref=e291]
+              - button "Bolígrafo" [ref=e295] [cursor=pointer]:
+                - img [ref=e296]
+              - button "Marcador" [ref=e298] [cursor=pointer]:
+                - img [ref=e299]
+              - button "Pluma" [ref=e303] [cursor=pointer]:
+                - img [ref=e304]
+              - button "Goma" [ref=e306] [cursor=pointer]:
+                - img [ref=e307]
+              - button "Figuras" [ref=e310] [cursor=pointer]:
+                - img [ref=e311]
+              - button "Regla" [ref=e315] [cursor=pointer]:
+                - img [ref=e316]
+              - button "Texto" [ref=e318] [cursor=pointer]:
+                - img [ref=e319]
+            - button "Color y grosor" [ref=e322] [cursor=pointer]
+            - button "Dibujar con dedo" [ref=e325] [cursor=pointer]:
+              - img [ref=e326]
+            - button "Ajustes lápiz" [ref=e332] [cursor=pointer]:
+              - img [ref=e333]
+            - button "Más opciones" [ref=e337] [cursor=pointer]:
+              - img [ref=e338]
+            - button "Listo" [ref=e342] [cursor=pointer]:
+              - img [ref=e343]
+              - text: Listo
+    - button "Abrir panel derecho" [ref=e132]:
+      - img [ref=e133]

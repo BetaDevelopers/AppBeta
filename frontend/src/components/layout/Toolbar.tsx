@@ -197,10 +197,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
             {/* Right actions */}
             <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                {/* Search icon — mobile only */}
+                {/* Search icon — mobile only (below tablet breakpoint) */}
                 <button
                     onClick={() => setSearchExpanded(true)}
-                    className="mobile:flex hidden items-center justify-center rounded-xl text-[#555] hover:text-white hover:bg-white/10 transition-all"
+                    className="flex tablet:hidden items-center justify-center rounded-xl text-[#555] hover:text-white hover:bg-white/10 transition-all"
                     style={{ width: '44px', height: '44px' }}
                     aria-label="Buscar"
                 >
@@ -227,16 +227,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 {/* IA button */}
                 <button
                     onClick={handleIAToggle}
-                    className={`flex items-center gap-2 px-4 rounded-xl border text-[14px] font-bold transition-all duration-200
+                    className={`flex items-center justify-center rounded-xl border transition-all duration-200
                         ${chatOpen
                             ? 'bg-gradient-to-r from-[#7C3AED] to-[#A371F7] text-white border-[#A371F7]/40 shadow-[0_0_22px_rgba(163,113,247,0.55)]'
                             : 'bg-gradient-to-br from-[rgba(124,58,237,0.18)] to-[rgba(163,113,247,0.22)] border-[rgba(163,113,247,0.45)] text-[#C084FC] hover:text-white hover:from-[rgba(124,58,237,0.38)] hover:to-[rgba(163,113,247,0.42)] hover:shadow-[0_0_20px_rgba(163,113,247,0.4)] shadow-[0_0_12px_rgba(163,113,247,0.18)]'
                         }`}
-                    style={{ height: '44px', minWidth: '44px' }}
+                    style={{ height: '44px', width: '44px' }}
                     title="Asistente IA"
                 >
-                    <Sparkles size={16} className={chatOpen ? '' : 'animate-pulse'} />
-                    <span className="text-sm font-bold">IA</span>
+                    <Sparkles size={20} className={chatOpen ? '' : 'animate-pulse'} />
                 </button>
 
                 {/* Plan badge */}

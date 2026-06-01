@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const cors    = require('cors');
+const cors = require('cors');
 
 process.on('unhandledRejection', (reason) => {
   console.error('[UNHANDLED REJECTION]', reason);
@@ -23,11 +23,11 @@ app.use(express.json({ limit: '10mb' }));
 app.use(globalLimiter);
 
 // ── Rutes ──────────────────────────────────────────────────────────────────
-app.use('/api/auth',     authLimiter, require('./routes/auth.routes'));
-app.use('/api/users',                 require('./routes/users.routes'));
-app.use('/api/subjects',              require('./routes/subjects.routes'));
-app.use('/api/notes',                 require('./routes/notes.routes'));
-app.use('/api/ai',       aiLimiter,   require('./routes/ai.routes'));
+app.use('/api/auth', authLimiter, require('./routes/auth.routes'));
+app.use('/api/users', require('./routes/users.routes'));
+app.use('/api/subjects', require('./routes/subjects.routes'));
+app.use('/api/notes', require('./routes/notes.routes'));
+app.use('/api/ai', aiLimiter, require('./routes/ai.routes'));
 
 // Health check endpoints
 app.get('/', (req, res) => {
@@ -45,6 +45,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(` Beta 3M API corrent a http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(` Beta 3M API corrent a http://0.0.0.0:${PORT} (xarxa local: http://192.168.0.138:${PORT})`);
 });
