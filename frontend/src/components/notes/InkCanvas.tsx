@@ -328,8 +328,10 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
   onShapeSnap,
 }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const rafRef = useRef<number | null>(null);
+  const currentPointsRef = useRef<Point[]>([]);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
-  const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const { isPanning, onDown: panDown, onMove: panMove, onUp: panUp } = useMultiTouch(
     editorScrollRef as React.RefObject<HTMLElement | null>
   );
@@ -340,6 +342,26 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
   const shapeSnapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shapeSnapRef = useRef(onShapeSnap);
   useEffect(() => { shapeSnapRef.current = onShapeSnap; }, [onShapeSnap]);
+  const strokeColorRef = useRef(strokeColor);
+  useEffect(() => { strokeColorRef.current = strokeColor; }, [strokeColor]);
+  const strokeWidthRef = useRef(strokeWidth);
+  useEffect(() => { strokeWidthRef.current = strokeWidth; }, [strokeWidth]);
+  const drawOpacityRef = useRef(drawOpacity);
+  useEffect(() => { drawOpacityRef.current = drawOpacity; }, [drawOpacity]);
+
+  useEffect(() => {
+    const canvas = overlayCanvasRef.current;
+    if (!canvas) return;
+    const resize = () => {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = canvas.clientWidth * dpr;
+      canvas.height = canvas.clientHeight * dpr;
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+    return () => ro.disconnect();
+  }, []);
 
   // ── Sketch autocomplete state ─────────────────────────────────────────────
   const [completionPath, setCompletionPath] = useState<string | null>(null);
@@ -353,6 +375,46 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     abortCtrlRef.current = null;
     completionPathRef.current = null;
     setCompletionPath(null);
+  };
+
+  const clearOverlay = () => {
+    if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    const canvas = overlayCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const scheduleRedraw = () => {
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const canvas = overlayCanvasRef.current;
+      const pts = currentPointsRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const dpr = window.devicePixelRatio || 1;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (pts.length < 2) return;
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      ctx.strokeStyle = strokeColorRef.current;
+      ctx.lineWidth = strokeWidthRef.current;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.globalAlpha = drawOpacityRef.current;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length - 1; i++) {
+        const mx = (pts[i].x + pts[i + 1].x) / 2;
+        const my = (pts[i].y + pts[i + 1].y) / 2;
+        ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+      }
+      ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+      ctx.stroke();
+      ctx.restore();
+    });
   };
 
   // ── LineBuffer state ──────────────────────────────────────────────────────
@@ -394,7 +456,8 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
       setLineBuffers([]);
       strokesRef.current = [];
       setStrokes([]);
-      setCurrentPoints([]);
+      currentPointsRef.current = [];
+      clearOverlay();
       clearCompletion();
     },
     getSvgElement: () => svgRef.current,
@@ -461,6 +524,7 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     if (!rendered) return;
 
     const isMath = looksLikeMath(consumed);
+    console.log('[InkCanvas] isMath:', isMath, 'strokes:', consumed.length);
     const mode = isMath ? 'math' : 'handwriting';
 
     setInternalStatus('processing');
@@ -600,35 +664,43 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
 
     if (commitTimerRef.current) clearTimeout(commitTimerRef.current);
     if (completionPathRef.current) clearCompletion();
-    setCurrentPoints([toSvgPoint(e)]);
+    currentPointsRef.current = [toSvgPoint(e)];
+    clearOverlay();
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!active) return;
     if (panMove(e)) return; // consumed by multi-touch pan
 
-    if (currentPoints.length === 0) return;
+    if (currentPointsRef.current.length === 0) return;
     if (shouldIgnoreTouch(e)) return;
 
-    let pt = toSvgPoint(e);
+    const rect = svgRef.current!.getBoundingClientRect();
+    const nativeEvents = (e.nativeEvent as PointerEvent).getCoalescedEvents?.() ?? [e.nativeEvent as PointerEvent];
 
-    // Ruler snap: project onto ruler line if within 20px
-    if (rulerState && drawTool !== 'eraser') {
-      const { ax, ay, bx, by } = rulerState;
-      const proj = projectPointOnLine(pt.x, pt.y, ax, ay, bx, by);
-      if (proj.dist < 20) pt = { ...pt, x: proj.x, y: proj.y };
+    for (const nativeEvt of nativeEvents) {
+      let pt: Point = { x: nativeEvt.clientX - rect.left, y: nativeEvt.clientY - rect.top, pressure: nativeEvt.pressure || 0.5 };
+
+      // Ruler snap: project onto ruler line if within 20px
+      if (rulerState && drawTool !== 'eraser') {
+        const { ax, ay, bx, by } = rulerState;
+        const proj = projectPointOnLine(pt.x, pt.y, ax, ay, bx, by);
+        if (proj.dist < 20) pt = { ...pt, x: proj.x, y: proj.y };
+      }
+      currentPointsRef.current.push(pt);
     }
-    setCurrentPoints(p => [...p, pt]);
+
+    scheduleRedraw();
 
     // Clear any previous completion suggestion when user continues drawing
     if (completionPathRef.current) clearCompletion();
 
     // Schedule pause detection after 700ms of no movement
-    if (currentPoints.length > 3) {
+    if (currentPointsRef.current.length > 3) {
       if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
       pauseTimerRef.current = setTimeout(async () => {
         // Take snapshot of current points at this moment
-        const pts = [...currentPoints, pt];
+        const pts = [...currentPointsRef.current];
         if (pts.length <= 3) return;
         const d = smoothPoints(pts);
         if (!d) return;
@@ -662,17 +734,18 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     const suggestion = completionPathRef.current;
     clearCompletion();
 
-    if (currentPoints.length < 2) { setCurrentPoints([]); return; }
+    const pts = currentPointsRef.current;
+    if (pts.length < 2) { currentPointsRef.current = []; clearOverlay(); return; }
 
     // Eraser mode: don't commit strokes as FloatingObjects
-    if (drawTool === 'eraser') { setCurrentPoints([]); return; }
+    if (drawTool === 'eraser') { currentPointsRef.current = []; clearOverlay(); return; }
 
     // Save points for shape detection before they're cleared
-    const pointsForSnap = currentPoints.map(p => ({ x: p.x, y: p.y }));
+    const pointsForSnap = pts.map(p => ({ x: p.x, y: p.y }));
 
     const now = Date.now();
-    const dx = currentPoints[0].x - currentPoints[currentPoints.length - 1].x;
-    const dy = currentPoints[0].y - currentPoints[currentPoints.length - 1].y;
+    const dx = pts[0].x - pts[pts.length - 1].x;
+    const dy = pts[0].y - pts[pts.length - 1].y;
     const dist = Math.hypot(dx, dy);
     const elapsed = now - (strokesRef.current[strokesRef.current.length - 1]?.timestamp || now - 100);
     const speed = elapsed > 0 ? dist / elapsed : 1;
@@ -694,7 +767,7 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
       : hexOrRgbaWithOpacity(strokeColor, drawOpacity);
 
     const dynamicWidth = finalWidth;
-    const newStroke: Stroke = { points: currentPoints, width: dynamicWidth, color: finalColor, timestamp: now };
+    const newStroke: Stroke = { points: pts, width: dynamicWidth, color: finalColor, timestamp: now };
 
     // If there was an active suggestion, merge it into the stroke's svgData as a second path
     // by appending the completion to the stroke's points via a synthetic merged stroke
@@ -706,7 +779,8 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
     strokesRef.current = updated;
     setStrokes(updated);
     onChangeStrokes?.(updated);
-    setCurrentPoints([]);
+    currentPointsRef.current = [];
+    clearOverlay();
 
     if (onOcrText) {
       addStrokeToBuffer(mergedStroke);
@@ -811,11 +885,6 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
       >
         <g className={isPulsing ? 'animate-pulse' : ''}>
           {strokes.map(renderPath)}
-          {currentPoints.length > 1 && (
-            <path d={smoothPoints(currentPoints)}
-              stroke={strokeColor} strokeWidth={strokeWidth}
-              fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          )}
           {completionPath && (
             <path
               d={completionPath}
@@ -830,6 +899,16 @@ const InkCanvas = forwardRef<InkCanvasRef, Props>(({
           )}
         </g>
       </svg>
+      <canvas
+        ref={overlayCanvasRef}
+        style={{
+          position: 'absolute', inset: 0,
+          width: '100%', height: '100%',
+          zIndex: 4,
+          pointerEvents: 'none',
+          touchAction: 'none',
+        }}
+      />
       <StatusPill status={displayStatus} />
     </>
   );
