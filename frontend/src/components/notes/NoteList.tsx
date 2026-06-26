@@ -1,31 +1,24 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNotesStore } from '../../store/notesStore';
 import { NoteCard } from './NoteCard';
 import { apiClient } from '../../api/client';
 import { Search, Sparkles, X, Camera, Sigma } from 'lucide-react';
 
 export const NoteList: React.FC = () => {
-    const { notes, createNote, activeSubjectId, searchNotes, fetchNotes } = useNotesStore();
+    const { notes, createNote, activeSubjectId } = useNotesStore();
     const [query, setQuery] = useState('');
     const [aiResults, setAiResults] = useState<number[] | null>(null);
     const [aiLoading, setAiLoading] = useState(false);
 
-    useEffect(() => {
-        if (aiResults !== null) return;
-        const timer = setTimeout(() => {
-            if (query.trim().length >= 2) {
-                searchNotes(query);
-            } else if (!query.trim()) {
-                fetchNotes(activeSubjectId ?? undefined);
-            }
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [query, aiResults, activeSubjectId]);
-
     const filteredNotes = useMemo(() => {
         if (aiResults !== null) return notes.filter(n => aiResults.includes(n.id));
-        return notes;
-    }, [notes, aiResults]);
+        if (!query.trim()) return notes;
+        const q = query.toLowerCase();
+        return notes.filter(n =>
+            n.title?.toLowerCase().includes(q) ||
+            n.content?.replace(/<[^>]*>/g, '').toLowerCase().includes(q)
+        );
+    }, [notes, query, aiResults]);
 
     const handleAiSearch = async () => {
         if (!query.trim() || notes.length === 0) return;
@@ -53,7 +46,7 @@ ${JSON.stringify(summaries)}`,
         finally { setAiLoading(false); }
     };
 
-    const clearSearch = () => { setQuery(''); setAiResults(null); fetchNotes(activeSubjectId ?? undefined); };
+    const clearSearch = () => { setQuery(''); setAiResults(null); };
 
     const handleCreateNote = async () => {
         await createNote();
@@ -112,8 +105,8 @@ ${JSON.stringify(summaries)}`,
                 <div className="flex items-center gap-6 mt-10 opacity-40">
                     {([
                         { icon: <Sparkles size={14} />, text: 'IA integrada' },
-                        { icon: <Camera size={14} />, text: 'Escaneo OCR' },
-                        { icon: <Sigma size={14} />, text: 'Matemáticas' },
+                        { icon: <Camera size={14} />,   text: 'Escaneo OCR' },
+                        { icon: <Sigma size={14} />,    text: 'Matemáticas' },
                     ] as { icon: React.ReactNode; text: string }[]).map(({ icon, text }) => (
                         <div key={text} className="flex items-center gap-2 text-[#555]">
                             {icon}
@@ -141,18 +134,18 @@ ${JSON.stringify(summaries)}`,
                     <button
                         onClick={handleCreateNote}
                         className="flex items-center gap-2 px-4 rounded-[var(--border-radius-lg)] bg-[#3b82f6] text-white font-semibold hover:bg-[#2f7be8] transition-all duration-150 active:scale-95 shadow-lg shadow-blue-500/20"
-                        style={{ height: '48px', fontSize: 'var(--font-size-sm)', minWidth: '48px' }}
+                        style={{ height: 'var(--touch-target)', fontSize: 'var(--font-size-sm)' }}
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
                         </svg>
-                        <span className="hidden sm:inline">Nueva nota</span>
+                        Nueva nota
                     </button>
                 </div>
 
                 {/* Search bar */}
                 <div className="flex gap-2 mb-6">
-                    <div className="flex-1 flex items-center gap-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl px-3" style={{ height: '48px' }}>
+                    <div className="flex-1 flex items-center gap-2 bg-[#0a0a0a] border border-[#1a1a1a] rounded-xl px-3" style={{ height: '44px' }}>
                         <Search size={15} className="text-[#444] flex-shrink-0" />
                         <input
                             value={query}
@@ -162,7 +155,7 @@ ${JSON.stringify(summaries)}`,
                             className="flex-1 bg-transparent outline-none text-[#fafafa] placeholder:text-[#444] text-sm"
                         />
                         {query && (
-                            <button onClick={clearSearch} className="text-[#444] hover:text-[#fafafa] transition-colors p-1">
+                            <button onClick={clearSearch} className="text-[#444] hover:text-[#fafafa] transition-colors">
                                 <X size={14} />
                             </button>
                         )}
@@ -172,7 +165,7 @@ ${JSON.stringify(summaries)}`,
                         disabled={!query.trim() || aiLoading}
                         title="Búsqueda semántica con IA"
                         className="flex items-center gap-1.5 px-3 rounded-xl bg-[#0a0a0a] border border-[#1a1a1a] text-[#444] hover:text-[#3b82f6] hover:border-[rgba(56,139,253,0.3)] disabled:opacity-30 transition-all"
-                        style={{ height: '48px', minWidth: '48px' }}
+                        style={{ height: '44px' }}
                     >
                         {aiLoading
                             ? <span className="w-4 h-4 border-2 border-white/20 border-t-blue-400 rounded-full animate-spin" />
@@ -190,10 +183,10 @@ ${JSON.stringify(summaries)}`,
                     </div>
                 )}
 
-                {/* Notes grid — 1 col mobile · 2 cols tablet portrait · 3 cols tablet landscape / desktop */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Notes grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {filteredNotes.length === 0 && query ? (
-                        <div className="col-span-full text-center py-12 text-[#444] text-sm">
+                        <div className="col-span-2 text-center py-12 text-[#444] text-sm">
                             Sin resultados para "{query}"
                         </div>
                     ) : filteredNotes.map((n, i) => (

@@ -4,7 +4,7 @@ import html2canvas from 'html2canvas';
 import { useMathToolsStore } from '../../store/mathToolsStore';
 import { useNotesStore } from '../../store/notesStore';
 import FileUploadOCR from '../files/FileUploadOCR';
-import { ScanLine, ImagePlus, FileDown, FileText, FolderOpen, Download, ChevronDown } from 'lucide-react';
+import { ScanLine, ImagePlus, FileDown, FileCode, FileText, FolderOpen, Download, ChevronDown } from 'lucide-react';
 
 interface SidebarRightProps {
     isOverlay?: boolean;
@@ -95,6 +95,7 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
         URL.revokeObjectURL(url);
     }
 
+    const downloadMD  = () => currentNote && downloadBlob(`# ${currentNote.title}\n\n${stripHtml(currentNote.content)}`, `${currentNote.title || 'nota'}.md`, 'text/markdown');
     const downloadTXT = () => currentNote && downloadBlob(`${currentNote.title}\n${'─'.repeat(40)}\n\n${stripHtml(currentNote.content)}`, `${currentNote.title || 'nota'}.txt`, 'text/plain');
 
     async function downloadPDF() {
@@ -148,15 +149,9 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
             `}
             style={{ width: 'var(--sidebar-right)' }}
         >
-<<<<<<< HEAD
             {/* Header with collapse button — always shown when onClose is available */}
             {onClose && (
                 <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-[#1a1a1a]">
-=======
-            {/* Close button — shown when overlay */}
-            {isOverlay && onClose && (
-                <div className="flex items-center justify-between px-5 pt-4 pb-2">
->>>>>>> parent of 7d49d8a0 (push 2)
                     <span className="text-[11px] font-semibold text-[#444] uppercase tracking-widest">Panel</span>
                     <button
                         onClick={onClose}
@@ -256,13 +251,24 @@ export default function SidebarRight({ isOverlay = false, onClose }: SidebarRigh
                         </div>
                     ) : (
                         <>
-                            <ActionButton onClick={downloadPDF} icon={<FileDown size={20} />}  label="Exportar PDF"   variant="default" />
-                            <ActionButton onClick={downloadTXT} icon={<FileText size={20} />}  label="Exportar texto" variant="default" />
+                            <ActionButton onClick={downloadPDF} icon={<FileDown size={20} />}  label="Exportar PDF"      variant="default" />
+                            <ActionButton onClick={downloadMD}  icon={<FileCode size={20} />}  label="Exportar Markdown" variant="default" />
+                            <ActionButton onClick={downloadTXT} icon={<FileText size={20} />}  label="Exportar texto"    variant="default" />
                         </>
                     )}
                 </div>
             </div>
 
+            {/* Status footer */}
+            <div className="p-4 border-t border-[#1a1a1a] safe-area-bottom">
+                <div className="flex items-center justify-between">
+                    <span className="text-[11px] text-[#444]">Estado IA</span>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#3FB950] animate-pulse" />
+                        <span className="text-[11px] text-[#3FB950] font-medium">Listo</span>
+                    </div>
+                </div>
+            </div>
         </aside>
     );
 }

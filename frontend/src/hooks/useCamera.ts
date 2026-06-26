@@ -7,6 +7,7 @@ export const useCamera = () => {
         setIsCapturing(true);
         try {
             // Logic for camera API access and perspective correction (placeholder)
+            console.log("Capturing from camera...");
             await new Promise(resolve => setTimeout(resolve, 2000));
             return {
                 url: 'https://via.placeholder.com/800x600?text=Pizarra+Capturada',

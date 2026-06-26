@@ -111,10 +111,7 @@ export default function BottomToolbar({
   const [showStickers, setShowStickers] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
   const [voiceInterim, setVoiceInterim] = useState('');
-<<<<<<< HEAD
   const [voiceLang, setVoiceLang] = useState('auto');
-=======
->>>>>>> parent of 7d49d8a0 (push 2)
 
   // Voice input: insert final results in Tiptap, show interim only in the indicator
   const handleVoiceResult = useCallback((text: string, isFinal: boolean) => {
@@ -127,11 +124,7 @@ export default function BottomToolbar({
     }
   }, [editor]);
 
-<<<<<<< HEAD
   const { isListening, isSupported, toggle: toggleVoice } = useVoiceInput(handleVoiceResult, voiceLang);
-=======
-  const { isListening, isSupported, toggle: toggleVoice } = useVoiceInput(handleVoiceResult);
->>>>>>> parent of 7d49d8a0 (push 2)
 
   const handleAddImage = () => {
     const input = document.createElement('input');
@@ -234,7 +227,6 @@ export default function BottomToolbar({
       {/* Main toolbar */}
       <div
         style={{
-<<<<<<< HEAD
           width: '100%',
           boxSizing: 'border-box',
           minHeight: 64,
@@ -242,13 +234,6 @@ export default function BottomToolbar({
           backdropFilter: 'blur(24px) saturate(200%)',
           WebkitBackdropFilter: 'blur(24px) saturate(200%)',
           borderTop: '1px solid rgba(255,255,255,0.10)',
-=======
-          height: 56,
-          background: 'rgba(12,12,18,0.96)',
-          backdropFilter: 'blur(20px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
->>>>>>> parent of 7d49d8a0 (push 2)
           paddingLeft: 8,
           paddingRight: 8,
           paddingTop: 6,

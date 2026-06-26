@@ -1,45 +1,29 @@
 import React from 'react';
 
 interface ConfirmModalProps {
-    title: string;
-    description: string;
-    confirmLabel?: string;
-    onConfirm: () => void;
-    onCancel: () => void;
+  title: string;
+  description: string;
+  onConfirm: () => void;
+  onCancel: () => void;
 }
 
-export const ConfirmModal: React.FC<ConfirmModalProps> = ({
-    title,
-    description,
-    confirmLabel = 'Eliminar',
-    onConfirm,
-    onCancel,
-}) => (
-    <div
-        className="fixed inset-0 z-[500] flex items-center justify-center p-4"
-        onClick={onCancel}
-    >
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-        <div
-            className="relative bg-[#111] border border-[#1a1a1a] rounded-xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
-        >
-            <h3 className="text-[15px] font-bold text-[#fafafa] mb-2">{title}</h3>
-            <p className="text-[13px] text-[#555] mb-6 leading-relaxed">{description}</p>
-            <div className="flex gap-3 justify-end">
-                <button
-                    onClick={onCancel}
-                    className="px-4 py-2 rounded-lg text-[13px] font-semibold text-[#555] bg-[#1a1a1a] hover:text-[#fafafa] transition-colors"
-                >
-                    Cancelar
-                </button>
-                <button
-                    onClick={onConfirm}
-                    className="px-4 py-2 rounded-lg text-[13px] font-semibold text-white bg-red-600 hover:bg-red-500 transition-colors"
-                >
-                    {confirmLabel}
-                </button>
-            </div>
-        </div>
+export const ConfirmModal: React.FC<ConfirmModalProps> = ({ title, description, onConfirm, onCancel }) => (
+  <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)' }}
+    onClick={onCancel}>
+    <div style={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 24, maxWidth: 360, width: '90%' }}
+      onClick={e => e.stopPropagation()}>
+      <h2 style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 16, marginBottom: 8 }}>{title}</h2>
+      <p style={{ color: '#94a3b8', fontSize: 14, marginBottom: 24 }}>{description}</p>
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+        <button onClick={onCancel}
+          style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)', background: 'transparent', color: '#94a3b8', cursor: 'pointer', fontSize: 14 }}>
+          Cancelar
+        </button>
+        <button onClick={onConfirm}
+          style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#ef4444', color: 'white', cursor: 'pointer', fontWeight: 600, fontSize: 14 }}>
+          Eliminar
+        </button>
+      </div>
     </div>
+  </div>
 );

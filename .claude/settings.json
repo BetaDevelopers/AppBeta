@@ -18,10 +18,7 @@
       "Bash(grep -n \"insertContent\\\\|latex\\\\|\\\\$\\\\$\" src/components/notes/SolvePanel.tsx)",
       "Bash(grep -n \"insertContent\\\\|latex\\\\|\\\\$\" src/components/notes/SelectionMenu.tsx)",
       "Bash(grep -n \"insertContent\\\\|\\\\$\\\\$\\\\|latex\\\\|equation\\\\|LaTeX\" src/components/notes/NoteEditor.tsx)",
-      "Bash(grep -n \"markdownToHtml\\\\|\\\\$\\\\$\\\\|\\\\$\" src/utils/editorUtils.ts)",
-      "Bash(findstr /i \"192.168\")",
-      "PowerShell(Get-Process -Name \"node\" -ErrorAction SilentlyContinue)",
-      "PowerShell(Stop-Process -Force)"
+      "Bash(grep -n \"markdownToHtml\\\\|\\\\$\\\\$\\\\|\\\\$\" src/utils/editorUtils.ts)"
     ]
   }
 }

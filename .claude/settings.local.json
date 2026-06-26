@@ -83,7 +83,8 @@
       "Bash(Select-String \"tailwind\" -Context 0,0)",
       "PowerShell(Get-Job *)",
       "Bash(taskkill /F /IM node.exe)",
-      "PowerShell(Get-Process *)"
+      "PowerShell(Get-Process *)",
+      "Bash(grep -E \"frontend.*\\\\.ts$|frontend.*\\\\.tsx$\")"
     ]
   }
 }
