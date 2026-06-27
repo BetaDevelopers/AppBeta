@@ -46,6 +46,38 @@
   --topbar-height: 60px;
 }
 
+/* ─── Light Mode ──────────────────────────────────────────────── */
+.light {
+  --beta-bg: #eef2f7;
+  --beta-surface: #ffffff;
+  --beta-surface-muted: #f1f5f9;
+  --beta-surface-glass: rgba(248,250,252,0.92);
+  --beta-border: #e2e8f0;
+  --beta-border-rich: #cbd5e1;
+  --beta-text-primary: #0f172a;
+  --beta-text-secondary: #64748b;
+  --beta-text-tertiary: #94a3b8;
+}
+
+.light .glass {
+  background: rgba(255,255,255,0.88);
+  border-color: var(--beta-border-rich);
+}
+
+.light .glass-card {
+  background: #ffffff;
+  border: 1px solid var(--beta-border);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.light .toolbar {
+  border-bottom-color: var(--beta-border-rich) !important;
+}
+
+.light .note-editor-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+}
+
 /* ─── Reset & Base ───────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
+import { useUIStore, applyTheme } from './store/uiStore';
 import AuthPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import PlansPage from './pages/PlansPage';
@@ -18,6 +19,7 @@ export default function App() {
 
     useEffect(() => {
         initAuth();
+        applyTheme(useUIStore.getState().theme);
     }, []);
 
     if (isInitializing) {

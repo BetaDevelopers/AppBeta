@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
+import { Mail, Check } from 'lucide-react';
 
 interface AuthFormProps {
     isRegisterInitial?: boolean;
@@ -86,7 +87,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ isRegisterInitial = false, o
         return (
             <div className="w-full max-w-[440px] text-center animate-in fade-in zoom-in-95 duration-500">
                 <div className="inline-flex w-24 h-24 bg-gradient-to-br from-green-600 to-emerald-600 rounded-[32px] items-center justify-center mb-8 shadow-2xl shadow-green-600/30 ring-8 ring-green-600/10">
-                    <span className="text-5xl">📧</span>
+                    <Mail size={48} className="text-white drop-shadow-md" />
                 </div>
                 <h2 className="text-4xl font-black text-white tracking-tight mb-4 font-display">
                     ¡Revisa tu email!
@@ -114,8 +115,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ isRegisterInitial = false, o
                     </p>
                 </div>
                 {resendSuccess && (
-                    <div className="mt-6 text-green-400 text-sm font-bold animate-in slide-in-from-bottom-2">
-                        ✓ Nuevo enlace enviado correctamente
+                    <div className="mt-6 text-green-400 text-sm font-bold animate-in slide-in-from-bottom-2 flex items-center justify-center gap-2">
+                        <Check size={14} /> Nuevo enlace enviado correctamente
                     </div>
                 )}
             </div>
@@ -162,14 +163,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ isRegisterInitial = false, o
                         )}
 
                         {resendSuccess && !isUnverified && (
-                            <span className="text-green-400 text-xs font-black uppercase tracking-widest pl-7">✓ Reenviado</span>
+                            <span className="text-green-400 text-xs font-black uppercase tracking-widest pl-7 flex items-center gap-1"><Check size={12} /> Reenviado</span>
                         )}
                     </div>
                 )}
 
                 {resendSuccess && isUnverified && (
                     <div className="bg-green-500/10 border border-green-500/20 text-green-400 text-[13px] p-4 rounded-2xl font-bold flex items-center gap-3 animate-in slide-in-from-top-2">
-                        <span className="text-lg">✓</span>
+                        <Check size={18} className="flex-shrink-0" />
                         <span>Enlace de confirmación reenviado a {email}</span>
                     </div>
                 )}

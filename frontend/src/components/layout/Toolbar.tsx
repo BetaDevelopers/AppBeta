@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useNotesStore } from '../../store/notesStore';
 import { useUIStore } from '../../store/uiStore';
-import { Crown, Sparkles } from 'lucide-react';
+import { Crown, Sparkles, Sun, Moon } from 'lucide-react';
 import { BetaLogo } from '../ui/BetaLogo';
 
 interface ToolbarProps {
@@ -21,7 +21,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 }) => {
     const { user, isGuest } = useAuthStore();
     const { isSaving } = useNotesStore();
-    const openAuthModal = useUIStore((s) => s.openAuthModal);
+    const { openAuthModal, theme, toggleTheme } = useUIStore();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchExpanded, setSearchExpanded] = useState(false);
@@ -223,6 +223,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                         <span className="text-amber-400 text-xs font-medium hidden sm:block">Sincronizando</span>
                     </div>
                 )}
+
+                {/* Theme toggle */}
+                <button
+                    onClick={toggleTheme}
+                    className="flex items-center justify-center rounded-xl text-[#555] hover:text-white hover:bg-white/10 transition-all"
+                    style={{ width: '44px', height: '44px' }}
+                    aria-label={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+                    title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+                >
+                    {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
 
                 {/* IA button */}
                 <button

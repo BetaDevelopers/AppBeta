@@ -2,7 +2,7 @@ import React from 'react';
 import { useNotesStore } from '../../store/notesStore';
 import { useSubjectsStore } from '../../store/subjectsStore';
 import type { Note } from '../../types';
-import { MoreHorizontal, Trash2, Edit2, RotateCcw } from 'lucide-react';
+import { MoreHorizontal, Trash2, Edit2, RotateCcw, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 
 interface NoteCardProps {
@@ -34,7 +34,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
             onKeyDown={(e) => e.key === 'Enter' && setCurrentNote(note)}
             className={`group relative w-full text-left p-5 rounded-[var(--border-radius-xl)] transition-all duration-150 overflow-hidden border cursor-pointer active:scale-[0.98] ${isActive
                 ? 'bg-[rgba(59,130,246,0.08)] border-[rgba(59,130,246,0.4)] shadow-[0_0_24px_rgba(59,130,246,0.1)]'
-                : 'bg-[#0a0a0a] border-[#1a1a1a] hover:border-[#222] hover:bg-[#141414] hover:translate-x-1'
+                : 'bg-[var(--beta-surface)] border-[var(--beta-border-rich)] hover:border-[var(--beta-border-rich)] hover:bg-[var(--beta-surface-muted)] hover:translate-x-1'
                 }`}
             style={{ minHeight: '140px' }}
         >
@@ -47,7 +47,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                 {/* Title row */}
                 <div className="flex items-start justify-between gap-3 mb-2">
                     <h4
-                        className={`font-semibold leading-snug tracking-tight font-display ${isActive ? 'text-[#fafafa]' : 'text-[#C9D1D9] group-hover:text-[#fafafa]'
+                        className={`font-semibold leading-snug tracking-tight font-display ${isActive ? 'text-[#fafafa]' : 'text-[var(--beta-text-primary)] group-hover:text-[var(--beta-text-primary)]'
                             }`}
                         style={{ fontSize: 'var(--font-size-lg)' }}
                     >
@@ -63,20 +63,20 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                         </button>
 
                         {showMenu && (
-                            <div className="absolute right-0 top-full mt-2 w-48 bg-[#111] border border-[#1a1a1a] rounded-xl shadow-2xl z-[100] py-1 overflow-hidden" onClick={e => e.stopPropagation()}>
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--beta-surface)] border border-[var(--beta-border-rich)] rounded-xl shadow-2xl z-[100] py-1 overflow-hidden" onClick={e => e.stopPropagation()}>
                                 {!showMove ? (
                                     <>
                                         <button onClick={() => {
                                             const title = prompt('Nuevo título:', note.title);
                                             if (title) updateNote(note.id, { title });
                                             setShowMenu(false);
-                                        }} className="w-full text-left px-4 py-2 text-xs font-semibold text-[#555] hover:text-white hover:bg-[#111] flex items-center gap-2">
+                                        }} className="w-full text-left px-4 py-2 text-xs font-semibold text-[var(--beta-text-secondary)] hover:text-[var(--beta-text-primary)] hover:bg-[var(--beta-surface-muted)] flex items-center gap-2">
                                             <Edit2 size={12} /> Renombrar
                                         </button>
-                                        <button onClick={() => setShowMove(true)} className="w-full text-left px-4 py-2 text-xs font-semibold text-[#555] hover:text-white hover:bg-[#111] flex items-center gap-2">
+                                        <button onClick={() => setShowMove(true)} className="w-full text-left px-4 py-2 text-xs font-semibold text-[var(--beta-text-secondary)] hover:text-[var(--beta-text-primary)] hover:bg-[var(--beta-surface-muted)] flex items-center gap-2">
                                             <RotateCcw size={12} /> Mover a...
                                         </button>
-                                        <div className="h-px bg-[#111] my-1" />
+                                        <div className="h-px bg-[var(--beta-border)] my-1" />
                                         <button onClick={() => {
                                             if (window.confirm('¿Borrar nota?')) deleteNote(note.id);
                                             setShowMenu(false);
@@ -86,14 +86,14 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
                                     </>
                                 ) : (
                                     <div className="max-h-48 overflow-y-auto scrollbar-hide">
-                                        <button onClick={() => setShowMove(false)} className="w-full text-left px-4 py-1 text-[10px] font-black text-blue-500 uppercase tracking-widest hover:bg-[#111] mb-1 px-4 py-2">
+                                        <button onClick={() => setShowMove(false)} className="w-full text-left px-4 py-2 text-[10px] font-black text-blue-500 uppercase tracking-widest hover:bg-[var(--beta-surface-muted)] mb-1">
                                             ← Volver
                                         </button>
-                                        <button onClick={() => { updateNote(note.id, { subject_id: null }); setShowMenu(false); }} className="w-full text-left px-4 py-2 text-xs font-semibold text-[#555] hover:text-white hover:bg-[#111]">
+                                        <button onClick={() => { updateNote(note.id, { subject_id: null }); setShowMenu(false); }} className="w-full text-left px-4 py-2 text-xs font-semibold text-[var(--beta-text-secondary)] hover:text-[var(--beta-text-primary)] hover:bg-[var(--beta-surface-muted)]">
                                             (Sin carpeta)
                                         </button>
                                         {subjects.map(s => (
-                                            <button key={s.id} onClick={() => { updateNote(note.id, { subject_id: s.id }); setShowMenu(false); }} className="w-full text-left px-4 py-2 text-xs font-semibold text-[#555] hover:text-white hover:bg-[#111] flex items-center gap-2">
+                                            <button key={s.id} onClick={() => { updateNote(note.id, { subject_id: s.id }); setShowMenu(false); }} className="w-full text-left px-4 py-2 text-xs font-semibold text-[var(--beta-text-secondary)] hover:text-[var(--beta-text-primary)] hover:bg-[var(--beta-surface-muted)] flex items-center gap-2">
                                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} /> {s.name}
                                             </button>
                                         ))}
@@ -106,32 +106,34 @@ export const NoteCard: React.FC<NoteCardProps> = ({ note }) => {
 
                 {/* Preview */}
                 <p
-                    className="text-[#555] line-clamp-2 leading-relaxed flex-1 mb-4"
+                    className="text-[var(--beta-text-secondary)] line-clamp-2 leading-relaxed flex-1 mb-4"
                     style={{ fontSize: 'var(--font-size-sm)' }}
                 >
                     {note.content?.replace(/<[^>]*>/g, '').substring(0, 100) || 'Sin contenido...'}
                 </p>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between pt-3 border-t border-[#141414]">
+                <div className="flex items-center justify-between pt-3 border-t border-[var(--beta-border)]">
                     <div className="flex items-center gap-1.5">
-                        <svg className="w-3 h-3 text-[#444]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3 h-3 text-[var(--beta-text-tertiary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5"
                                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span className="text-[#444]" style={{ fontSize: 'var(--font-size-xs)' }}>
+                        <span className="text-[var(--beta-text-tertiary)]" style={{ fontSize: 'var(--font-size-xs)' }}>
                             {formatDate(note.updated_at)}
                         </span>
                     </div>
 
                     {note.ai_processed && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 bg-[rgba(59,130,246,0.1)] rounded-[var(--border-radius-sm)] border border-[rgba(59,130,246,0.2)]">
-                            <span className="text-[#3b82f6]" style={{ fontSize: 'var(--font-size-xs)' }}>✨ Smart</span>
+                            <span className="text-[#3b82f6] flex items-center gap-1" style={{ fontSize: 'var(--font-size-xs)' }}>
+                                <Sparkles size={10} /> Smart
+                            </span>
                         </div>
                     )}
 
                     {note.subject_name && !note.subject_color && (
-                        <span className="text-[#444]" style={{ fontSize: 'var(--font-size-xs)' }}>
+                        <span className="text-[var(--beta-text-tertiary)]" style={{ fontSize: 'var(--font-size-xs)' }}>
                             {note.subject_name}
                         </span>
                     )}

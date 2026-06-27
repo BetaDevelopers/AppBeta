@@ -1,9 +1,0 @@
-[     653ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=f18d6e29:20102
-[  159601ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:5174/node_modules/.vite/deps/react-dom_client.js?v=f18d6e29:20102
-[  309922ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/perfil:0
-[  309922ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/perfil:0
-[  309922ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5174/perfil:0
-[ 5830467ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5174/@vite/client:864
-[ 7276237ms] [ERROR] Failed to load resource: net::ERR_NETWORK_CHANGED @ http://localhost:5174/src/main.tsx?t=1779361914585:0
-[ 7276243ms] [ERROR] Failed to load resource: net::ERR_NETWORK_CHANGED @ http://localhost:5174/@vite/client:0
-[ 7276244ms] [ERROR] Failed to load resource: net::ERR_NETWORK_CHANGED @ http://localhost:5174/@react-refresh:0

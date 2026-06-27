@@ -45,11 +45,6 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-<<<<<<< HEAD
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(` Beta 3M API corrent a http://0.0.0.0:${PORT} (xarxa local: http://192.168.0.138:${PORT})`);
-=======
-app.listen(PORT, () => {
-  console.log(` Beta 3M API corrent a http://localhost:${PORT}`);
->>>>>>> parent of 7d49d8a0 (push 2)
+  console.log(` Beta 3M API corrent a http://0.0.0.0:${PORT}`);
 });
