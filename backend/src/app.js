@@ -46,5 +46,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(` Beta 3M API corrent a http://0.0.0.0:${PORT}`);
+  console.log(` Beta 3M API corrent a http://0.0.0.0:${PORT} (xarxa local: http://192.168.1.95:${PORT})`);
 });

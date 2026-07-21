@@ -278,7 +278,7 @@ export default function MathOCR({ onResult } = {}) {
         }
         if (isDrawing) { e.preventDefault(); setCurrentStroke(p => [...p, getPos(e)]); }
     };
-    const onEnd   = () => {
+    const onEnd = () => {
         if (isPanningRef.current) { isPanningRef.current = false; return; }
         if (!isDrawing) return;
         setIsDrawing(false);
