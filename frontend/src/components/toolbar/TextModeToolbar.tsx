@@ -14,7 +14,6 @@ const EMOJI_GRID = [
   '📚','📖','✏️','📝','💡','🔬','🧠','🎨','🚀','⚡','🔥','💎',
 ];
 
-<<<<<<< HEAD
 const VOICE_LANGS = [
   { code: 'auto', flag: '🌐', label: 'Auto',     bcp: 'auto' },
   { code: 'es',   flag: '🇪🇸', label: 'Español',  bcp: 'es-ES' },
@@ -30,8 +29,6 @@ const VOICE_LANGS = [
   { code: 'ar',   flag: '🇸🇦', label: 'العربية',  bcp: 'ar-SA' },
 ];
 
-=======
->>>>>>> parent of 7d49d8a0 (push 2)
 interface Props {
   editor: any;
   onEnterDrawMode: () => void;
@@ -57,13 +54,8 @@ function TBtn({
       onClick={onClick}
       title={title}
       style={{
-<<<<<<< HEAD
         width: 48, height: 48,
         borderRadius: 11,
-=======
-        width: 40, height: 40,
-        borderRadius: 9,
->>>>>>> parent of 7d49d8a0 (push 2)
         border: active ? '1px solid rgba(59,130,246,0.55)' : '1px solid transparent',
         background: active ? 'rgba(59,130,246,0.22)' : 'transparent',
         color: active ? '#93C5FD' : 'rgba(255,255,255,0.55)',
@@ -100,7 +92,6 @@ export default function TextModeToolbar({
   const [showFontPicker, setShowFontPicker] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-<<<<<<< HEAD
   const [showLangPicker, setShowLangPicker] = useState(false);
 
   const closeAll = () => {
@@ -127,13 +118,6 @@ export default function TextModeToolbar({
 
   if (!editor) return null;
 
-=======
-
-  const colorBtnRef = useRef<HTMLButtonElement>(null);
-
-  if (!editor) return null;
-
->>>>>>> parent of 7d49d8a0 (push 2)
   const insertEmoji = (emoji: string) => {
     editor.chain().focus().insertContent(emoji).run();
     setShowEmojiPicker(false);
@@ -144,11 +128,7 @@ export default function TextModeToolbar({
   };
 
   return (
-<<<<<<< HEAD
     <div ref={toolbarRef} style={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%', position: 'relative' }}>
-=======
-    <div style={{ display: 'flex', alignItems: 'center', gap: 2, width: '100%', position: 'relative' }}>
->>>>>>> parent of 7d49d8a0 (push 2)
       {/* ── Left scrollable zone ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, overflowX: 'auto', scrollbarWidth: 'none' }}>
 
@@ -320,7 +300,6 @@ export default function TextModeToolbar({
 
         {/* Voice + Language picker */}
         {isVoiceSupported && (
-<<<<<<< HEAD
           <>
             {/* Language dropdown */}
             <div style={{ position: 'relative' }}>
@@ -396,31 +375,11 @@ export default function TextModeToolbar({
               )}
             </div>
           </>
-=======
-          <div style={{ position: 'relative' }}>
-            <TBtn onClick={onToggleVoice} active={isVoiceListening} title={isVoiceListening ? 'Parar dictado' : 'Dictado por voz'}>
-              {isVoiceListening ? <MicOff size={16} /> : <Mic size={16} />}
-            </TBtn>
-            {isVoiceListening && (
-              <span style={{
-                position: 'absolute', inset: -2,
-                borderRadius: 11,
-                border: '2px solid #EF4444',
-                animation: 'voice-ring 1s ease infinite',
-                pointerEvents: 'none',
-              }} />
-            )}
-          </div>
->>>>>>> parent of 7d49d8a0 (push 2)
         )}
 
         {/* Emoji */}
         <div style={{ position: 'relative' }}>
-<<<<<<< HEAD
           <TBtn onClick={() => { const next = !showEmojiPicker; closeAll(); setShowEmojiPicker(next); }} title="Emoji">
-=======
-          <TBtn onClick={() => { setShowEmojiPicker(p => !p); setShowFontPicker(false); setShowColorPicker(false); }} title="Emoji">
->>>>>>> parent of 7d49d8a0 (push 2)
             <span style={{ fontSize: 18, lineHeight: 1 }}>😊</span>
           </TBtn>
           {showEmojiPicker && (
@@ -471,11 +430,7 @@ export default function TextModeToolbar({
 
         {/* More menu */}
         <div style={{ position: 'relative' }}>
-<<<<<<< HEAD
           <TBtn onClick={() => { const next = !showMenu; closeAll(); setShowMenu(next); }} active={showMenu} title="Más opciones">
-=======
-          <TBtn onClick={() => setShowMenu(p => !p)} active={showMenu} title="Más opciones">
->>>>>>> parent of 7d49d8a0 (push 2)
             <MoreHorizontal size={16} />
           </TBtn>
           {showMenu && (
